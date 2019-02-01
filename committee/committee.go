@@ -13,13 +13,14 @@ import (
 	"time"
 
 	"github.com/iotexproject/go-ethereum/common"
+	"github.com/iotexproject/iotex-election/vote"
 	"github.com/pkg/errors"
 )
 
 var ErrNotExist = errors.New("not exist in db")
 
 // WeightFunc defines a function to calculate the weight of a vote
-type WeightFunc func(*Vote) (*big.Int, error)
+type WeightFunc func(*vote.Vote) (*big.Int, error)
 
 // CalcBeaconChainHeight calculates the corresponding beacon chain height for an epoch
 type CalcBeaconChainHeight func(uint64) (uint64, error)
@@ -32,7 +33,7 @@ type Committee interface {
 type committee struct {
 	db         KVStore
 	calcWeight WeightFunc
-	carrier    VoteCarrier
+	carrier    vote.Carrier
 	calcHeight CalcBeaconChainHeight
 }
 
@@ -53,24 +54,18 @@ func NewCommittee(db KVStore, cfg Config) (Committee, error) {
 	if !common.IsHexAddress(cfg.StakingContractAddress) {
 		return nil, errors.New("Invalid staking contract address")
 	}
-	calcWeight := func(v *Vote) (*big.Int, error) {
+	calcWeight := func(v *vote.Vote) (*big.Int, error) {
 		// TODO: calculate weights
 		now := time.Now()
-		if now.Before(v.startTime) {
+		if now.Before(v.StartTime()) {
 			return nil, errors.New("invalid vote start time")
 		}
-		var remainingTime time.Duration
-		// TODO: validate that duration is a positive value
-		if v.decay {
-			remainingTime = v.startTime.Add(v.duration).Sub(now).Seconds()
-		} else {
-			remainingTime = v.duration
-		}
+		remainingTime := v.RemainingTime(time.Now()).Seconds()
 		weight := float64(1)
 		if remainingTime > 0 {
 			weight += math.Log(math.Ceil(remainingTime/86400)) / math.Log(1.2)
 		}
-		amount := new(big.Float).SetInt(v.amount)
+		amount := new(big.Float).SetInt(v.Amount())
 		weightedAmount, _ := amount.Mul(amount, big.NewFloat(weight)).Int(nil)
 
 		return weightedAmount, nil
@@ -82,7 +77,7 @@ func NewCommittee(db KVStore, cfg Config) (Committee, error) {
 	return &committee{
 		calcHeight: calcHeight,
 		calcWeight: calcWeight,
-		carrier: NewEthereumVoteCarrier(
+		carrier: vote.NewEthereumVoteCarrier(
 			cfg.EthRawURL,
 			common.HexToAddress(cfg.StakingContractAddress),
 		),
@@ -96,7 +91,7 @@ func (ec *committee) ResultByEpoch(epoch uint64) (*Result, error) {
 		return nil, err
 	}
 	heightHash := make([]byte, 8)
-	binary.LittleEndian.PutUint64(bytes, height)
+	binary.LittleEndian.PutUint64(heightHash, height)
 	data, err := ec.db.Get(heightHash)
 	switch errors.Cause(err) {
 	case ErrNotExist: // not exist in db
@@ -112,19 +107,19 @@ func (ec *committee) ResultByEpoch(epoch uint64) (*Result, error) {
 	paginationSize := uint8(100)
 	result := &Result{}
 	for {
-		var votes []*Vote
+		var votes []*vote.Vote
 		if previousIndex, votes, err = ec.carrier.Votes(height, previousIndex, paginationSize); err != nil {
 			return nil, err
 		}
 		for _, vote := range votes {
-			if vote.candidate == "" {
+			if vote.Candidate() == "" {
 				continue
 			}
 			weight, err := ec.calcWeight(vote)
 			if err != nil {
 				return nil, err
 			}
-			result.AddPoints(vote.candidate, weight)
+			result.AddPoints(vote.Candidate(), weight)
 		}
 		if len(votes) < int(paginationSize) {
 			break
@@ -133,7 +128,7 @@ func (ec *committee) ResultByEpoch(epoch uint64) (*Result, error) {
 	if data, err = result.Serialize(); err != nil {
 		return nil, err
 	}
-	if err = ec.db.Put(resultBucket, heightHash, data); err != nil {
+	if err = ec.db.Put(heightHash, data); err != nil {
 		return nil, err
 	}
 

@@ -28,6 +28,38 @@ type Vote struct {
 	decay     bool
 }
 
+func (v *Vote) StartTime() time.Time {
+	return v.startTime
+}
+
+func (v *Vote) Duration() time.Duration {
+	return v.duration
+}
+
+func (v *Vote) Voter() common.Address {
+	return v.voter
+}
+
+func (v *Vote) Amount() *big.Int {
+	return v.amount
+}
+
+func (v *Vote) Candidate() string {
+	return v.candidate
+}
+
+func (v *Vote) Decay() bool {
+	return v.decay
+}
+
+func (v *Vote) RemainingTime(now time.Time) time.Duration {
+	// TODO: validate that duration is a positive value
+	if v.decay {
+		return v.startTime.Add(v.duration).Sub(now)
+	}
+	return v.duration
+}
+
 // Carrier defines an interfact to fetch votes
 type Carrier interface {
 	Votes(uint64, *big.Int, uint8) (*big.Int, []*Vote, error)

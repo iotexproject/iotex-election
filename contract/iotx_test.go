@@ -17,20 +17,20 @@ import (
 )
 
 func TestIOTXContract(t *testing.T) {
-	client, err := ethclient.Dial("wss://mainnet.infura.io/ws")
+	client, err := ethclient.Dial("https://kovan.infura.io/")
 	require.NoError(t, err)
-	sc, err := NewIOTXCaller(common.HexToAddress("6fb3e0a217407efff7ca062d46c26e5d60a14d69"), client)
+	sc, err := NewIOTXCaller(common.HexToAddress("a45e1d096a5d1b7db32e9309f67b293d3d8de759"), client)
 	require.NoError(t, err)
 	b, err := sc.BalanceOf(
-		&bind.CallOpts{BlockNumber: big.NewInt(7088362)},
+		&bind.CallOpts{BlockNumber: big.NewInt(10245807)},
 		common.HexToAddress("731eae7bEdec1F0A5A52BEb39a4e1dCdb4bb77Ac"),
 	)
 	require.NoError(t, err)
 	require.Equal(t, 0, b.Cmp(big.NewInt(0)))
 	b, err = sc.BalanceOf(
-		&bind.CallOpts{BlockNumber: big.NewInt(7088363)},
+		&bind.CallOpts{BlockNumber: big.NewInt(10245808)},
 		common.HexToAddress("731eae7bEdec1F0A5A52BEb39a4e1dCdb4bb77Ac"),
 	)
 	require.NoError(t, err)
-	require.Equal(t, 0, b.Cmp(big.NewInt(0).Mul(big.NewInt(1170), big.NewInt(1000000000000000000))))
+	require.Equal(t, 0, b.Cmp(big.NewInt(123456789)))
 }

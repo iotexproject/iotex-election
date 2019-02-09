@@ -9,7 +9,35 @@
 syntax = "proto3";
 package pb;
 
-message ElectionResultPb {
-    repeated string candidates = 1;
-    repeated bytes scores = 2;
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
+message Vote {
+	bytes voter = 1;
+	bytes candidate = 2;
+	bytes amount = 3;
+	bytes weightedAmount = 4;
+    google.protobuf.Timestamp startTime = 5;
+	google.protobuf.Duration duration = 6;
+	bool decay = 7;
+}
+
+message VoteList {
+	repeated Vote votes = 1;
+}
+
+message Candidate {
+	bytes name = 1;
+	bytes beaconPubKey = 2;
+	bytes operatorPubKey = 3;
+	bytes rewardPubKey = 4;
+	uint32 selfStakingWeight = 5;
+	bytes score = 6;
+	bytes selfStakingScore = 7;
+}
+
+message ElectionResult {
+	google.protobuf.Timestamp timestamp = 1;
+    repeated Candidate candidates = 2;
+    repeated VoteList candidateVotes = 3;
 }

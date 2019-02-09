@@ -4,93 +4,97 @@
 // permitted by law, all liability for your use of the code is disclaimed. This source code is governed by Apache
 // License 2.0 that can be found in the LICENSE file.
 
-package vote
+package carrier
 
 import (
+	"context"
 	"encoding/hex"
 	"errors"
+	"fmt"
+	"log"
 	"math/big"
 	"time"
 
 	"github.com/iotexproject/go-ethereum/accounts/abi/bind"
 	"github.com/iotexproject/go-ethereum/common"
+	ethtypes "github.com/iotexproject/go-ethereum/core/types"
 	"github.com/iotexproject/go-ethereum/ethclient"
+
 	"github.com/iotexproject/iotex-election/contract"
+	"github.com/iotexproject/iotex-election/types"
 )
-
-// Vote defines the structure of a vote
-type Vote struct {
-	startTime time.Time
-	duration  time.Duration
-	amount    *big.Int
-	voter     common.Address
-	candidate string
-	decay     bool
-}
-
-func (v *Vote) StartTime() time.Time {
-	return v.startTime
-}
-
-func (v *Vote) Duration() time.Duration {
-	return v.duration
-}
-
-func (v *Vote) Voter() common.Address {
-	return v.voter
-}
-
-func (v *Vote) Amount() *big.Int {
-	return v.amount
-}
-
-func (v *Vote) Candidate() string {
-	return v.candidate
-}
-
-func (v *Vote) Decay() bool {
-	return v.decay
-}
-
-func (v *Vote) RemainingTime(now time.Time) time.Duration {
-	// TODO: validate that duration is a positive value
-	if v.decay {
-		return v.startTime.Add(v.duration).Sub(now)
-	}
-	return v.duration
-}
 
 // Carrier defines an interfact to fetch votes
 type Carrier interface {
-	Votes(uint64, *big.Int, uint8) (*big.Int, []*Vote, error)
+	// BlockTimestamp returns the timestamp of a block
+	BlockTimestamp(uint64) (time.Time, error)
+	// SubscribeNewBlock callbacks on new block created
+	SubscribeNewBlock(func(uint64), chan bool) error
+	// Votes returns the votes on height
+	Votes(uint64, *big.Int, uint8) (*big.Int, []*types.Vote, error)
 }
 
 type ethereumCarrier struct {
-	url          string
+	client       *ethclient.Client
 	contractAddr common.Address
 }
 
 // NewEthereumVoteCarrier defines a carrier to fetch votes from ethereum contract
-func NewEthereumVoteCarrier(url string, contractAddr common.Address) Carrier {
-	return &ethereumCarrier{
-		contractAddr: contractAddr,
-		url:          url,
+func NewEthereumVoteCarrier(url string, contractAddr common.Address) (Carrier, error) {
+	client, err := ethclient.Dial(url)
+	if err != nil {
+		return nil, err
 	}
+	return &ethereumCarrier{
+		client:       client,
+		contractAddr: contractAddr,
+	}, nil
+}
+
+func (evc *ethereumCarrier) Close() {
+	evc.client.Close()
+}
+
+func (evc *ethereumCarrier) BlockTimestamp(height uint64) (time.Time, error) {
+	header, err := evc.client.HeaderByNumber(context.Background(), big.NewInt(0).SetUint64(height))
+	if err != nil {
+		return time.Now(), err
+	}
+	return time.Unix(header.Time.Int64(), 0), nil
+}
+
+func (evc *ethereumCarrier) SubscribeNewBlock(cb func(uint64), close chan bool) error {
+	headers := make(chan *ethtypes.Header)
+	sub, err := evc.client.SubscribeNewHead(context.Background(), headers)
+	if err != nil {
+		return err
+	}
+	go func() {
+		for {
+			select {
+			case closed := <-close:
+				close <- closed
+				break
+			case err := <-sub.Err():
+				log.Fatal(err)
+			case header := <-headers:
+				fmt.Printf("New block %d %x\n", header.Number, header.Hash())
+				cb(header.Number.Uint64())
+			}
+		}
+	}()
+	return nil
 }
 
 func (evc *ethereumCarrier) Votes(
 	height uint64,
 	previousIndex *big.Int,
 	count uint8,
-) (*big.Int, []*Vote, error) {
+) (*big.Int, []*types.Vote, error) {
 	if previousIndex == nil || previousIndex.Cmp(big.NewInt(0)) < 0 {
 		previousIndex = big.NewInt(0)
 	}
-	client, err := ethclient.Dial(evc.url)
-	if err != nil {
-		return nil, nil, err
-	}
-	caller, err := contract.NewStakingCaller(evc.contractAddr, client)
+	caller, err := contract.NewStakingCaller(evc.contractAddr, evc.client)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -102,7 +106,7 @@ func (evc *ethereumCarrier) Votes(
 	if err != nil {
 		return nil, nil, err
 	}
-	votes := []*Vote{}
+	votes := []*types.Vote{}
 	num := len(buckets.Indexes)
 	if num == 0 {
 		return previousIndex, votes, nil
@@ -115,14 +119,23 @@ func (evc *ethereumCarrier) Votes(
 		if big.NewInt(0).Cmp(index) == 0 { // back to start
 			break
 		}
-		votes = append(votes, &Vote{
-			startTime: time.Unix(buckets.StakeStartTimes[i].Int64(), 0),
-			duration:  time.Duration(buckets.StakeDurations[i].Uint64()*24) * time.Hour,
-			amount:    buckets.StakedAmounts[i],
-			voter:     buckets.Owners[i],
-			candidate: candidates[i],
-			decay:     buckets.Decays[i],
-		})
+		candidate, err := hex.DecodeString(candidates[i])
+		if err != nil {
+			return nil, nil, err
+		}
+		v, err := types.NewVote(
+			time.Unix(buckets.StakeStartTimes[i].Int64(), 0),
+			time.Duration(buckets.StakeDurations[i].Uint64()*24)*time.Hour,
+			buckets.StakedAmounts[i],
+			big.NewInt(0),
+			buckets.Owners[i].Bytes(),
+			candidate,
+			buckets.Decays[i],
+		)
+		if err != nil {
+			return nil, nil, err
+		}
+		votes = append(votes, v)
 		if index.Cmp(previousIndex) > 0 {
 			previousIndex = index
 		}

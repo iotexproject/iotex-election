@@ -44,7 +44,8 @@ type Config struct {
 	BeaconChainStartHeight    uint64 `yaml:"beaconChainStartHeight"`
 	StakingContractAddress    string `yaml:"stakingContractAddress"`
 	PaginationSize            uint8  `yaml:"paginationSize"`
-	Threshold                 uint64 `yaml:"threshold"`
+	VoteThreshold             uint64 `yaml:"voteThreshold"`
+	ScoreThreshold            uint64 `yaml:"scoreThreshold"`
 	SelfStakingThreshold      uint64 `yaml:"selfStakingThreshold"`
 	CacheSize                 uint8  `yaml:"cacheSize"`
 }
@@ -359,15 +360,34 @@ func (ec *committee) fetchResultByHeight(height uint64) (*types.Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	var previousIndex *big.Int
 	calculator := types.NewResultCalculator(
 		mintTime,
+		func(c *types.Vote) bool {
+			return new(big.Int).SetUint64(ec.cfg.VoteThrehold).Cmp(v.Amount()) > 0
+		},
 		ec.calcWeightedVotes,
 		func(c *types.Candidate) bool {
 			return new(big.Int).SetUint64(ec.cfg.SelfStakingThreshold).Cmp(c.SelfStakingScore()) > 0 &&
-				new(big.Int).SetUint64(ec.cfg.Threshold).Cmp(c.Score()) > 0
+				new(big.Int).SetUint64(ec.cfg.ScoreThreshold).Cmp(c.Score()) > 0
 		},
 	)
+	previousIndex := big.NewInt(1)
+	for {
+		var candidates []*types.Candidate
+		var err error
+		if previousIndex, candidates, err = ec.carrier.Candidates(
+			height,
+			previousIndex,
+			ec.cfg.PaginationSize,
+		); err != nil {
+			return nil, err
+		}
+		calculator.AddCandidates(candidates)
+		if len(candidates) < int(ec.cfg.PaginationSize) {
+			break
+		}
+	}
+	previousIndex = big.NewInt(0)
 	for {
 		var votes []*types.Vote
 		var err error

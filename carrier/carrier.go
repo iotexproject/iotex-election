@@ -30,6 +30,8 @@ type Carrier interface {
 	BlockTimestamp(uint64) (time.Time, error)
 	// SubscribeNewBlock callbacks on new block created
 	SubscribeNewBlock(func(uint64), chan bool) error
+	// Candidates returns the candidates on height
+	Candidates(uint64, *big.Int, uint8) (*big.Int, []*types.Candidate, error)
 	// Votes returns the votes on height
 	Votes(uint64, *big.Int, uint8) (*big.Int, []*types.Vote, error)
 }
@@ -37,6 +39,7 @@ type Carrier interface {
 type ethereumCarrier struct {
 	client       *ethclient.Client
 	contractAddr common.Address
+	registerAddr common.Address
 }
 
 // NewEthereumVoteCarrier defines a carrier to fetch votes from ethereum contract
@@ -84,6 +87,40 @@ func (evc *ethereumCarrier) SubscribeNewBlock(cb func(uint64), close chan bool) 
 		}
 	}()
 	return nil
+}
+
+func (evc *ethereumCarrier) Candidates(
+	height uint64,
+	previousIndex *big.Int,
+	count uint8,
+) (*big.Int, []*types.Candidate, error) {
+	if previousIndex == nil || previousIndex.Cmp(big.NewInt(1)) < 0 {
+		previousIndex = big.NewInt(1)
+	}
+	caller, err := contract.NewRegisterCaller(evc.registerAddr, evc.client)
+	if err != nil {
+		return nil, nil, err
+	}
+	retval, err := caller.GetAllCandidates(
+		&bind.CallOpts{BlockNumber: new(big.Int).SetUint64(height)},
+		previousIndex,
+		big.NewInt(int64(count)),
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+	num := len(retval.Names)
+	candidates := make([]*types.Candidate, num)
+	for i := 0; i < num; i++ {
+		candidates[i] = types.NewCandidate(
+			retval.Names[i][:],
+			retval.Addresses[i][:],
+			retval.IoOperatorPubKeys[i][:],
+			retval.IoRewardPubKeys[i][:],
+			1, // TODO: read weight from contract
+		)
+	}
+	return new(big.Int).Add(previousIndex, big.NewInt(int64(num))), candidates, nil
 }
 
 func (evc *ethereumCarrier) Votes(

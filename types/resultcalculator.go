@@ -50,116 +50,126 @@ func (p itemList) Less(i, j int) bool {
 
 // ResultCalculator defines a calculator for a set of votes
 type ResultCalculator struct {
-	calcScore      func(*Vote, time.Time) *big.Int
-	filter         func(*Candidate) bool
-	mintTime       time.Time
-	candidates     map[string]*Candidate
-	candidateVotes map[string][]*Vote
-	totalVotes     int32
-	calculated     bool
-	mutex          sync.RWMutex
+	calcScore       func(*Vote, time.Time) *big.Int
+	candidateFilter func(*Candidate) bool
+	voteFilter      func(*Vote) bool
+	mintTime        time.Time
+	candidates      map[string]*Candidate
+	candidateVotes  map[string][]*Vote
+	totalVotes      int32
+	calculated      bool
+	mutex           sync.RWMutex
 }
 
-// NewResultCalculator creates a result builder
+// NewResultCalculator creates a result calculator
 func NewResultCalculator(
 	mintTime time.Time,
+	voteFilter func(*Vote) bool, // filter votes before calculating
 	calcScore func(*Vote, time.Time) *big.Int,
-	filter func(*Candidate) bool,
+	candidateFilter func(*Candidate) bool, // filter candidates during calculating
 ) *ResultCalculator {
 	return &ResultCalculator{
-		calcScore:      calcScore,
-		filter:         filter,
-		mintTime:       mintTime.UTC(),
-		candidates:     map[string]*Candidate{},
-		candidateVotes: map[string][]*Vote{},
-		totalVotes:     0,
-		calculated:     false,
+		calcScore:       calcScore,
+		candidateFilter: candidateFilter,
+		voteFilter:      voteFilter,
+		mintTime:        mintTime.UTC(),
+		candidates:      map[string]*Candidate{},
+		candidateVotes:  map[string][]*Vote{},
+		totalVotes:      0,
+		calculated:      false,
 	}
 }
 
 // AddCandidates adds candidates to result
-func (builder *ResultCalculator) AddCandidates(candidates []*Candidate) error {
-	builder.mutex.Lock()
-	defer builder.mutex.Unlock()
-	if builder.calculated {
+func (calculator *ResultCalculator) AddCandidates(candidates []*Candidate) error {
+	calculator.mutex.Lock()
+	defer calculator.mutex.Unlock()
+	if calculator.calculated {
 		return errors.New("Cannot modify a calculated result")
 	}
-	if builder.totalVotes > 0 {
+	if calculator.totalVotes > 0 {
 		return errors.New("Candidates should be added before any votes")
 	}
 	for _, c := range candidates {
-		name := builder.hex(c.Name())
-		if _, exists := builder.candidates[name]; exists {
+		name := calculator.hex(c.Name())
+		if _, exists := calculator.candidates[name]; exists {
 			return errors.Errorf("Duplicate candidate %s", name)
 		}
-		builder.candidates[name] = c.Clone().reset()
-		builder.candidateVotes[name] = []*Vote{}
+		calculator.candidates[name] = c.Clone().reset()
+		calculator.candidateVotes[name] = []*Vote{}
 	}
 	return nil
 }
 
 // AddVotes adds votes to result
-func (builder *ResultCalculator) AddVotes(votes []*Vote) error {
-	builder.mutex.Lock()
-	defer builder.mutex.Unlock()
-	if builder.calculated {
+func (calculator *ResultCalculator) AddVotes(votes []*Vote) error {
+	calculator.mutex.Lock()
+	defer calculator.mutex.Unlock()
+	if calculator.calculated {
 		return errors.New("Cannot modify a calculated result")
 	}
 	for _, v := range votes {
+		if calculator.voteFilter(v) {
+			continue
+		}
 		name := v.Candidate()
 		if name == nil {
 			continue
 		}
-		nameHex := builder.hex(name)
-		candidate, exists := builder.candidates[nameHex]
+		nameHex := calculator.hex(name)
+		candidate, exists := calculator.candidates[nameHex]
 		if !exists {
 			continue
 		}
-		score := builder.calcScore(v, builder.mintTime)
+		score := calculator.calcScore(v, calculator.mintTime)
 		if bytes.Equal(v.Voter(), candidate.beaconPubKey) {
 			score.Mul(score, big.NewInt(int64(candidate.selfStakingWeight)))
-			candidate.addSelfStakingScore(score)
+			if err := candidate.addSelfStakingScore(score); err != nil {
+				return err
+			}
 		}
 		cVote := v.Clone()
 		if err := cVote.SetWeightedAmount(score); err != nil {
 			return err
 		}
-		candidate.addScore(score)
-		builder.candidateVotes[nameHex] = append(builder.candidateVotes[nameHex], cVote)
-		builder.totalVotes++
+		if err := candidate.addScore(score); err != nil {
+			return err
+		}
+		calculator.candidateVotes[nameHex] = append(calculator.candidateVotes[nameHex], cVote)
+		calculator.totalVotes++
 	}
 	return nil
 }
 
 // Calculate summaries the result with candidates and votes added
-func (builder *ResultCalculator) Calculate() (*Result, error) {
-	builder.mutex.Lock()
-	defer builder.mutex.Unlock()
-	if builder.calculated {
+func (calculator *ResultCalculator) Calculate() (*Result, error) {
+	calculator.mutex.Lock()
+	defer calculator.mutex.Unlock()
+	if calculator.calculated {
 		return nil, errors.New("Cannot modify a calculated result")
 	}
-	qualifiers := builder.filterAndSortCandidates()
+	qualifiers := calculator.filterAndSortCandidates()
 	candidates := make([]*Candidate, len(qualifiers))
 	votes := map[string][]*Vote{}
 	for i, name := range qualifiers {
-		candidates[i] = builder.candidates[name]
-		votes[name] = builder.candidateVotes[name]
+		candidates[i] = calculator.candidates[name]
+		votes[name] = calculator.candidateVotes[name]
 	}
-	builder.calculated = true
+	calculator.calculated = true
 
 	return &Result{
-		mintTime:   builder.mintTime,
+		mintTime:   calculator.mintTime,
 		candidates: candidates,
 		votes:      votes,
 	}, nil
 }
 
-func (builder *ResultCalculator) filterAndSortCandidates() []string {
-	p := make(itemList, len(builder.candidates))
+func (calculator *ResultCalculator) filterAndSortCandidates() []string {
+	p := make(itemList, len(calculator.candidates))
 	num := 0
-	tsBytes := util.Uint64ToBytes(uint64(builder.mintTime.Unix()))
-	for name, candidate := range builder.candidates {
-		if !builder.filter(candidate) {
+	tsBytes := util.Uint64ToBytes(uint64(calculator.mintTime.Unix()))
+	for name, candidate := range calculator.candidates {
+		if !calculator.candidateFilter(candidate) {
 			priority := blake2b.Sum256(append([]byte(name), tsBytes...))
 			p[num] = item{
 				Key:      name,
@@ -177,6 +187,6 @@ func (builder *ResultCalculator) filterAndSortCandidates() []string {
 	return qualifiers
 }
 
-func (builder *ResultCalculator) hex(name []byte) string {
+func (calculator *ResultCalculator) hex(name []byte) string {
 	return hex.EncodeToString(name)
 }

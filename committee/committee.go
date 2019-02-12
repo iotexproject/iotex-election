@@ -362,8 +362,8 @@ func (ec *committee) fetchResultByHeight(height uint64) (*types.Result, error) {
 	}
 	calculator := types.NewResultCalculator(
 		mintTime,
-		func(c *types.Vote) bool {
-			return new(big.Int).SetUint64(ec.cfg.VoteThrehold).Cmp(v.Amount()) > 0
+		func(v *types.Vote) bool {
+			return new(big.Int).SetUint64(ec.cfg.VoteThreshold).Cmp(v.Amount()) > 0
 		},
 		ec.calcWeightedVotes,
 		func(c *types.Candidate) bool {

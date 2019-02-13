@@ -34,19 +34,25 @@ func (p itemList) Len() int      { return len(p) }
 func (p itemList) Less(i, j int) bool {
 	switch p[i].Value.Cmp(p[j].Value) {
 	case -1:
-		return false
-	case 1:
 		return true
+	case 1:
+		return false
 	}
 	switch {
 	case p[i].Priority > p[j].Priority:
-		return true
-	case p[i].Priority < p[j].Priority:
 		return false
+	case p[i].Priority < p[j].Priority:
+		return true
 	}
 	// This is a corner case, which rarely happens.
-	return strings.Compare(p[i].Key, p[j].Key) > 0
+	return strings.Compare(p[i].Key, p[j].Key) < 0
 }
+
+// VoteFilterFunc defines the function to filter vote
+type VoteFilterFunc func(*Vote) bool
+
+// CandidateFilterFunc defines the function to filter candidate
+type CandidateFilterFunc func(*Candidate) bool
 
 // ResultCalculator defines a calculator for a set of votes
 type ResultCalculator struct {
@@ -64,9 +70,9 @@ type ResultCalculator struct {
 // NewResultCalculator creates a result calculator
 func NewResultCalculator(
 	mintTime time.Time,
-	voteFilter func(*Vote) bool, // filter votes before calculating
+	voteFilter VoteFilterFunc, // filter votes before calculating
 	calcScore func(*Vote, time.Time) *big.Int,
-	candidateFilter func(*Candidate) bool, // filter candidates during calculating
+	candidateFilter CandidateFilterFunc, // filter candidates during calculating
 ) *ResultCalculator {
 	return &ResultCalculator{
 		calcScore:       calcScore,

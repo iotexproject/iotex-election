@@ -105,7 +105,7 @@ func genTestCandidates() []*Candidate {
 			[]byte("voter3"),
 			[]byte("operatorPubKey3"),
 			[]byte("rewardPubKey3"),
-			100,
+			10,
 		),
 		NewCandidate(
 			[]byte("candidate4"),

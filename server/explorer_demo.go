@@ -3,7 +3,7 @@
 
 // For now, this code is NOT working, after code restructuring.
 
-package main
+package server
 
 import (
 	"log"
@@ -14,7 +14,7 @@ import (
 	pb "github.com/ashishsnigam/iotex-election/explorer_pb"
 )
 
-func main() {
+func RunServer() {
 	lis, err := net.Listen("tcp", ":8089")
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)

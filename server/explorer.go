@@ -3,9 +3,9 @@ package server
 import (
 	"strconv"
 
-	pb "github.com/ashishsnigam/iotex-election/explorer_pb"
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/iotexproject/iotex-election/committee"
+	pb "github.com/iotexproject/iotex-election/explorer_pb"
 
 	"golang.org/x/net/context"
 )

@@ -11,7 +11,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	pb "github.com/ashishsnigam/iotex-election/explorer_pb"
+	pb "github.com/iotexproject/iotex-election/explorer_pb"
 )
 
 func RunServer() {

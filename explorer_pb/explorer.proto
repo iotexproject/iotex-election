@@ -10,11 +10,12 @@ syntax = "proto3";
 package explorer_pb;
 
 import "google/protobuf/duration.proto";
+import "google/protobuf/empty.proto";
 
 // The Explorer service definition
 service Explorer {
 	// get the blockchain meta data
-	rpc getMeta(Empty) returns (ChainMeta) {}
+	rpc getMeta(google.protobuf.Empty) returns (ChainMeta) {}
 
 	// get candidates
 	rpc getCandidates(GetCandidatesRequest) returns (CandidateResponse) {}
@@ -25,7 +26,7 @@ service Explorer {
 
 message ChainMeta {
 	string height = 1;
-	int64 totalCandidates = 2;
+	uint64 totalCandidates = 2;
 }
 
 message Bucket {
@@ -46,15 +47,15 @@ message Candidate {
 
 message GetCandidatesRequest {
 	string height = 1;
-	int64 offset = 2;
-	int64 limit =3;
+	uint64 offset = 2;
+	uint64 limit =3;
 }
 
 message GetBucketsByCandidateRequest {
 	string name = 1;
 	string height = 2;
-	int64 offset = 3;
-	int64 limit = 4;
+	uint64 offset = 3;
+	uint64 limit = 4;
 }
 
 message CandidateResponse {
@@ -63,7 +64,4 @@ message CandidateResponse {
 
 message BucketResponse {
 	repeated Bucket buckets = 1;
-}
-
-message Empty {
 }

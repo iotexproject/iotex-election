@@ -16,20 +16,20 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestResult(t *testing.T) {
+func TestElectionResult(t *testing.T) {
 	require := require.New(t)
 	t.Run("without-data", func(t *testing.T) {
-		result := &Result{
-			mintTime:   time.Now(),
-			candidates: []*Candidate{},
-			votes:      map[string][]*Vote{},
+		result := &ElectionResult{
+			mintTime:  time.Now(),
+			delegates: []*Candidate{},
+			votes:     map[string][]*Vote{},
 		}
 		b, err := result.Serialize()
 		require.NoError(err)
-		clone := &Result{}
+		clone := &ElectionResult{}
 		require.NoError(clone.Deserialize(b))
 		require.True(result.mintTime.Equal(clone.mintTime))
-		require.Equal(0, len(clone.candidates))
+		require.Equal(0, len(clone.delegates))
 		require.Equal(0, len(clone.votes))
 	})
 	t.Run("with-data", func(t *testing.T) {
@@ -58,24 +58,24 @@ func TestResult(t *testing.T) {
 			require.NoError(err)
 			votes[hex.EncodeToString(c.name)] = []*Vote{v1, v2}
 		}
-		result := &Result{
-			mintTime:   time.Now(),
-			candidates: candidates,
-			votes:      votes,
+		result := &ElectionResult{
+			mintTime:  time.Now(),
+			delegates: candidates,
+			votes:     votes,
 		}
 		b, err := result.Serialize()
 		require.NoError(err)
-		clone := &Result{}
+		clone := &ElectionResult{}
 		require.NoError(clone.Deserialize(b))
 		require.True(result.mintTime.Equal(clone.mintTime))
-		cs := result.Candidates()
-		ccs := clone.Candidates()
+		cs := result.Delegates()
+		ccs := clone.Delegates()
 		require.Equal(len(cs), len(ccs))
 		require.Equal(len(result.votes), len(clone.votes))
 		for i, c := range cs {
 			require.True(c.equal(ccs[i]))
-			vs := result.VotesByCandidate(c.Name())
-			cvs := clone.VotesByCandidate(c.Name())
+			vs := result.VotesByDelegate(c.Name())
+			cvs := clone.VotesByDelegate(c.Name())
 			require.Equal(len(vs), len(cvs))
 			for j, v := range vs {
 				require.True(v.equal(cvs[j]))

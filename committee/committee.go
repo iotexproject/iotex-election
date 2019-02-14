@@ -52,7 +52,7 @@ type Config struct {
 
 type resultCache struct {
 	size    uint8
-	results []*types.Result
+	results []*types.ElectionResult
 	heights []uint64
 	index   map[uint64]int
 	cursor  int
@@ -61,14 +61,14 @@ type resultCache struct {
 func newResultCache(size uint8) *resultCache {
 	return &resultCache{
 		size:    size,
-		results: make([]*types.Result, size),
+		results: make([]*types.ElectionResult, size),
 		heights: make([]uint64, size),
 		index:   map[uint64]int{},
 		cursor:  0,
 	}
 }
 
-func (c *resultCache) insert(height uint64, r *types.Result) {
+func (c *resultCache) insert(height uint64, r *types.ElectionResult) {
 	if i, exists := c.index[height]; exists {
 		c.results[i] = r
 		return
@@ -80,7 +80,7 @@ func (c *resultCache) insert(height uint64, r *types.Result) {
 	c.cursor = (c.cursor + 1) % int(c.size)
 }
 
-func (c *resultCache) get(height uint64) *types.Result {
+func (c *resultCache) get(height uint64) *types.ElectionResult {
 	i, exists := c.index[height]
 	if !exists {
 		return nil
@@ -171,7 +171,9 @@ type Committee interface {
 	// Stop stops the committee service
 	Stop(context.Context) error
 	// ResultByHeight returns the result on a specific ethereum height
-	ResultByHeight(height uint64) (*types.Result, error)
+	ResultByHeight(height uint64) (*types.ElectionResult, error)
+	// ResultByTime returns the nearest result before time
+	ResultByTime(timestamp time.Time) (uint64, *types.ElectionResult, error)
 	// OnNewBlock is a callback function which will be called on new block created
 	OnNewBlock(height uint64)
 	// LatestHeight returns the height with latest result
@@ -258,7 +260,7 @@ func (ec *committee) OnNewBlock(tipHeight uint64) {
 		if ec.nextHeight > ec.currentHeight {
 			break
 		}
-		var result *types.Result
+		var result *types.ElectionResult
 		var err error
 		for i := uint8(0); i < ec.cfg.NumOfRetries; i++ {
 			if result, err = ec.fetchResultByHeight(ec.nextHeight); err != nil {
@@ -294,23 +296,25 @@ func (ec *committee) LatestHeight() uint64 {
 	return ec.heightManager.lastestHeight()
 }
 
-func (ec *committee) ResultByTime(ts time.Time) (*types.Result, error) {
+func (ec *committee) ResultByTime(ts time.Time) (uint64, *types.ElectionResult, error) {
 	ec.mutex.RLock()
 	defer ec.mutex.RUnlock()
 	height := ec.heightManager.nearestHeightBefore(ts)
 	if height == 0 {
-		return nil, ErrNotExist
+		return 0, nil, ErrNotExist
 	}
-	return ec.resultByHeight(height)
+	result, err := ec.resultByHeight(height)
+
+	return height, result, err
 }
 
-func (ec *committee) ResultByHeight(height uint64) (*types.Result, error) {
+func (ec *committee) ResultByHeight(height uint64) (*types.ElectionResult, error) {
 	ec.mutex.RLock()
 	defer ec.mutex.RUnlock()
 	return ec.resultByHeight(height)
 }
 
-func (ec *committee) resultByHeight(height uint64) (*types.Result, error) {
+func (ec *committee) resultByHeight(height uint64) (*types.ElectionResult, error) {
 	if height < ec.cfg.BeaconChainStartHeight {
 		return nil, errors.Errorf(
 			"height %d is higher than start height %d",
@@ -335,7 +339,7 @@ func (ec *committee) resultByHeight(height uint64) (*types.Result, error) {
 	if data == nil {
 		return nil, ErrNotExist
 	}
-	result = &types.Result{}
+	result = &types.ElectionResult{}
 
 	return result, result.Deserialize(data)
 }
@@ -355,7 +359,7 @@ func (ec *committee) calcWeightedVotes(v *types.Vote, now time.Time) *big.Int {
 	return weightedAmount
 }
 
-func (ec *committee) fetchResultByHeight(height uint64) (*types.Result, error) {
+func (ec *committee) fetchResultByHeight(height uint64) (*types.ElectionResult, error) {
 	mintTime, err := ec.carrier.BlockTimestamp(height)
 	if err != nil {
 		return nil, err
@@ -410,7 +414,7 @@ func (ec *committee) dbKey(height uint64) []byte {
 	return util.Uint64ToBytes(height)
 }
 
-func (ec *committee) storeResult(height uint64, result *types.Result) error {
+func (ec *committee) storeResult(height uint64, result *types.ElectionResult) error {
 	data, err := result.Serialize()
 	if err != nil {
 		return err

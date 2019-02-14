@@ -38,6 +38,6 @@ message Candidate {
 
 message ElectionResult {
 	google.protobuf.Timestamp timestamp = 1;
-    repeated Candidate candidates = 2;
-    repeated VoteList candidateVotes = 3;
+    repeated Candidate delegates = 2;
+    repeated VoteList delegateVotes = 3;
 }

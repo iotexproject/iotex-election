@@ -146,7 +146,7 @@ func TestResultCalculator(t *testing.T) {
 		require.NoError(calculator.AddVotes(votes))
 		result, err := calculator.Calculate()
 		require.NoError(err)
-		delegates := result.Candidates()
+		delegates := result.Delegates()
 		require.Equal(2, len(delegates))
 		ec4 := candidates[3].Clone()
 		ec4.score = big.NewInt(2090)
@@ -163,7 +163,7 @@ func TestResultCalculator(t *testing.T) {
 			require.NotNil(expectedDelegates[i])
 			require.NotNil(expectedVotes[i])
 			require.True(expectedDelegates[i].equal(d))
-			for j, v := range result.VotesByCandidate(d.Name()) {
+			for j, v := range result.VotesByDelegate(d.Name()) {
 				require.NotNil(expectedVotes[i][j])
 				require.Equal(0, expectedVotes[i][j].Cmp(v.WeightedAmount()))
 			}

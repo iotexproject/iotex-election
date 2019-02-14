@@ -35,7 +35,7 @@ func (e *Impl) GetMeta() (explorer.ChainMeta, error) {
 	}
 	return explorer.ChainMeta{
 		Height:          strconv.FormatUint(height, 10),
-		TotalCandidates: int64(len(result.Candidates())),
+		TotalCandidates: int64(len(result.Delegates())),
 	}, nil
 }
 
@@ -56,7 +56,7 @@ func (e *Impl) GetCandidates(
 	if err != nil {
 		return nil, err
 	}
-	candidates := result.Candidates()
+	candidates := result.Delegates()
 	if int64(len(candidates)) <= offset {
 		return nil, errors.New("offset is larger than candidate length")
 	}
@@ -86,7 +86,7 @@ func (e *Impl) GetBucketsByCandidate(
 	if err != nil {
 		return nil, err
 	}
-	votes := result.VotesByCandidate([]byte(request.Name))
+	votes := result.VotesByDelegate([]byte(request.Name))
 	if votes == nil {
 		return nil, errors.New("No buckets for the candidate")
 	}

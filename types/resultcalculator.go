@@ -148,7 +148,7 @@ func (calculator *ResultCalculator) AddVotes(votes []*Vote) error {
 }
 
 // Calculate summaries the result with candidates and votes added
-func (calculator *ResultCalculator) Calculate() (*Result, error) {
+func (calculator *ResultCalculator) Calculate() (*ElectionResult, error) {
 	calculator.mutex.Lock()
 	defer calculator.mutex.Unlock()
 	if calculator.calculated {
@@ -163,10 +163,10 @@ func (calculator *ResultCalculator) Calculate() (*Result, error) {
 	}
 	calculator.calculated = true
 
-	return &Result{
-		mintTime:   calculator.mintTime,
-		candidates: candidates,
-		votes:      votes,
+	return &ElectionResult{
+		mintTime:  calculator.mintTime,
+		delegates: candidates,
+		votes:     votes,
 	}, nil
 }
 

@@ -20,42 +20,42 @@ import (
 // ErrInvalidProto indicates a format error of an election proto
 var ErrInvalidProto = errors.New("Invalid election proto")
 
-// Result defines the collection of voting result on a height
-type Result struct {
-	mintTime   time.Time
-	candidates []*Candidate
-	votes      map[string][]*Vote
+// ElectionResult defines the collection of voting result on a height
+type ElectionResult struct {
+	mintTime  time.Time
+	delegates []*Candidate
+	votes     map[string][]*Vote
 }
 
 // MintTime returns the mint time of the corresponding beacon chain block
-func (r *Result) MintTime() time.Time {
+func (r *ElectionResult) MintTime() time.Time {
 	return r.mintTime
 }
 
-// Candidates returns a list of sorted candidates
-func (r *Result) Candidates() []*Candidate {
-	return r.candidates
+// Delegates returns a list of sorted delegates
+func (r *ElectionResult) Delegates() []*Candidate {
+	return r.delegates
 }
 
-// VotesByCandidate returns a list of votes for a given candidate
-func (r *Result) VotesByCandidate(name []byte) []*Vote {
+// VotesByDelegate returns a list of votes for a given delegate
+func (r *ElectionResult) VotesByDelegate(name []byte) []*Vote {
 	return r.votes[hex.EncodeToString(name)]
 }
 
 // ToProtoMsg converts the vote to protobuf
-func (r *Result) ToProtoMsg() (*pb.ElectionResult, error) {
-	candidates := make([]*pb.Candidate, len(r.candidates))
-	candidateVotes := make([]*pb.VoteList, len(r.votes))
+func (r *ElectionResult) ToProtoMsg() (*pb.ElectionResult, error) {
+	delegates := make([]*pb.Candidate, len(r.delegates))
+	delegateVotes := make([]*pb.VoteList, len(r.votes))
 	var err error
-	for i := 0; i < len(r.candidates); i++ {
-		candidate := r.candidates[i]
-		if candidates[i], err = candidate.ToProtoMsg(); err != nil {
+	for i := 0; i < len(r.delegates); i++ {
+		delegate := r.delegates[i]
+		if delegates[i], err = delegate.ToProtoMsg(); err != nil {
 			return nil, err
 		}
-		name := hex.EncodeToString(candidate.Name())
+		name := hex.EncodeToString(delegate.Name())
 		votes, ok := r.votes[name]
 		if !ok {
-			return nil, errors.Errorf("Cannot find votes for candidate %s", name)
+			return nil, errors.Errorf("Cannot find votes for delegate %s", name)
 		}
 		voteList := make([]*pb.Vote, len(votes))
 		for j := 0; j < len(votes); j++ {
@@ -63,7 +63,7 @@ func (r *Result) ToProtoMsg() (*pb.ElectionResult, error) {
 				return nil, err
 			}
 		}
-		candidateVotes[i] = &pb.VoteList{Votes: voteList}
+		delegateVotes[i] = &pb.VoteList{Votes: voteList}
 	}
 	t, err := ptypes.TimestampProto(r.mintTime)
 	if err != nil {
@@ -71,14 +71,14 @@ func (r *Result) ToProtoMsg() (*pb.ElectionResult, error) {
 	}
 
 	return &pb.ElectionResult{
-		Timestamp:      t,
-		Candidates:     candidates,
-		CandidateVotes: candidateVotes,
+		Timestamp:     t,
+		Delegates:     delegates,
+		DelegateVotes: delegateVotes,
 	}, nil
 }
 
 // Serialize converts result to byte array
-func (r *Result) Serialize() ([]byte, error) {
+func (r *ElectionResult) Serialize() ([]byte, error) {
 	rPb, err := r.ToProtoMsg()
 	if err != nil {
 		return nil, err
@@ -87,31 +87,31 @@ func (r *Result) Serialize() ([]byte, error) {
 }
 
 // FromProtoMsg extracts result details from protobuf message
-func (r *Result) FromProtoMsg(rPb *pb.ElectionResult) (err error) {
-	if len(rPb.Candidates) != len(rPb.CandidateVotes) {
+func (r *ElectionResult) FromProtoMsg(rPb *pb.ElectionResult) (err error) {
+	if len(rPb.Delegates) != len(rPb.DelegateVotes) {
 		return errors.Wrapf(
 			ErrInvalidProto,
-			"size of candidate list %d is different from score list %d",
-			len(rPb.Candidates),
-			len(rPb.CandidateVotes),
+			"size of delegate list %d is different from score list %d",
+			len(rPb.Delegates),
+			len(rPb.DelegateVotes),
 		)
 	}
 	r.votes = map[string][]*Vote{}
-	r.candidates = make([]*Candidate, len(rPb.Candidates))
-	for i, cPb := range rPb.Candidates {
-		r.candidates[i] = &Candidate{}
-		if err := r.candidates[i].FromProtoMsg(cPb); err != nil {
+	r.delegates = make([]*Candidate, len(rPb.Delegates))
+	for i, cPb := range rPb.Delegates {
+		r.delegates[i] = &Candidate{}
+		if err := r.delegates[i].FromProtoMsg(cPb); err != nil {
 			return err
 		}
-		name := hex.EncodeToString(r.candidates[i].Name())
+		name := hex.EncodeToString(r.delegates[i].Name())
 		if _, ok := r.votes[name]; ok {
 			return errors.Wrapf(
 				ErrInvalidProto,
-				"duplicate candidate %s",
+				"duplicate delegate %s",
 				name,
 			)
 		}
-		voteList := rPb.CandidateVotes[i]
+		voteList := rPb.DelegateVotes[i]
 		r.votes[name] = make([]*Vote, len(voteList.Votes))
 		for j, vPb := range voteList.Votes {
 			r.votes[name][j] = &Vote{}
@@ -128,7 +128,7 @@ func (r *Result) FromProtoMsg(rPb *pb.ElectionResult) (err error) {
 }
 
 // Deserialize converts a byte array to election result
-func (r *Result) Deserialize(data []byte) error {
+func (r *ElectionResult) Deserialize(data []byte) error {
 	pb := &pb.ElectionResult{}
 	if err := proto.Unmarshal(data, pb); err != nil {
 		return err

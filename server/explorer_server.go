@@ -5,7 +5,7 @@ import (
 	"log"
 	"net"
 
-	pb "github.com/ashishsnigam/iotex-election/explorer_pb"
+	pb "github.com/iotexproject/iotex-election/explorer_pb"
 )
 
 func main() {

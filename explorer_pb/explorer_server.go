@@ -1,7 +1,7 @@
 package explorer_pb
 
 import (
-	"github.com/ashishsnigam/iotex-election/committee"
+	"github.com/iotexproject/iotex-election/committee"
 	"strconv"
 
 	"golang.org/x/net/context"

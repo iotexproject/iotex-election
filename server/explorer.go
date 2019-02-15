@@ -29,10 +29,12 @@ func (s *server) GetMeta(ctx context.Context, empty empty.Empty) (*pb.ChainMeta,
 	}, nil
 }
 
+// GetCandidates returns a list of candidates sorted by weighted votes
 func (s *server) GetCandidates(ctx context.Context, cr *pb.GetCandidatesRequest) (*pb.CandidateResponse, error) {
 	return new(pb.CandidateResponse), nil
 }
 
+// GetBucketsByCandidate returns the buckets
 func (s *server) GetBucketsByCandidate(ctx context.Context, br *pb.GetBucketsByCandidateRequest) (*pb.BucketResponse, error) {
 	return new(pb.BucketResponse), nil
 }

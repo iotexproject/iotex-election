@@ -1,0 +1,67 @@
+// Copyright (c) 2019 IoTeX
+// This is an alpha (internal) release and is not suitable for production. This source code is provided 'as is' and no
+// warranties are given as to title or non-infringement, merchantability or fitness for purpose and, to the extent
+// permitted by law, all liability for your use of the code is disclaimed. This source code is governed by Apache
+// License 2.0 that can be found in the LICENSE file.
+
+// To compile the proto, run:
+//      protoc --go_out=plugins=grpc:. *.proto
+syntax = "proto3";
+package explorer_pb;
+
+import "google/protobuf/duration.proto";
+import "google/protobuf/empty.proto";
+
+// The Explorer service definition
+service Explorer {
+	// get the blockchain meta data
+	rpc getMeta(google.protobuf.Empty) returns (ChainMeta) {}
+
+	// get candidates
+	rpc getCandidates(GetCandidatesRequest) returns (CandidateResponse) {}
+
+	// get buckets by candidate
+	rpc getBucketsByCandidate(GetBucketsByCandidateRequest) returns (BucketResponse) {}
+}
+
+message ChainMeta {
+	string height = 1;
+	uint64 totalCandidates = 2;
+}
+
+message Bucket {
+	// hex string
+	string voter = 1;
+	string votes = 2;
+	string weightedVotes = 3;
+	// seconds
+	google.protobuf.Duration remainingDuration  = 4;
+}
+
+message Candidate {
+	string name = 1;
+	// hex string
+	string pubKey = 2;
+	string totalWeightedVotes = 3;
+}
+
+message GetCandidatesRequest {
+	string height = 1;
+	uint64 offset = 2;
+	uint64 limit =3;
+}
+
+message GetBucketsByCandidateRequest {
+	string name = 1;
+	string height = 2;
+	uint64 offset = 3;
+	uint64 limit = 4;
+}
+
+message CandidateResponse {
+	repeated Candidate candidates = 1;
+}
+
+message BucketResponse {
+	repeated Bucket buckets = 1;
+}

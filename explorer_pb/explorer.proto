@@ -9,7 +9,6 @@
 syntax = "proto3";
 package explorer_pb;
 
-import "google/protobuf/duration.proto";
 import "google/protobuf/empty.proto";
 
 // The Explorer service definition
@@ -35,7 +34,7 @@ message Bucket {
 	string votes = 2;
 	string weightedVotes = 3;
 	// seconds
-	google.protobuf.Duration remainingDuration  = 4;
+	uint64 remainingDuration  = 4;
 }
 
 message Candidate {

@@ -1,4 +1,4 @@
-package server
+package ranking
 
 import (
 	"encoding/hex"
@@ -8,7 +8,7 @@ import (
 
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/iotexproject/iotex-election/committee"
-	pb "github.com/iotexproject/iotex-election/ranking_pb"
+	pb "github.com/iotexproject/iotex-election/pb/ranking"
 
 	"golang.org/x/net/context"
 )

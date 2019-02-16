@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/ptypes/empty"
+	"golang.org/x/net/context"
+	
 	"github.com/iotexproject/iotex-election/committee"
 	pb "github.com/iotexproject/iotex-election/pb/ranking"
-
-	"golang.org/x/net/context"
 )
 
 // server is used to implement pb.RankingServer.

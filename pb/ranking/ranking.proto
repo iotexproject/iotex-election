@@ -7,13 +7,12 @@
 // To compile the proto, run:
 //      protoc --go_out=plugins=grpc:. *.proto
 syntax = "proto3";
-package explorer_pb;
+package ranking;
 
-import "google/protobuf/duration.proto";
 import "google/protobuf/empty.proto";
 
-// The Explorer service definition
-service Explorer {
+// The Ranking service definition
+service Ranking {
 	// get the blockchain meta data
 	rpc getMeta(google.protobuf.Empty) returns (ChainMeta) {}
 
@@ -35,7 +34,7 @@ message Bucket {
 	string votes = 2;
 	string weightedVotes = 3;
 	// seconds
-	google.protobuf.Duration remainingDuration  = 4;
+	uint64 remainingDuration  = 4;
 }
 
 message Candidate {

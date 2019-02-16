@@ -2,18 +2,28 @@
 
 
 [[projects]]
-  digest = "1:f5322546f652db78b7a8efd35047a61d1e492abca2263e1c647eca49e1c8a354"
+  branch = "master"
+  digest = "1:7d191fd0c54ff370eaf6116a14dafe2a328df487baea280699f597aae858d00d"
   name = "github.com/aristanetworks/goarista"
   packages = ["monotime"]
   pruneopts = "UT"
-  revision = "ea17b1a17847fb6e4c0a91de0b674704693469b0"
+  revision = "c1e4b37418775d8f5e0c0c1a68766d321b32d6ca"
 
 [[projects]]
-  digest = "1:477f6df8a1915abb180d730179a4a45212328effdf98cc6ca5b0e5741db00125"
+  branch = "master"
+  digest = "1:093bf93a65962e8191e3e8cd8fc6c363f83d43caca9739c906531ba7210a9904"
   name = "github.com/btcsuite/btcd"
   packages = ["btcec"]
   pruneopts = "UT"
-  revision = "2e60448ffcc6bf78332d1fe590260095f554dd78"
+  revision = "306aecffea325e97f513b3ff0cf7895a5310651d"
+
+[[projects]]
+  branch = "master"
+  digest = "1:64c47337097f2e58eb97cc6dd5994b88c142737f2f13a685c90211e72d87ca03"
+  name = "github.com/coopernurse/barrister-go"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "efbfefb2c4a3db0b55f74d1d1a985317a24ff7de"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
@@ -24,39 +34,17 @@
   version = "v1.1.1"
 
 [[projects]]
-  digest = "1:1aeb4854a1c278e842712cd6684f48d595cbdd7839655d37a77248efa08c9fc0"
+  digest = "1:e47d51dab652d26c3fba6f8cba403f922d02757a82abdc77e90df7948daf296e"
   name = "github.com/deckarep/golang-set"
   packages = ["."]
   pruneopts = "UT"
-  revision = "504e848d77ea4752b3057b8fb46da0e7f746ccf3"
+  revision = "cbaa98ba5575e67703b32b4b19f73c91f3c4159e"
+  version = "v1.7.1"
 
 [[projects]]
-  digest = "1:33542eaf895b5489ccfb059502a721f0e8875379da8b3ff60fdd9212d503705c"
-  name = "github.com/go-stack/stack"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "54be5f394ed2c3e19dac9134a40a95ba5a017f7b"
-  version = "v1.5.4"
-
-[[projects]]
-  digest = "1:d059a146ab350e553c2687d3e17f198eb5b27c7cf55fe6ba0e2d21349df63388"
-  name = "github.com/gogo/protobuf"
-  packages = ["proto"]
-  pruneopts = "UT"
-  revision = "4cbf7e384e768b4e01799441fdf2a706a5635ae7"
-  version = "v1.2.0"
-
-[[projects]]
-  digest = "1:97df918963298c287643883209a2c3f642e6593379f97ab400c2a2e219ab647d"
-  name = "github.com/golang/protobuf"
-  packages = ["proto"]
-  pruneopts = "UT"
-  revision = "aa810b61a9c79d51363740d207bb46cf8e620ed5"
-  version = "v1.2.0"
-
-[[projects]]
-  digest = "1:a622f1f4113a27efa60889d2fda997236135b653a105b5cd536cbca50cce091f"
-  name = "github.com/iotexproject/go-ethereum"
+  branch = "master"
+  digest = "1:6621a68edbd0bcea227ca0f95102060f81e8673be4d7eb71968c33fb433f73ae"
+  name = "github.com/ethereum/go-ethereum"
   packages = [
     ".",
     "accounts",
@@ -67,26 +55,87 @@
     "common/hexutil",
     "common/math",
     "common/mclock",
+    "common/prque",
     "core/types",
     "crypto",
     "crypto/secp256k1",
     "crypto/sha3",
     "ethclient",
+    "ethdb",
     "event",
     "log",
+    "metrics",
+    "p2p/netutil",
     "params",
     "rlp",
     "rpc",
+    "trie",
   ]
   pruneopts = "T"
-  revision = "ccc12f4fab5e9a9038675904481734570e05f95d"
+  revision = "2bbee71fbe61def241832e800b4f0bd24d4beb89"
+  source = "github.com/iotexproject/go-ethereum"
 
 [[projects]]
-  digest = "1:361de06aa7ae272616cbe71c3994a654cc6316324e30998e650f7765b20c5b33"
+  digest = "1:586ea76dbd0374d6fb649a91d70d652b7fe0ccffb8910a77468e7702e7901f3d"
+  name = "github.com/go-stack/stack"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "2fee6af1a9795aafbe0253a0cfbdf668e1fb8a9a"
+  version = "v1.8.0"
+
+[[projects]]
+  digest = "1:d059a146ab350e553c2687d3e17f198eb5b27c7cf55fe6ba0e2d21349df63388"
+  name = "github.com/gogo/protobuf"
+  packages = ["proto"]
+  pruneopts = "UT"
+  revision = "4cbf7e384e768b4e01799441fdf2a706a5635ae7"
+  version = "v1.2.0"
+
+[[projects]]
+  digest = "1:4c0989ca0bcd10799064318923b9bc2db6b4d6338dd75f3f2d86c3511aaaf5cf"
+  name = "github.com/golang/protobuf"
+  packages = [
+    "proto",
+    "ptypes",
+    "ptypes/any",
+    "ptypes/duration",
+    "ptypes/timestamp",
+  ]
+  pruneopts = "UT"
+  revision = "aa810b61a9c79d51363740d207bb46cf8e620ed5"
+  version = "v1.2.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:4a0c6bb4805508a6287675fac876be2ac1182539ca8a32468d8128882e9d5009"
+  name = "github.com/golang/snappy"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "2e65f85255dbc3072edf28d6b5b8efc472979f5a"
+
+[[projects]]
+  digest = "1:236d7e1bdb50d8f68559af37dbcf9d142d56b431c9b2176d41e2a009b664cda8"
+  name = "github.com/google/uuid"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "9b3b1e0f5f99ae461456d768e7d301a7acdaa2d8"
+  version = "v1.1.0"
+
+[[projects]]
+  digest = "1:1aa6a782a131a1b3053ec4b78d91df42df0a6095b42dd874d0a2416de571ca23"
+  name = "github.com/iotexproject/go-ethereum"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "4bb3c89d44e372e6a9ab85a8be0c9345265c763a"
+  version = "v1.7.3"
+
+[[projects]]
+  digest = "1:e5d0bd87abc2781d14e274807a470acd180f0499f8bf5bb18606e9ec22ad9de9"
   name = "github.com/pborman/uuid"
   packages = ["."]
   pruneopts = "UT"
-  revision = "1b00554d822231195d1babd97ff4a781231955c9"
+  revision = "adf5a7427709b9deb95d29d3fa8a2bf9cfd388f1"
+  version = "v1.2"
 
 [[projects]]
   digest = "1:cf31692c14422fa27c83a05292eb5cbe0fb2775972e8f1f8446a71549bd8980b"
@@ -105,28 +154,20 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:8f4b365e527c00e2ba6b25a4c41ee7b84078c375fba83c971e54d2f0582df279"
+  digest = "1:31d83d1b1c288073c91abadee3caec87de2a1fb5dbe589039264a802e67a26b8"
   name = "github.com/rjeczalik/notify"
   packages = ["."]
   pruneopts = "UT"
-  revision = "0f065fa99b48b842c3fd3e2c8b194c6f2b69f6b8"
-  version = "v0.9.1"
+  revision = "69d839f37b13a8cb7a78366f7633a4071cb43be7"
+  version = "v0.9.2"
 
 [[projects]]
-  digest = "1:4b9bd28bbf14271f4b89a6c401589ea5939d14138e0399c253c1939cc4252d2f"
+  digest = "1:b0c25f00bad20d783d259af2af8666969e2fc343fa0dc9efe52936bbd67fb758"
   name = "github.com/rs/cors"
   packages = ["."]
   pruneopts = "UT"
-  revision = "a62a804a8a009876ca59105f7899938a1349f4b3"
-  version = "v1.0"
-
-[[projects]]
-  digest = "1:9665a593c0199c193341b8b110e31b19c899923711fc70bde2c2f3eb2d337526"
-  name = "github.com/rs/xhandler"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "d9d9599b6aaf6a058cb7b1f48291ded2cbd13390"
-  version = "v1.0"
+  revision = "9a47f48565a795472d43519dd49aac781f3034fb"
+  version = "v1.6.0"
 
 [[projects]]
   digest = "1:5da8ce674952566deae4dbc23d07c85caafc6cfa815b0b3e03e41979cedb8750"
@@ -141,42 +182,76 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:dd658e9008df9e0bea1ddb2caa3df8250e5e42bf54dcb776ed5bef0496395549"
+  digest = "1:685fdfea42d825ebd39ee0994354b46c374cf2c2b2d97a41a8dee1807c6a9b62"
+  name = "github.com/syndtr/goleveldb"
+  packages = [
+    "leveldb",
+    "leveldb/cache",
+    "leveldb/comparer",
+    "leveldb/errors",
+    "leveldb/filter",
+    "leveldb/iterator",
+    "leveldb/journal",
+    "leveldb/memdb",
+    "leveldb/opt",
+    "leveldb/storage",
+    "leveldb/table",
+    "leveldb/util",
+  ]
+  pruneopts = "UT"
+  revision = "2f17a3356c6616cbfc4ae4c38147dc062a68fb0e"
+
+[[projects]]
+  branch = "master"
+  digest = "1:4987dc6844c200891f789cb807ebb453f402e9c76e4189c6ca23e87f9788a3a2"
   name = "golang.org/x/crypto"
   packages = [
+    "blake2b",
     "pbkdf2",
     "scrypt",
   ]
   pruneopts = "UT"
-  revision = "ccddf3741a0cfcee0a62d34c18c2c5417a3761af"
-
-[[projects]]
-  digest = "1:8126afc249948c5f48a0dc35c87538bcd5944d01003ce6aaec2f7a9755fcd537"
-  name = "golang.org/x/net"
-  packages = [
-    "context",
-    "websocket",
-  ]
-  pruneopts = "UT"
-  revision = "a6577fac2d73be281a500b310739095313165611"
+  revision = "74369b46fc6756741c016591724fd1cb8e26845f"
 
 [[projects]]
   branch = "master"
-  digest = "1:7c3cf8f9e513ba8a0bd2f2c694646397a45e9d7458e61fabd774abb0f6149372"
-  name = "golang.org/x/sys"
-  packages = ["unix"]
+  digest = "1:7427036b6d926b3d1fa0773771820735b35554a98296f1074df440ee30a97296"
+  name = "golang.org/x/net"
+  packages = ["websocket"]
   pruneopts = "UT"
-  revision = "302c3dd5f1cc82baae8e44d9c3178e89b6e2b345"
+  revision = "3a22650c66bd7f4fb6d1e8072ffd7b75c8a27898"
 
 [[projects]]
-  digest = "1:623bd29e39e30952f3a4d5bc07f222c30e30f95813c749d9e8147bbc4293a774"
+  branch = "master"
+  digest = "1:dd386553dd2290f2bb9a7dabbbca60df074487882eed7cbf9a892c4284e30b96"
+  name = "golang.org/x/sys"
+  packages = [
+    "cpu",
+    "unix",
+  ]
+  pruneopts = "UT"
+  revision = "d0b11bdaac8adb652bff00e49bcacf992835621a"
+
+[[projects]]
+  branch = "master"
+  digest = "1:f57e88c4326d5433c2f4eb28fcd1662be003cb0d11dd13710c8828e687303c76"
   name = "golang.org/x/tools"
   packages = [
     "go/ast/astutil",
+    "go/gcexportdata",
+    "go/internal/cgo",
+    "go/internal/gcimporter",
+    "go/internal/packagesdriver",
+    "go/packages",
+    "go/types/typeutil",
     "imports",
+    "internal/fastwalk",
+    "internal/gopathwalk",
+    "internal/module",
+    "internal/semver",
   ]
   pruneopts = "UT"
-  revision = "be0fcc31ae2332374e800dfff29b721c585b35df"
+  revision = "8dcb7bc8c7fe0a895995c76c721cef79419ac98a"
 
 [[projects]]
   branch = "v2"
@@ -190,17 +265,22 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/coopernurse/barrister-go",
+    "github.com/ethereum/go-ethereum/accounts/abi",
+    "github.com/ethereum/go-ethereum/accounts/abi/bind",
+    "github.com/ethereum/go-ethereum/common",
+    "github.com/ethereum/go-ethereum/core/types",
+    "github.com/ethereum/go-ethereum/ethclient",
+    "github.com/ethereum/go-ethereum/event",
     "github.com/gogo/protobuf/proto",
     "github.com/golang/protobuf/proto",
+    "github.com/golang/protobuf/ptypes",
+    "github.com/golang/protobuf/ptypes/duration",
+    "github.com/golang/protobuf/ptypes/timestamp",
     "github.com/iotexproject/go-ethereum",
-    "github.com/iotexproject/go-ethereum/accounts/abi",
-    "github.com/iotexproject/go-ethereum/accounts/abi/bind",
-    "github.com/iotexproject/go-ethereum/common",
-    "github.com/iotexproject/go-ethereum/core/types",
-    "github.com/iotexproject/go-ethereum/ethclient",
-    "github.com/iotexproject/go-ethereum/event",
     "github.com/pkg/errors",
     "github.com/stretchr/testify/require",
+    "golang.org/x/crypto/blake2b",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

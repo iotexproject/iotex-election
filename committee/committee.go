@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/iotexproject/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 
 	"github.com/iotexproject/iotex-election/carrier"

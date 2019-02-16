@@ -35,8 +35,9 @@
 
 
 [[constraint]]
-  name = "github.com/iotexproject/go-ethereum"
-  revision = "ccc12f4fab5e9a9038675904481734570e05f95d"
+  name = "github.com/ethereum/go-ethereum"
+  branch = "master"
+  source = "github.com/iotexproject/go-ethereum"
 
 [[constraint]]
   name = "github.com/pkg/errors"
@@ -51,5 +52,5 @@
   unused-packages = true
 
   [[prune.project]]
-      name = "github.com/iotexproject/go-ethereum"
+      name = "github.com/ethereum/go-ethereum"
       unused-packages = false

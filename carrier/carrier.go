@@ -15,10 +15,10 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/iotexproject/go-ethereum/accounts/abi/bind"
-	"github.com/iotexproject/go-ethereum/common"
-	ethtypes "github.com/iotexproject/go-ethereum/core/types"
-	"github.com/iotexproject/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
 
 	"github.com/iotexproject/iotex-election/contract"
 	"github.com/iotexproject/iotex-election/types"

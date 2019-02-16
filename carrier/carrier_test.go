@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/iotexproject/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
 )
 

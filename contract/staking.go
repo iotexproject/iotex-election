@@ -8,11 +8,11 @@ import (
 	"strings"
 
 	ethereum "github.com/iotexproject/go-ethereum"
-	"github.com/iotexproject/go-ethereum/accounts/abi"
-	"github.com/iotexproject/go-ethereum/accounts/abi/bind"
-	"github.com/iotexproject/go-ethereum/common"
-	"github.com/iotexproject/go-ethereum/core/types"
-	"github.com/iotexproject/go-ethereum/event"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/event"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.

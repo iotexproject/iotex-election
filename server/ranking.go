@@ -8,14 +8,14 @@ import (
 
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/iotexproject/iotex-election/committee"
-	pb "github.com/iotexproject/iotex-election/explorer_pb"
+	pb "github.com/iotexproject/iotex-election/ranking_pb"
 
 	"golang.org/x/net/context"
 )
 
-// server is used to implement pb.ExplorerServer.
+// server is used to implement pb.RankingServer.
 type server struct {
-	savedCustomers []*pb.ExplorerServer
+	savedCustomers []*pb.RankingServer
 	c              committee.Committee
 }
 

@@ -2,6 +2,17 @@
 
 
 [[projects]]
+  digest = "1:f96ba6ecca7ba87b1dddd70ae38cfc4ce5ea844f58d1f728e121d2e29cdfb8a2"
+  name = "github.com/allegro/bigcache"
+  packages = [
+    ".",
+    "queue",
+  ]
+  pruneopts = "UT"
+  revision = "84a0ff3f153cbd7e280a19029a864bb04b504e62"
+  version = "v1.2.0"
+
+[[projects]]
   branch = "master"
   digest = "1:7d191fd0c54ff370eaf6116a14dafe2a328df487baea280699f597aae858d00d"
   name = "github.com/aristanetworks/goarista"
@@ -43,7 +54,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:6621a68edbd0bcea227ca0f95102060f81e8673be4d7eb71968c33fb433f73ae"
+  digest = "1:4cc466632bc70becd6d2ce8555c9b900c20aac5bdce6371bed6c77053c66ed7c"
   name = "github.com/ethereum/go-ethereum"
   packages = [
     ".",
@@ -59,7 +70,6 @@
     "core/types",
     "crypto",
     "crypto/secp256k1",
-    "crypto/sha3",
     "ethclient",
     "ethdb",
     "event",
@@ -72,8 +82,8 @@
     "trie",
   ]
   pruneopts = "T"
-  revision = "2bbee71fbe61def241832e800b4f0bd24d4beb89"
-  source = "github.com/iotexproject/go-ethereum"
+  revision = "4f85c2b88b6849def5c8d5b7661efa2cae8ec641"
+  source = "github.com/ethereum/go-ethereum"
 
 [[projects]]
   digest = "1:586ea76dbd0374d6fb649a91d70d652b7fe0ccffb8910a77468e7702e7901f3d"
@@ -92,13 +102,14 @@
   version = "v1.2.0"
 
 [[projects]]
-  digest = "1:4c0989ca0bcd10799064318923b9bc2db6b4d6338dd75f3f2d86c3511aaaf5cf"
+  digest = "1:5ac24c0ad5dc117fb2b6d90d205c876ec599c09cccb702a36586680e09cb20b5"
   name = "github.com/golang/protobuf"
   packages = [
     "proto",
     "ptypes",
     "ptypes/any",
     "ptypes/duration",
+    "ptypes/empty",
     "ptypes/timestamp",
   ]
   pruneopts = "UT"
@@ -120,14 +131,6 @@
   pruneopts = "UT"
   revision = "9b3b1e0f5f99ae461456d768e7d301a7acdaa2d8"
   version = "v1.1.0"
-
-[[projects]]
-  digest = "1:1aa6a782a131a1b3053ec4b78d91df42df0a6095b42dd874d0a2416de571ca23"
-  name = "github.com/iotexproject/go-ethereum"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "4bb3c89d44e372e6a9ab85a8be0c9345265c763a"
-  version = "v1.7.3"
 
 [[projects]]
   digest = "1:e5d0bd87abc2781d14e274807a470acd180f0499f8bf5bb18606e9ec22ad9de9"
@@ -203,21 +206,31 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:4987dc6844c200891f789cb807ebb453f402e9c76e4189c6ca23e87f9788a3a2"
+  digest = "1:253bf9714eb3ca0834514ad1f781e2a9237afdba136eba757d2b35274a4f79b7"
   name = "golang.org/x/crypto"
   packages = [
     "blake2b",
     "pbkdf2",
     "scrypt",
+    "sha3",
   ]
   pruneopts = "UT"
   revision = "74369b46fc6756741c016591724fd1cb8e26845f"
 
 [[projects]]
   branch = "master"
-  digest = "1:7427036b6d926b3d1fa0773771820735b35554a98296f1074df440ee30a97296"
+  digest = "1:fbb0ef3cbe401b91d1d02d8a9a2e8a1d6a5c5cad9f4b48be81b155f2a7fbcda0"
   name = "golang.org/x/net"
-  packages = ["websocket"]
+  packages = [
+    "context",
+    "http/httpguts",
+    "http2",
+    "http2/hpack",
+    "idna",
+    "internal/timeseries",
+    "trace",
+    "websocket",
+  ]
   pruneopts = "UT"
   revision = "3a22650c66bd7f4fb6d1e8072ffd7b75c8a27898"
 
@@ -233,25 +246,75 @@
   revision = "d0b11bdaac8adb652bff00e49bcacf992835621a"
 
 [[projects]]
-  branch = "master"
-  digest = "1:f57e88c4326d5433c2f4eb28fcd1662be003cb0d11dd13710c8828e687303c76"
-  name = "golang.org/x/tools"
+  digest = "1:a2ab62866c75542dd18d2b069fec854577a20211d7c0ea6ae746072a1dccdd18"
+  name = "golang.org/x/text"
   packages = [
-    "go/ast/astutil",
-    "go/gcexportdata",
-    "go/internal/cgo",
-    "go/internal/gcimporter",
-    "go/internal/packagesdriver",
-    "go/packages",
-    "go/types/typeutil",
-    "imports",
-    "internal/fastwalk",
-    "internal/gopathwalk",
-    "internal/module",
-    "internal/semver",
+    "collate",
+    "collate/build",
+    "internal/colltab",
+    "internal/gen",
+    "internal/tag",
+    "internal/triegen",
+    "internal/ucd",
+    "language",
+    "secure/bidirule",
+    "transform",
+    "unicode/bidi",
+    "unicode/cldr",
+    "unicode/norm",
+    "unicode/rangetable",
   ]
   pruneopts = "UT"
-  revision = "8dcb7bc8c7fe0a895995c76c721cef79419ac98a"
+  revision = "f21a4dfb5e38f5895301dc265a8def02365cc3d0"
+  version = "v0.3.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:077c1c599507b3b3e9156d17d36e1e61928ee9b53a5b420f10f28ebd4a0b275c"
+  name = "google.golang.org/genproto"
+  packages = ["googleapis/rpc/status"]
+  pruneopts = "UT"
+  revision = "bd968387e4aa590b3c6e4ba38ecac1ed314d43ad"
+
+[[projects]]
+  digest = "1:9ab5a33d8cb5c120602a34d2e985ce17956a4e8c2edce7e6961568f95e40c09a"
+  name = "google.golang.org/grpc"
+  packages = [
+    ".",
+    "balancer",
+    "balancer/base",
+    "balancer/roundrobin",
+    "binarylog/grpc_binarylog_v1",
+    "codes",
+    "connectivity",
+    "credentials",
+    "credentials/internal",
+    "encoding",
+    "encoding/proto",
+    "grpclog",
+    "internal",
+    "internal/backoff",
+    "internal/binarylog",
+    "internal/channelz",
+    "internal/envconfig",
+    "internal/grpcrand",
+    "internal/grpcsync",
+    "internal/syscall",
+    "internal/transport",
+    "keepalive",
+    "metadata",
+    "naming",
+    "peer",
+    "resolver",
+    "resolver/dns",
+    "resolver/passthrough",
+    "stats",
+    "status",
+    "tap",
+  ]
+  pruneopts = "UT"
+  revision = "a02b0774206b209466313a0b525d2c738fe407eb"
+  version = "v1.18.0"
 
 [[projects]]
   branch = "v2"
@@ -266,6 +329,7 @@
   analyzer-version = 1
   input-imports = [
     "github.com/coopernurse/barrister-go",
+    "github.com/ethereum/go-ethereum",
     "github.com/ethereum/go-ethereum/accounts/abi",
     "github.com/ethereum/go-ethereum/accounts/abi/bind",
     "github.com/ethereum/go-ethereum/common",
@@ -276,11 +340,13 @@
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/ptypes",
     "github.com/golang/protobuf/ptypes/duration",
+    "github.com/golang/protobuf/ptypes/empty",
     "github.com/golang/protobuf/ptypes/timestamp",
-    "github.com/iotexproject/go-ethereum",
     "github.com/pkg/errors",
     "github.com/stretchr/testify/require",
     "golang.org/x/crypto/blake2b",
+    "golang.org/x/net/context",
+    "google.golang.org/grpc",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

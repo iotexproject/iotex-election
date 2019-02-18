@@ -7,7 +7,7 @@ import (
 	"math/big"
 	"strings"
 
-	ethereum "github.com/iotexproject/go-ethereum"
+	ethereum "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -28,7 +28,7 @@ var (
 )
 
 // RegisterABI is the input ABI used to generate the binding from.
-const RegisterABI = "[{\"constant\":true,\"inputs\":[{\"name\":\"_address\",\"type\":\"address\"}],\"name\":\"isOwner\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"candidates\",\"outputs\":[{\"name\":\"name\",\"type\":\"bytes12\"},{\"name\":\"addr\",\"type\":\"address\"},{\"name\":\"ioOperatorPubKey\",\"type\":\"bytes\"},{\"name\":\"ioRewardPubKey\",\"type\":\"bytes\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"unpause\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"paused\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_index\",\"type\":\"uint256\"},{\"name\":\"_limit\",\"type\":\"uint256\"}],\"name\":\"getAllCandidates\",\"outputs\":[{\"name\":\"names\",\"type\":\"bytes12[]\"},{\"name\":\"addresses\",\"type\":\"address[]\"},{\"name\":\"ioOperatorPubKeys\",\"type\":\"bytes32[]\"},{\"name\":\"ioRewardPubKeys\",\"type\":\"bytes32[]\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"address\"}],\"name\":\"addrToIdx\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"pause\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"bytes32\"},{\"name\":\"\",\"type\":\"bytes32\"},{\"name\":\"\",\"type\":\"bytes32\"}],\"name\":\"ioPubKeyToIdx\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"candidateCount\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_name\",\"type\":\"bytes12\"},{\"name\":\"_ioOperatorPubKey\",\"type\":\"bytes\"},{\"name\":\"_ioRewardPubKey\",\"type\":\"bytes\"},{\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"register\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"bytes12\"}],\"name\":\"nameToIdx\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"token\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"name\":\"_tokenAddr\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"idx\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"name\",\"type\":\"bytes12\"},{\"indexed\":false,\"name\":\"addr\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"ioOperatorPubKey\",\"type\":\"bytes\"},{\"indexed\":false,\"name\":\"ioRewardPubKey\",\"type\":\"bytes\"},{\"indexed\":false,\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"Registered\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"Pause\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"Unpause\",\"type\":\"event\"}]"
+const RegisterABI = "[{\"constant\":true,\"inputs\":[{\"name\":\"_address\",\"type\":\"address\"}],\"name\":\"isOwner\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"candidates\",\"outputs\":[{\"name\":\"name\",\"type\":\"bytes12\"},{\"name\":\"addr\",\"type\":\"address\"},{\"name\":\"ioOperatorPubKey\",\"type\":\"bytes\"},{\"name\":\"ioRewardPubKey\",\"type\":\"bytes\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"unpause\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"nameRegistrationFee\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"paused\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"address\"}],\"name\":\"addrToIdx\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"pause\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"bytes32\"},{\"name\":\"\",\"type\":\"bytes32\"},{\"name\":\"\",\"type\":\"bytes32\"}],\"name\":\"ioPubKeyToIdx\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"candidateCount\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"feeCollector\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"bytes12\"}],\"name\":\"nameToIdx\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"token\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"name\":\"_tokenAddr\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"idx\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"name\",\"type\":\"bytes12\"},{\"indexed\":false,\"name\":\"addr\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"ioOperatorPubKey\",\"type\":\"bytes\"},{\"indexed\":false,\"name\":\"ioRewardPubKey\",\"type\":\"bytes\"},{\"indexed\":false,\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"Registered\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"Pause\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"Unpause\",\"type\":\"event\"},{\"constant\":true,\"inputs\":[{\"name\":\"_index\",\"type\":\"uint256\"},{\"name\":\"_limit\",\"type\":\"uint256\"}],\"name\":\"getAllCandidates\",\"outputs\":[{\"name\":\"names\",\"type\":\"bytes12[]\"},{\"name\":\"addresses\",\"type\":\"address[]\"},{\"name\":\"ioOperatorPubKeys\",\"type\":\"bytes32[]\"},{\"name\":\"ioRewardPubKeys\",\"type\":\"bytes32[]\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_addr\",\"type\":\"address\"}],\"name\":\"setFeeCollector\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_fee\",\"type\":\"uint256\"}],\"name\":\"setNameRegistrationFee\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_name\",\"type\":\"bytes12\"},{\"name\":\"_ioOperatorPubKey\",\"type\":\"bytes\"},{\"name\":\"_ioRewardPubKey\",\"type\":\"bytes\"},{\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"register\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
 
 // Register is an auto generated Go binding around an Ethereum contract.
 type Register struct {
@@ -268,6 +268,32 @@ func (_Register *RegisterCallerSession) Candidates(arg0 *big.Int) (struct {
 	return _Register.Contract.Candidates(&_Register.CallOpts, arg0)
 }
 
+// FeeCollector is a free data retrieval call binding the contract method 0xc415b95c.
+//
+// Solidity: function feeCollector() constant returns(address)
+func (_Register *RegisterCaller) FeeCollector(opts *bind.CallOpts) (common.Address, error) {
+	var (
+		ret0 = new(common.Address)
+	)
+	out := ret0
+	err := _Register.contract.Call(opts, out, "feeCollector")
+	return *ret0, err
+}
+
+// FeeCollector is a free data retrieval call binding the contract method 0xc415b95c.
+//
+// Solidity: function feeCollector() constant returns(address)
+func (_Register *RegisterSession) FeeCollector() (common.Address, error) {
+	return _Register.Contract.FeeCollector(&_Register.CallOpts)
+}
+
+// FeeCollector is a free data retrieval call binding the contract method 0xc415b95c.
+//
+// Solidity: function feeCollector() constant returns(address)
+func (_Register *RegisterCallerSession) FeeCollector() (common.Address, error) {
+	return _Register.Contract.FeeCollector(&_Register.CallOpts)
+}
+
 // GetAllCandidates is a free data retrieval call binding the contract method 0x5e924246.
 //
 // Solidity: function getAllCandidates(uint256 _index, uint256 _limit) constant returns(bytes12[] names, address[] addresses, bytes32[] ioOperatorPubKeys, bytes32[] ioRewardPubKeys)
@@ -362,6 +388,32 @@ func (_Register *RegisterSession) IsOwner(_address common.Address) (bool, error)
 // Solidity: function isOwner(address _address) constant returns(bool)
 func (_Register *RegisterCallerSession) IsOwner(_address common.Address) (bool, error) {
 	return _Register.Contract.IsOwner(&_Register.CallOpts, _address)
+}
+
+// NameRegistrationFee is a free data retrieval call binding the contract method 0x543ca195.
+//
+// Solidity: function nameRegistrationFee() constant returns(uint256)
+func (_Register *RegisterCaller) NameRegistrationFee(opts *bind.CallOpts) (*big.Int, error) {
+	var (
+		ret0 = new(*big.Int)
+	)
+	out := ret0
+	err := _Register.contract.Call(opts, out, "nameRegistrationFee")
+	return *ret0, err
+}
+
+// NameRegistrationFee is a free data retrieval call binding the contract method 0x543ca195.
+//
+// Solidity: function nameRegistrationFee() constant returns(uint256)
+func (_Register *RegisterSession) NameRegistrationFee() (*big.Int, error) {
+	return _Register.Contract.NameRegistrationFee(&_Register.CallOpts)
+}
+
+// NameRegistrationFee is a free data retrieval call binding the contract method 0x543ca195.
+//
+// Solidity: function nameRegistrationFee() constant returns(uint256)
+func (_Register *RegisterCallerSession) NameRegistrationFee() (*big.Int, error) {
+	return _Register.Contract.NameRegistrationFee(&_Register.CallOpts)
 }
 
 // NameToIdx is a free data retrieval call binding the contract method 0xd64ac4a6.
@@ -508,6 +560,48 @@ func (_Register *RegisterSession) Register(_name [12]byte, _ioOperatorPubKey []b
 // Solidity: function register(bytes12 _name, bytes _ioOperatorPubKey, bytes _ioRewardPubKey, bytes _data) returns()
 func (_Register *RegisterTransactorSession) Register(_name [12]byte, _ioOperatorPubKey []byte, _ioRewardPubKey []byte, _data []byte) (*types.Transaction, error) {
 	return _Register.Contract.Register(&_Register.TransactOpts, _name, _ioOperatorPubKey, _ioRewardPubKey, _data)
+}
+
+// SetFeeCollector is a paid mutator transaction binding the contract method 0xa42dce80.
+//
+// Solidity: function setFeeCollector(address _addr) returns()
+func (_Register *RegisterTransactor) SetFeeCollector(opts *bind.TransactOpts, _addr common.Address) (*types.Transaction, error) {
+	return _Register.contract.Transact(opts, "setFeeCollector", _addr)
+}
+
+// SetFeeCollector is a paid mutator transaction binding the contract method 0xa42dce80.
+//
+// Solidity: function setFeeCollector(address _addr) returns()
+func (_Register *RegisterSession) SetFeeCollector(_addr common.Address) (*types.Transaction, error) {
+	return _Register.Contract.SetFeeCollector(&_Register.TransactOpts, _addr)
+}
+
+// SetFeeCollector is a paid mutator transaction binding the contract method 0xa42dce80.
+//
+// Solidity: function setFeeCollector(address _addr) returns()
+func (_Register *RegisterTransactorSession) SetFeeCollector(_addr common.Address) (*types.Transaction, error) {
+	return _Register.Contract.SetFeeCollector(&_Register.TransactOpts, _addr)
+}
+
+// SetNameRegistrationFee is a paid mutator transaction binding the contract method 0x6afee780.
+//
+// Solidity: function setNameRegistrationFee(uint256 _fee) returns()
+func (_Register *RegisterTransactor) SetNameRegistrationFee(opts *bind.TransactOpts, _fee *big.Int) (*types.Transaction, error) {
+	return _Register.contract.Transact(opts, "setNameRegistrationFee", _fee)
+}
+
+// SetNameRegistrationFee is a paid mutator transaction binding the contract method 0x6afee780.
+//
+// Solidity: function setNameRegistrationFee(uint256 _fee) returns()
+func (_Register *RegisterSession) SetNameRegistrationFee(_fee *big.Int) (*types.Transaction, error) {
+	return _Register.Contract.SetNameRegistrationFee(&_Register.TransactOpts, _fee)
+}
+
+// SetNameRegistrationFee is a paid mutator transaction binding the contract method 0x6afee780.
+//
+// Solidity: function setNameRegistrationFee(uint256 _fee) returns()
+func (_Register *RegisterTransactorSession) SetNameRegistrationFee(_fee *big.Int) (*types.Transaction, error) {
+	return _Register.Contract.SetNameRegistrationFee(&_Register.TransactOpts, _fee)
 }
 
 // TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.

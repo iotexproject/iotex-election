@@ -7,6 +7,8 @@
 package contract
 
 import (
+	"bytes"
+	"encoding/hex"
 	"math/big"
 	"testing"
 
@@ -20,17 +22,37 @@ func TestStakingContract(t *testing.T) {
 	client, err := ethclient.Dial("https://kovan.infura.io")
 	require.NoError(t, err)
 	caller, err := NewStakingCaller(
-		common.HexToAddress("0x5573c5c69e6bceac4aad14e2c98fbceee8d8c0b8"),
+		common.HexToAddress("0xf488342896e4ef30022a88d869caaa329d476aa9"),
 		client,
 	)
 	require.NoError(t, err)
-	bucket, err := caller.Buckets(&bind.CallOpts{BlockNumber: big.NewInt(10246226)}, big.NewInt(1))
+	retval, err := caller.GetActiveBuckets(
+		&bind.CallOpts{BlockNumber: big.NewInt(10377538)},
+		big.NewInt(0),
+		big.NewInt(10),
+	)
 	require.NoError(t, err)
-	require.Equal(t, true, bucket.NonDecay)
-	require.Equal(t, 0, big.NewInt(66).Cmp(bucket.StakedAmount))
-	require.Equal(t, 0, big.NewInt(14).Cmp(bucket.StakeDuration))
-	require.Equal(t, 0, big.NewInt(1548986412).Cmp(bucket.StakeStartTime))
-	require.Equal(t, 0, len(bucket.CanPubKey))
-	require.Equal(t, 0, big.NewInt(0).Cmp(bucket.UnstakeStartTime))
-	require.Equal(t, common.HexToAddress("0x85F8Ff7151DE8EFf96F8bA4190b1FCE316a241aB"), bucket.BucketOwner)
+	require.Equal(t, big.NewInt(2), retval.Count)
+
+	amount, ok := new(big.Int).SetString("250000000000000000000", 10)
+	require.True(t, ok)
+	require.Equal(t, true, retval.Decays[0])
+	require.Equal(t, 0, amount.Cmp(retval.StakedAmounts[0]))
+	require.Equal(t, 0, big.NewInt(7).Cmp(retval.StakeDurations[0]))
+	require.Equal(t, 0, big.NewInt(1550363360).Cmp(retval.StakeStartTimes[0]))
+	canName, err := hex.DecodeString("726f626f7432000000000000")
+	require.NoError(t, err)
+	require.True(t, bytes.Equal(canName, retval.CanNames[0][:]))
+	require.Equal(t, common.HexToAddress("0x95a971937F343591352c56EABf04a1D69DE18c4E"), retval.Owners[0])
+
+	amount, ok = new(big.Int).SetString("100000000000000000000", 10)
+	require.True(t, ok)
+	require.Equal(t, false, retval.Decays[1])
+	require.Equal(t, 0, amount.Cmp(retval.StakedAmounts[1]))
+	require.Equal(t, 0, big.NewInt(350).Cmp(retval.StakeDurations[1]))
+	require.Equal(t, 0, big.NewInt(1550363864).Cmp(retval.StakeStartTimes[1]))
+	canName, err = hex.DecodeString("726f626f7431000000000000")
+	require.NoError(t, err)
+	require.True(t, bytes.Equal(canName, retval.CanNames[1][:]))
+	require.Equal(t, common.HexToAddress("1D23bF4b8c64e4cdaC4448A5aF777FebF9fedE90"), retval.Owners[1])
 }

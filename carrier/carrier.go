@@ -8,7 +8,6 @@ package carrier
 
 import (
 	"context"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"log"
@@ -37,20 +36,25 @@ type Carrier interface {
 }
 
 type ethereumCarrier struct {
-	client       *ethclient.Client
-	contractAddr common.Address
-	registerAddr common.Address
+	client                  *ethclient.Client
+	stakingContractAddress  common.Address
+	registerContractAddress common.Address
 }
 
 // NewEthereumVoteCarrier defines a carrier to fetch votes from ethereum contract
-func NewEthereumVoteCarrier(url string, contractAddr common.Address) (Carrier, error) {
+func NewEthereumVoteCarrier(
+	url string,
+	registerContractAddress common.Address,
+	stakingContractAddress common.Address,
+) (Carrier, error) {
 	client, err := ethclient.Dial(url)
 	if err != nil {
 		return nil, err
 	}
 	return &ethereumCarrier{
-		client:       client,
-		contractAddr: contractAddr,
+		client:                  client,
+		stakingContractAddress:  stakingContractAddress,
+		registerContractAddress: registerContractAddress,
 	}, nil
 }
 
@@ -91,36 +95,47 @@ func (evc *ethereumCarrier) SubscribeNewBlock(cb func(uint64), close chan bool) 
 
 func (evc *ethereumCarrier) Candidates(
 	height uint64,
-	previousIndex *big.Int,
+	startIndex *big.Int,
 	count uint8,
 ) (*big.Int, []*types.Candidate, error) {
-	if previousIndex == nil || previousIndex.Cmp(big.NewInt(1)) < 0 {
-		previousIndex = big.NewInt(1)
+	if startIndex == nil || startIndex.Cmp(big.NewInt(1)) < 0 {
+		startIndex = big.NewInt(1)
 	}
-	caller, err := contract.NewRegisterCaller(evc.registerAddr, evc.client)
+	caller, err := contract.NewRegisterCaller(evc.registerContractAddress, evc.client)
 	if err != nil {
 		return nil, nil, err
 	}
 	retval, err := caller.GetAllCandidates(
 		&bind.CallOpts{BlockNumber: new(big.Int).SetUint64(height)},
-		previousIndex,
+		startIndex,
 		big.NewInt(int64(count)),
 	)
 	if err != nil {
 		return nil, nil, err
 	}
 	num := len(retval.Names)
+	if len(retval.Addresses) != num {
+		return nil, nil, errors.New("invalid addresses from GetAllCandidates")
+	}
+	operatorPubKeys, err := decodePubKeys(retval.IoOperatorPubKeys, num)
+	if err != nil {
+		return nil, nil, err
+	}
+	rewardPubKeys, err := decodePubKeys(retval.IoRewardPubKeys, num)
+	if err != nil {
+		return nil, nil, err
+	}
 	candidates := make([]*types.Candidate, num)
 	for i := 0; i < num; i++ {
 		candidates[i] = types.NewCandidate(
 			retval.Names[i][:],
 			retval.Addresses[i][:],
-			retval.IoOperatorPubKeys[i][:],
-			retval.IoRewardPubKeys[i][:],
+			operatorPubKeys[i],
+			rewardPubKeys[i],
 			1, // TODO: read weight from contract
 		)
 	}
-	return new(big.Int).Add(previousIndex, big.NewInt(int64(num))), candidates, nil
+	return new(big.Int).Add(startIndex, big.NewInt(int64(num))), candidates, nil
 }
 
 func (evc *ethereumCarrier) Votes(
@@ -131,7 +146,7 @@ func (evc *ethereumCarrier) Votes(
 	if previousIndex == nil || previousIndex.Cmp(big.NewInt(0)) < 0 {
 		previousIndex = big.NewInt(0)
 	}
-	caller, err := contract.NewStakingCaller(evc.contractAddr, evc.client)
+	caller, err := contract.NewStakingCaller(evc.stakingContractAddress, evc.client)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -148,17 +163,9 @@ func (evc *ethereumCarrier) Votes(
 	if num == 0 {
 		return previousIndex, votes, nil
 	}
-	candidates, err := decodeCandidates(buckets.Candidates, num)
-	if err != nil {
-		return nil, nil, errors.New("invalid candidates return value")
-	}
 	for i, index := range buckets.Indexes {
 		if big.NewInt(0).Cmp(index) == 0 { // back to start
 			break
-		}
-		candidate, err := hex.DecodeString(candidates[i])
-		if err != nil {
-			return nil, nil, err
 		}
 		v, err := types.NewVote(
 			time.Unix(buckets.StakeStartTimes[i].Int64(), 0),
@@ -166,7 +173,7 @@ func (evc *ethereumCarrier) Votes(
 			buckets.StakedAmounts[i],
 			big.NewInt(0),
 			buckets.Owners[i].Bytes(),
-			candidate,
+			buckets.CanNames[i][:],
 			buckets.Decays[i],
 		)
 		if err != nil {
@@ -181,17 +188,15 @@ func (evc *ethereumCarrier) Votes(
 	return previousIndex, votes, nil
 }
 
-func decodeCandidates(data []byte, num int) ([]string, error) {
-	if len(data) != 73*num {
-		return nil, errors.New("the length of candidates is not as expected")
+func decodePubKeys(data [][32]byte, num int) ([][]byte, error) {
+	if len(data) != 3*num {
+		return nil, errors.New("the length of pub key array is not as expected")
 	}
-	candidates := []string{}
+	keys := [][]byte{}
 	for i := 0; i < num; i++ {
-		candidates = append(
-			candidates,
-			hex.EncodeToString(data[i*73+1:i*73+1+int(data[i*73])]),
-		)
+		key := append(data[3*i][:], data[3*i+1][:]...)
+		keys = append(keys, append(key, data[3*i+2][0]))
 	}
 
-	return candidates, nil
+	return keys, nil
 }

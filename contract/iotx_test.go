@@ -19,18 +19,23 @@ import (
 func TestIOTXContract(t *testing.T) {
 	client, err := ethclient.Dial("https://kovan.infura.io/")
 	require.NoError(t, err)
-	sc, err := NewIOTXCaller(common.HexToAddress("a45e1d096a5d1b7db32e9309f67b293d3d8de759"), client)
+	contractAddr := common.HexToAddress("51ca23c98b7481951d0904d3f134889713306c75")
+	sc, err := NewIOTXCaller(contractAddr, client)
 	require.NoError(t, err)
+	accountAddr := common.HexToAddress("daa75db17e57ede45cfa589b103ce91566770563")
+	transferHeight := int64(10369800)
 	b, err := sc.BalanceOf(
-		&bind.CallOpts{BlockNumber: big.NewInt(10245807)},
-		common.HexToAddress("731eae7bEdec1F0A5A52BEb39a4e1dCdb4bb77Ac"),
+		&bind.CallOpts{BlockNumber: big.NewInt(transferHeight - 1)},
+		accountAddr,
 	)
 	require.NoError(t, err)
 	require.Equal(t, 0, b.Cmp(big.NewInt(0)))
 	b, err = sc.BalanceOf(
-		&bind.CallOpts{BlockNumber: big.NewInt(10245808)},
-		common.HexToAddress("731eae7bEdec1F0A5A52BEb39a4e1dCdb4bb77Ac"),
+		&bind.CallOpts{BlockNumber: big.NewInt(transferHeight)},
+		accountAddr,
 	)
 	require.NoError(t, err)
-	require.Equal(t, 0, b.Cmp(big.NewInt(123456789)))
+	balance, ok := new(big.Int).SetString("100000000000000000000000", 10)
+	require.True(t, ok)
+	require.Equal(t, 0, b.Cmp(balance))
 }

@@ -15,7 +15,7 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	"github.com/pkg/errors"
 
-	"github.com/iotexproject/iotex-election/pb"
+	pb "github.com/iotexproject/iotex-election/pb/election"
 )
 
 // Vote defines the structure of a vote

@@ -23,21 +23,37 @@ func TestVoteCarrier(t *testing.T) {
 	// TODO: update contract address once finalize it
 	carrier, err := NewEthereumVoteCarrier(
 		"wss://kovan.infura.io/ws",
-		common.HexToAddress("0x5573c5c69e6bceac4aad14e2c98fbceee8d8c0b8"),
+		common.HexToAddress("0x57e2b1b258ab80e0b01136409d5b60e7d2debb49"),
+		common.HexToAddress("0xf488342896e4ef30022a88d869caaa329d476aa9"),
 	)
 	require.NoError(err)
+	t.Run("Candidates", func(t *testing.T) {
+		nextIndex, candidates, err := carrier.Candidates(uint64(10377500), big.NewInt(1), uint8(2))
+		require.Equal(0, big.NewInt(3).Cmp(nextIndex))
+		require.NoError(err)
+		require.Equal(2, len(candidates))
+		name, err := hex.DecodeString("726f626f7432000000000000")
+		require.NoError(err)
+		require.True(bytes.Equal(name, candidates[0].Name()))
+		name, err = hex.DecodeString("726f626f7431000000000000")
+		require.NoError(err)
+		require.True(bytes.Equal(name, candidates[1].Name()))
+	})
 	t.Run("Votes", func(t *testing.T) {
-		lastIndex, votes, err := carrier.Votes(uint64(10246226), big.NewInt(-1), uint8(3))
+		lastIndex, votes, err := carrier.Votes(uint64(10377500), big.NewInt(0), uint8(3))
 		require.NoError(err)
 		require.Equal(0, big.NewInt(1).Cmp(lastIndex))
 		require.Equal(1, len(votes))
-		require.Equal(int64(1548986412), votes[0].StartTime().Unix())
-		require.Equal(336*time.Hour, votes[0].Duration())
-		require.Equal(0, big.NewInt(66).Cmp(votes[0].Amount()))
-		require.Equal(false, votes[0].Decay())
-		require.Equal(0, strings.Compare("85f8ff7151de8eff96f8ba4190b1fce316a241ab", hex.EncodeToString(votes[0].Voter())))
-		require.True(bytes.Equal([]byte(""), votes[0].Candidate()))
-
+		require.Equal(int64(1550363360), votes[0].StartTime().Unix())
+		require.Equal(24*7*time.Hour, votes[0].Duration())
+		amount, ok := new(big.Int).SetString("250000000000000000000", 10)
+		require.True(ok)
+		require.Equal(0, amount.Cmp(votes[0].Amount()))
+		require.Equal(true, votes[0].Decay())
+		require.Equal(0, strings.Compare("95a971937f343591352c56eabf04a1d69de18c4e", hex.EncodeToString(votes[0].Voter())))
+		canName, err := hex.DecodeString("726f626f7432000000000000")
+		require.NoError(err)
+		require.True(bytes.Equal(canName, votes[0].Candidate()))
 	})
 	t.Run("BlockTimestamp", func(t *testing.T) {
 		ts, err := carrier.BlockTimestamp(uint64(10246228))

@@ -31,9 +31,7 @@ type server struct {
 }
 
 // NewServer returns an implementation of ranking server
-func NewServer() (pb.RankingServer, error) {
-	// TODO: read config from yaml file
-	cfg := &Config{}
+func NewServer(cfg *Config) (pb.RankingServer, error) {
 	c, err := committee.NewCommittee(nil, cfg.Committee)
 	if err != nil {
 		return nil, err

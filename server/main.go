@@ -7,12 +7,16 @@
 package main
 
 import (
+	"flag"
+	"io/ioutil"
 	"log"
 	"net"
 
+	"google.golang.org/grpc"
+	yaml "gopkg.in/yaml.v2"
+
 	pb "github.com/iotexproject/iotex-election/pb/ranking"
 	"github.com/iotexproject/iotex-election/server/ranking"
-	"google.golang.org/grpc"
 )
 
 func main() {
@@ -20,7 +24,17 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
-	rankingServer, err := ranking.NewServer()
+	var configPath string
+	flag.StringVar(&configPath, "config", "server.yaml", "path of server config file")
+	data, err := ioutil.ReadFile(configPath)
+	if err != nil {
+		log.Fatalf("failed to load config file %v", err)
+	}
+	var config ranking.Config
+	if err := yaml.Unmarshal(data, &config); err != nil {
+		log.Fatalf("failed to unmarshal config %v", err)
+	}
+	rankingServer, err := ranking.NewServer(&config)
 	if err != nil {
 		log.Fatalf("failed to create ranking server %v", err)
 	}

@@ -30,12 +30,6 @@ var (
 // CalcBeaconChainHeight calculates the corresponding beacon chain height for an epoch
 type CalcBeaconChainHeight func(uint64) (uint64, error)
 
-// KVStore defines the db interface using in committee
-type KVStore interface {
-	Get([]byte) ([]byte, error)
-	Put([]byte, []byte) error
-}
-
 // Config defines the config of the committee
 type Config struct {
 	NumOfRetries              uint8  `yaml:"numOfRetries"`
@@ -88,6 +82,9 @@ type committee struct {
 
 // NewCommittee creates a committee
 func NewCommittee(db KVStore, cfg Config) (Committee, error) {
+	if db == nil {
+		db = &store{}
+	}
 	if !common.IsHexAddress(cfg.StakingContractAddress) {
 		return nil, errors.New("Invalid staking contract address")
 	}

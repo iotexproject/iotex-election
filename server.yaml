@@ -1,10 +1,12 @@
 dbPath: ""
 
+port: 8089
+
 committee:
   numOfRetries: 8
   beaconChainAPI: wss://kovan.infura.io/ws
   beaconChainHeightInterval: 100
-  beaconChainStartHeight: 10377500
+  beaconChainStartHeight: 10391000
   registerContractAddress: 0x57e2b1b258ab80e0b01136409d5b60e7d2debb49
   stakingContractAddress: 0xf488342896e4ef30022a88d869caaa329d476aa9
   paginationSize: 20

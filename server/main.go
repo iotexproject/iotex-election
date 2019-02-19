@@ -7,23 +7,17 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"io/ioutil"
 	"log"
-	"net"
 
-	"google.golang.org/grpc"
 	yaml "gopkg.in/yaml.v2"
 
-	pb "github.com/iotexproject/iotex-election/pb/ranking"
 	"github.com/iotexproject/iotex-election/server/ranking"
 )
 
 func main() {
-	lis, err := net.Listen("tcp", ":8089")
-	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
-	}
 	var configPath string
 	flag.StringVar(&configPath, "config", "server.yaml", "path of server config file")
 	data, err := ioutil.ReadFile(configPath)
@@ -38,8 +32,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to create ranking server %v", err)
 	}
-	s := grpc.NewServer()
-	pb.RegisterRankingServer(s, rankingServer)
-
-	s.Serve(lis)
+	if err := rankingServer.Start(context.Background()); err != nil {
+		log.Fatalf("failed to start ranking server %v", err)
+	}
+	defer rankingServer.Stop(context.Background())
+	select {}
 }

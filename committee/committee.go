@@ -8,12 +8,14 @@ package committee
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"math"
 	"math/big"
 	"sync"
 	"time"
 
+	ethereum "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 
@@ -120,6 +122,7 @@ func NewCommittee(db KVStore, cfg Config) (Committee, error) {
 		selfStakingThreshold: selfStakingThreshold,
 		terminate:            make(chan bool),
 		startHeight:          cfg.BeaconChainStartHeight,
+		interval:             cfg.BeaconChainHeightInterval,
 		currentHeight:        0,
 		nextHeight:           cfg.BeaconChainStartHeight,
 	}, nil
@@ -129,7 +132,7 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 	ec.mutex.Lock()
 	defer ec.mutex.Unlock()
 	for {
-		result, err := ec.resultByHeight(ec.nextHeight)
+		result, err := ec.fetchResultByHeight(ec.nextHeight)
 		if err == ErrNotExist {
 			break
 		}
@@ -148,6 +151,7 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 		if err = ec.carrier.SubscribeNewBlock(ec.OnNewBlock, ec.terminate); err == nil {
 			break
 		}
+		fmt.Println("retry new block subscription")
 	}
 	return
 }
@@ -268,8 +272,14 @@ func (ec *committee) calcWeightedVotes(v *types.Vote, now time.Time) *big.Int {
 }
 
 func (ec *committee) fetchResultByHeight(height uint64) (*types.ElectionResult, error) {
+	fmt.Printf("fetch result for %d\n", height)
 	mintTime, err := ec.carrier.BlockTimestamp(height)
-	if err != nil {
+	switch errors.Cause(err) {
+	case nil:
+		break
+	case ethereum.NotFound:
+		return nil, ErrNotExist
+	default:
 		return nil, err
 	}
 	calculator := types.NewResultCalculator(

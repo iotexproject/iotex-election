@@ -37,7 +37,7 @@
 [[constraint]]
   name = "github.com/ethereum/go-ethereum"
   branch = "master"
-  source = "github.com/iotexproject/go-ethereum"
+  source = "github.com/ethereum/go-ethereum"
 
 [[constraint]]
   name = "github.com/pkg/errors"

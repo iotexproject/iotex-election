@@ -8,12 +8,14 @@ package committee
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"math"
 	"math/big"
 	"sync"
 	"time"
 
+	ethereum "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 
@@ -30,137 +32,19 @@ var (
 // CalcBeaconChainHeight calculates the corresponding beacon chain height for an epoch
 type CalcBeaconChainHeight func(uint64) (uint64, error)
 
-// KVStore defines the db interface using in committee
-type KVStore interface {
-	Get([]byte) ([]byte, error)
-	Put([]byte, []byte) error
-}
-
 // Config defines the config of the committee
 type Config struct {
 	NumOfRetries              uint8  `yaml:"numOfRetries"`
 	BeaconChainAPI            string `yaml:"beaconChainAPI"`
 	BeaconChainHeightInterval uint64 `yaml:"beaconChainHeightInterval"`
 	BeaconChainStartHeight    uint64 `yaml:"beaconChainStartHeight"`
+	RegisterContractAddress   string `yaml:"registerContractAddress"`
 	StakingContractAddress    string `yaml:"stakingContractAddress"`
 	PaginationSize            uint8  `yaml:"paginationSize"`
-	VoteThreshold             uint64 `yaml:"voteThreshold"`
-	ScoreThreshold            uint64 `yaml:"scoreThreshold"`
-	SelfStakingThreshold      uint64 `yaml:"selfStakingThreshold"`
+	VoteThreshold             string `yaml:"voteThreshold"`
+	ScoreThreshold            string `yaml:"scoreThreshold"`
+	SelfStakingThreshold      string `yaml:"selfStakingThreshold"`
 	CacheSize                 uint8  `yaml:"cacheSize"`
-}
-
-type resultCache struct {
-	size    uint8
-	results []*types.ElectionResult
-	heights []uint64
-	index   map[uint64]int
-	cursor  int
-}
-
-func newResultCache(size uint8) *resultCache {
-	return &resultCache{
-		size:    size,
-		results: make([]*types.ElectionResult, size),
-		heights: make([]uint64, size),
-		index:   map[uint64]int{},
-		cursor:  0,
-	}
-}
-
-func (c *resultCache) insert(height uint64, r *types.ElectionResult) {
-	if i, exists := c.index[height]; exists {
-		c.results[i] = r
-		return
-	}
-	delete(c.index, c.heights[c.cursor])
-	c.results[c.cursor] = r
-	c.heights[c.cursor] = height
-	c.index[height] = c.cursor
-	c.cursor = (c.cursor + 1) % int(c.size)
-}
-
-func (c *resultCache) get(height uint64) *types.ElectionResult {
-	i, exists := c.index[height]
-	if !exists {
-		return nil
-	}
-	return c.results[i]
-}
-
-type heightManager struct {
-	heights []uint64
-	times   []time.Time
-}
-
-func newHeightManager() *heightManager {
-	return &heightManager{
-		heights: []uint64{},
-		times:   []time.Time{},
-	}
-}
-
-func (m *heightManager) nearestHeightBefore(ts time.Time) uint64 {
-	l := len(m.heights)
-	if l == 0 {
-		return 0
-	}
-	if m.times[0].After(ts) {
-		return 0
-	}
-	head := 0
-	tail := l
-	for {
-		if tail-head <= 1 {
-			break
-		}
-		mid := (head + tail) / 2
-		if m.times[mid].After(ts) {
-			tail = mid
-		} else {
-			head = mid
-		}
-	}
-	return m.heights[head]
-}
-
-func (m *heightManager) lastestHeight() uint64 {
-	l := len(m.heights)
-	if l == 0 {
-		return 0
-	}
-	return m.heights[l-1]
-}
-
-func (m *heightManager) validate(height uint64, ts time.Time) error {
-	l := len(m.heights)
-	if l == 0 {
-		return nil
-	}
-	if m.heights[l-1] >= height {
-		return errors.Errorf(
-			"invalid height %d, current tail is %d",
-			height,
-			m.heights[l-1],
-		)
-	}
-	if !ts.After(m.times[l-1]) {
-		return errors.Errorf(
-			"invalid timestamp %s, current tail is %s",
-			ts,
-			m.times[l-1],
-		)
-	}
-	return nil
-}
-
-func (m *heightManager) add(height uint64, ts time.Time) error {
-	if err := m.validate(height, ts); err != nil {
-		return err
-	}
-	m.heights = append(m.heights, height)
-	m.times = append(m.times, ts)
-	return nil
 }
 
 // Committee defines an interface of an election committee
@@ -172,8 +56,8 @@ type Committee interface {
 	Stop(context.Context) error
 	// ResultByHeight returns the result on a specific ethereum height
 	ResultByHeight(height uint64) (*types.ElectionResult, error)
-	// ResultByTime returns the nearest result before time
-	ResultByTime(timestamp time.Time) (uint64, *types.ElectionResult, error)
+	// HeightByTime returns the nearest result before time
+	HeightByTime(timestamp time.Time) (uint64, error)
 	// OnNewBlock is a callback function which will be called on new block created
 	OnNewBlock(height uint64)
 	// LatestHeight returns the height with latest result
@@ -181,38 +65,66 @@ type Committee interface {
 }
 
 type committee struct {
-	db            KVStore
-	carrier       carrier.Carrier
-	cfg           Config
-	cache         *resultCache
-	heightManager *heightManager
-	nextHeight    uint64
-	currentHeight uint64
-	terminate     chan bool
-	mutex         sync.RWMutex
+	db                   KVStore
+	carrier              carrier.Carrier
+	retryLimit           uint8
+	paginationSize       uint8
+	voteThreshold        *big.Int
+	scoreThreshold       *big.Int
+	selfStakingThreshold *big.Int
+	interval             uint64
+	cache                *resultCache
+	heightManager        *heightManager
+	startHeight          uint64
+	nextHeight           uint64
+	currentHeight        uint64
+	terminate            chan bool
+	mutex                sync.RWMutex
 }
 
 // NewCommittee creates a committee
 func NewCommittee(db KVStore, cfg Config) (Committee, error) {
+	if db == nil {
+		db = &store{}
+	}
 	if !common.IsHexAddress(cfg.StakingContractAddress) {
 		return nil, errors.New("Invalid staking contract address")
 	}
 	carrier, err := carrier.NewEthereumVoteCarrier(
 		cfg.BeaconChainAPI,
+		common.HexToAddress(cfg.RegisterContractAddress),
 		common.HexToAddress(cfg.StakingContractAddress),
 	)
 	if err != nil {
 		return nil, err
 	}
+	voteThreshold, ok := new(big.Int).SetString(cfg.VoteThreshold, 10)
+	if !ok {
+		return nil, errors.New("Invalid vote threshold")
+	}
+	scoreThreshold, ok := new(big.Int).SetString(cfg.ScoreThreshold, 10)
+	if !ok {
+		return nil, errors.New("Invalid score threshold")
+	}
+	selfStakingThreshold, ok := new(big.Int).SetString(cfg.SelfStakingThreshold, 10)
+	if !ok {
+		return nil, errors.New("Invalid self staking threshold")
+	}
 	return &committee{
-		db:            db,
-		cache:         newResultCache(cfg.CacheSize),
-		heightManager: newHeightManager(),
-		carrier:       carrier,
-		cfg:           cfg,
-		terminate:     make(chan bool),
-		currentHeight: 0,
-		nextHeight:    cfg.BeaconChainStartHeight,
+		db:                   db,
+		cache:                newResultCache(cfg.CacheSize),
+		heightManager:        newHeightManager(),
+		carrier:              carrier,
+		retryLimit:           cfg.NumOfRetries,
+		paginationSize:       cfg.PaginationSize,
+		voteThreshold:        voteThreshold,
+		scoreThreshold:       scoreThreshold,
+		selfStakingThreshold: selfStakingThreshold,
+		terminate:            make(chan bool),
+		startHeight:          cfg.BeaconChainStartHeight,
+		interval:             cfg.BeaconChainHeightInterval,
+		currentHeight:        0,
+		nextHeight:           cfg.BeaconChainStartHeight,
 	}, nil
 }
 
@@ -220,7 +132,7 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 	ec.mutex.Lock()
 	defer ec.mutex.Unlock()
 	for {
-		result, err := ec.resultByHeight(ec.nextHeight)
+		result, err := ec.fetchResultByHeight(ec.nextHeight)
 		if err == ErrNotExist {
 			break
 		}
@@ -230,15 +142,16 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 			}
 			ec.cache.insert(ec.nextHeight, result)
 			ec.currentHeight = ec.nextHeight
-			ec.nextHeight += ec.cfg.BeaconChainHeightInterval
+			ec.nextHeight += ec.interval
 			continue
 		}
 		return err
 	}
-	for i := uint8(0); i < ec.cfg.NumOfRetries; i++ {
+	for i := uint8(0); i < ec.retryLimit; i++ {
 		if err = ec.carrier.SubscribeNewBlock(ec.OnNewBlock, ec.terminate); err == nil {
 			break
 		}
+		fmt.Println("retry new block subscription")
 	}
 	return
 }
@@ -262,7 +175,7 @@ func (ec *committee) OnNewBlock(tipHeight uint64) {
 		}
 		var result *types.ElectionResult
 		var err error
-		for i := uint8(0); i < ec.cfg.NumOfRetries; i++ {
+		for i := uint8(0); i < ec.retryLimit; i++ {
 			if result, err = ec.fetchResultByHeight(ec.nextHeight); err != nil {
 				log.Println(err)
 				continue
@@ -286,7 +199,7 @@ func (ec *committee) OnNewBlock(tipHeight uint64) {
 		}
 		ec.heightManager.add(ec.nextHeight, result.MintTime())
 		ec.cache.insert(ec.nextHeight, result)
-		ec.nextHeight += ec.cfg.BeaconChainHeightInterval
+		ec.nextHeight += ec.interval
 	}
 }
 
@@ -296,16 +209,15 @@ func (ec *committee) LatestHeight() uint64 {
 	return ec.heightManager.lastestHeight()
 }
 
-func (ec *committee) ResultByTime(ts time.Time) (uint64, *types.ElectionResult, error) {
+func (ec *committee) HeightByTime(ts time.Time) (uint64, error) {
 	ec.mutex.RLock()
 	defer ec.mutex.RUnlock()
 	height := ec.heightManager.nearestHeightBefore(ts)
 	if height == 0 {
-		return 0, nil, ErrNotExist
+		return 0, ErrNotExist
 	}
-	result, err := ec.resultByHeight(height)
 
-	return height, result, err
+	return height, nil
 }
 
 func (ec *committee) ResultByHeight(height uint64) (*types.ElectionResult, error) {
@@ -315,14 +227,14 @@ func (ec *committee) ResultByHeight(height uint64) (*types.ElectionResult, error
 }
 
 func (ec *committee) resultByHeight(height uint64) (*types.ElectionResult, error) {
-	if height < ec.cfg.BeaconChainStartHeight {
+	if height < ec.startHeight {
 		return nil, errors.Errorf(
 			"height %d is higher than start height %d",
 			height,
-			ec.cfg.BeaconChainStartHeight,
+			ec.startHeight,
 		)
 	}
-	if (height-ec.cfg.BeaconChainStartHeight)%ec.cfg.BeaconChainHeightInterval != 0 {
+	if (height-ec.startHeight)%ec.interval != 0 {
 		return nil, errors.Errorf(
 			"height %d is an invalid height",
 			height,
@@ -360,19 +272,25 @@ func (ec *committee) calcWeightedVotes(v *types.Vote, now time.Time) *big.Int {
 }
 
 func (ec *committee) fetchResultByHeight(height uint64) (*types.ElectionResult, error) {
+	fmt.Printf("fetch result for %d\n", height)
 	mintTime, err := ec.carrier.BlockTimestamp(height)
-	if err != nil {
+	switch errors.Cause(err) {
+	case nil:
+		break
+	case ethereum.NotFound:
+		return nil, ErrNotExist
+	default:
 		return nil, err
 	}
 	calculator := types.NewResultCalculator(
 		mintTime,
 		func(v *types.Vote) bool {
-			return new(big.Int).SetUint64(ec.cfg.VoteThreshold).Cmp(v.Amount()) > 0
+			return ec.voteThreshold.Cmp(v.Amount()) > 0
 		},
 		ec.calcWeightedVotes,
 		func(c *types.Candidate) bool {
-			return new(big.Int).SetUint64(ec.cfg.SelfStakingThreshold).Cmp(c.SelfStakingScore()) > 0 &&
-				new(big.Int).SetUint64(ec.cfg.ScoreThreshold).Cmp(c.Score()) > 0
+			return ec.selfStakingThreshold.Cmp(c.SelfStakingScore()) > 0 &&
+				ec.scoreThreshold.Cmp(c.Score()) > 0
 		},
 	)
 	previousIndex := big.NewInt(1)
@@ -382,12 +300,12 @@ func (ec *committee) fetchResultByHeight(height uint64) (*types.ElectionResult, 
 		if previousIndex, candidates, err = ec.carrier.Candidates(
 			height,
 			previousIndex,
-			ec.cfg.PaginationSize,
+			ec.paginationSize,
 		); err != nil {
 			return nil, err
 		}
 		calculator.AddCandidates(candidates)
-		if len(candidates) < int(ec.cfg.PaginationSize) {
+		if len(candidates) < int(ec.paginationSize) {
 			break
 		}
 	}
@@ -398,12 +316,12 @@ func (ec *committee) fetchResultByHeight(height uint64) (*types.ElectionResult, 
 		if previousIndex, votes, err = ec.carrier.Votes(
 			height,
 			previousIndex,
-			ec.cfg.PaginationSize,
+			ec.paginationSize,
 		); err != nil {
 			return nil, err
 		}
 		calculator.AddVotes(votes)
-		if len(votes) < int(ec.cfg.PaginationSize) {
+		if len(votes) < int(ec.paginationSize) {
 			break
 		}
 	}

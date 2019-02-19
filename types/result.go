@@ -14,7 +14,7 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	"github.com/pkg/errors"
 
-	"github.com/iotexproject/iotex-election/pb"
+	pb "github.com/iotexproject/iotex-election/pb/election"
 )
 
 // ErrInvalidProto indicates a format error of an election proto

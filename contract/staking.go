@@ -7,7 +7,7 @@ import (
 	"math/big"
 	"strings"
 
-	ethereum "github.com/iotexproject/go-ethereum"
+	ethereum "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -28,7 +28,7 @@ var (
 )
 
 // StakingABI is the input ABI used to generate the binding from.
-const StakingABI = "[{\"constant\":false,\"inputs\":[{\"name\":\"addrs\",\"type\":\"address[]\"}],\"name\":\"addAddressesToWhitelist\",\"outputs\":[{\"name\":\"success\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"addAddressToWhitelist\",\"outputs\":[{\"name\":\"success\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_canPubKey\",\"type\":\"bytes\"},{\"name\":\"_amount\",\"type\":\"uint256\"},{\"name\":\"_stakeDuration\",\"type\":\"uint256\"},{\"name\":\"_nonDecay\",\"type\":\"bool\"},{\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"createBucket\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"pause\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"addrs\",\"type\":\"address[]\"}],\"name\":\"removeAddressesFromWhitelist\",\"outputs\":[{\"name\":\"success\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"removeAddressFromWhitelist\",\"outputs\":[{\"name\":\"success\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_bucketIndex\",\"type\":\"uint256\"},{\"name\":\"_stakeDuration\",\"type\":\"uint256\"},{\"name\":\"_nonDecay\",\"type\":\"bool\"},{\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"restake\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_bucketIndex\",\"type\":\"uint256\"},{\"name\":\"_canPubKey\",\"type\":\"bytes\"},{\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"revote\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_bucketIndex\",\"type\":\"uint256\"},{\"name\":\"_newOwner\",\"type\":\"address\"},{\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"setBucketOwner\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"unpause\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_bucketIndex\",\"type\":\"uint256\"},{\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"unstake\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_bucketIndex\",\"type\":\"uint256\"},{\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"withdraw\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"name\":\"_stakingTokenAddr\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"bucketIndex\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"canPubKey\",\"type\":\"bytes\"},{\"indexed\":false,\"name\":\"amount\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"stakeDuration\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"nonDecay\",\"type\":\"bool\"},{\"indexed\":false,\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"BucketCreated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"bucketIndex\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"canPubKey\",\"type\":\"bytes\"},{\"indexed\":false,\"name\":\"stakeDuration\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"stakeStartTime\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"nonDecay\",\"type\":\"bool\"},{\"indexed\":false,\"name\":\"bucketOwner\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"BucketUpdated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"bucketIndex\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"canPubKey\",\"type\":\"bytes\"},{\"indexed\":false,\"name\":\"amount\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"BucketUnstake\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"bucketIndex\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"canPubKey\",\"type\":\"bytes\"},{\"indexed\":false,\"name\":\"amount\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"BucketWithdraw\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"WhitelistedAddressAdded\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"WhitelistedAddressRemoved\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"Pause\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"Unpause\",\"type\":\"event\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"buckets\",\"outputs\":[{\"name\":\"canPubKey\",\"type\":\"bytes\"},{\"name\":\"stakedAmount\",\"type\":\"uint256\"},{\"name\":\"stakeDuration\",\"type\":\"uint256\"},{\"name\":\"stakeStartTime\",\"type\":\"uint256\"},{\"name\":\"nonDecay\",\"type\":\"bool\"},{\"name\":\"unstakeStartTime\",\"type\":\"uint256\"},{\"name\":\"bucketOwner\",\"type\":\"address\"},{\"name\":\"prev\",\"type\":\"uint256\"},{\"name\":\"next\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_prevIndex\",\"type\":\"uint256\"},{\"name\":\"_limit\",\"type\":\"uint256\"}],\"name\":\"getActiveBuckets\",\"outputs\":[{\"name\":\"count\",\"type\":\"uint256\"},{\"name\":\"indexes\",\"type\":\"uint256[]\"},{\"name\":\"stakeStartTimes\",\"type\":\"uint256[]\"},{\"name\":\"stakeDurations\",\"type\":\"uint256[]\"},{\"name\":\"decays\",\"type\":\"bool[]\"},{\"name\":\"stakedAmounts\",\"type\":\"uint256[]\"},{\"name\":\"candidates\",\"type\":\"bytes\"},{\"name\":\"owners\",\"type\":\"address[]\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"owner\",\"type\":\"address\"}],\"name\":\"getBucketIndexesByAddress\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256[]\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_address\",\"type\":\"address\"}],\"name\":\"isOwner\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"paused\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"address\"},{\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"stakeholders\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"token\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"totalStaked\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"address\"}],\"name\":\"whitelist\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}]"
+const StakingABI = "[{\"constant\":false,\"inputs\":[{\"name\":\"addrs\",\"type\":\"address[]\"}],\"name\":\"removeAddressesFromWhitelist\",\"outputs\":[{\"name\":\"success\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"removeAddressFromWhitelist\",\"outputs\":[{\"name\":\"success\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_address\",\"type\":\"address\"}],\"name\":\"isOwner\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"unpause\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"address\"},{\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"stakeholders\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"paused\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"addAddressToWhitelist\",\"outputs\":[{\"name\":\"success\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"pause\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"address\"}],\"name\":\"whitelist\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"buckets\",\"outputs\":[{\"name\":\"canName\",\"type\":\"bytes12\"},{\"name\":\"stakedAmount\",\"type\":\"uint256\"},{\"name\":\"stakeDuration\",\"type\":\"uint256\"},{\"name\":\"stakeStartTime\",\"type\":\"uint256\"},{\"name\":\"nonDecay\",\"type\":\"bool\"},{\"name\":\"unstakeStartTime\",\"type\":\"uint256\"},{\"name\":\"bucketOwner\",\"type\":\"address\"},{\"name\":\"prev\",\"type\":\"uint256\"},{\"name\":\"next\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"addrs\",\"type\":\"address[]\"}],\"name\":\"addAddressesToWhitelist\",\"outputs\":[{\"name\":\"success\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"name\":\"_stakingTokenAddr\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"bucketIndex\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"canName\",\"type\":\"bytes12\"},{\"indexed\":false,\"name\":\"amount\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"stakeDuration\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"nonDecay\",\"type\":\"bool\"},{\"indexed\":false,\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"BucketCreated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"bucketIndex\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"canName\",\"type\":\"bytes12\"},{\"indexed\":false,\"name\":\"stakeDuration\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"stakeStartTime\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"nonDecay\",\"type\":\"bool\"},{\"indexed\":false,\"name\":\"bucketOwner\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"BucketUpdated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"bucketIndex\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"canName\",\"type\":\"bytes12\"},{\"indexed\":false,\"name\":\"amount\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"BucketUnstake\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"bucketIndex\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"canName\",\"type\":\"bytes12\"},{\"indexed\":false,\"name\":\"amount\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"BucketWithdraw\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"WhitelistedAddressAdded\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"WhitelistedAddressRemoved\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"Pause\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"Unpause\",\"type\":\"event\"},{\"constant\":true,\"inputs\":[{\"name\":\"_prevIndex\",\"type\":\"uint256\"},{\"name\":\"_limit\",\"type\":\"uint256\"}],\"name\":\"getActiveBuckets\",\"outputs\":[{\"name\":\"count\",\"type\":\"uint256\"},{\"name\":\"indexes\",\"type\":\"uint256[]\"},{\"name\":\"stakeStartTimes\",\"type\":\"uint256[]\"},{\"name\":\"stakeDurations\",\"type\":\"uint256[]\"},{\"name\":\"decays\",\"type\":\"bool[]\"},{\"name\":\"stakedAmounts\",\"type\":\"uint256[]\"},{\"name\":\"canNames\",\"type\":\"bytes12[]\"},{\"name\":\"owners\",\"type\":\"address[]\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_owner\",\"type\":\"address\"}],\"name\":\"getBucketIndexesByAddress\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256[]\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_bucketIndex\",\"type\":\"uint256\"},{\"name\":\"_stakeDuration\",\"type\":\"uint256\"},{\"name\":\"_nonDecay\",\"type\":\"bool\"},{\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"restake\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_bucketIndex\",\"type\":\"uint256\"},{\"name\":\"_canName\",\"type\":\"bytes12\"},{\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"revote\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_bucketIndex\",\"type\":\"uint256\"},{\"name\":\"_newOwner\",\"type\":\"address\"},{\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"setBucketOwner\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_bucketIndex\",\"type\":\"uint256\"},{\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"unstake\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_bucketIndex\",\"type\":\"uint256\"},{\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"withdraw\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"totalStaked\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"token\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_canName\",\"type\":\"bytes12\"},{\"name\":\"_amount\",\"type\":\"uint256\"},{\"name\":\"_stakeDuration\",\"type\":\"uint256\"},{\"name\":\"_nonDecay\",\"type\":\"bool\"},{\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"createBucket\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
 
 // Staking is an auto generated Go binding around an Ethereum contract.
 type Staking struct {
@@ -174,9 +174,9 @@ func (_Staking *StakingTransactorRaw) Transact(opts *bind.TransactOpts, method s
 
 // Buckets is a free data retrieval call binding the contract method 0x9b51fb0d.
 //
-// Solidity: function buckets(uint256 ) constant returns(bytes canPubKey, uint256 stakedAmount, uint256 stakeDuration, uint256 stakeStartTime, bool nonDecay, uint256 unstakeStartTime, address bucketOwner, uint256 prev, uint256 next)
+// Solidity: function buckets(uint256 ) constant returns(bytes12 canName, uint256 stakedAmount, uint256 stakeDuration, uint256 stakeStartTime, bool nonDecay, uint256 unstakeStartTime, address bucketOwner, uint256 prev, uint256 next)
 func (_Staking *StakingCaller) Buckets(opts *bind.CallOpts, arg0 *big.Int) (struct {
-	CanPubKey        []byte
+	CanName          [12]byte
 	StakedAmount     *big.Int
 	StakeDuration    *big.Int
 	StakeStartTime   *big.Int
@@ -187,7 +187,7 @@ func (_Staking *StakingCaller) Buckets(opts *bind.CallOpts, arg0 *big.Int) (stru
 	Next             *big.Int
 }, error) {
 	ret := new(struct {
-		CanPubKey        []byte
+		CanName          [12]byte
 		StakedAmount     *big.Int
 		StakeDuration    *big.Int
 		StakeStartTime   *big.Int
@@ -204,9 +204,9 @@ func (_Staking *StakingCaller) Buckets(opts *bind.CallOpts, arg0 *big.Int) (stru
 
 // Buckets is a free data retrieval call binding the contract method 0x9b51fb0d.
 //
-// Solidity: function buckets(uint256 ) constant returns(bytes canPubKey, uint256 stakedAmount, uint256 stakeDuration, uint256 stakeStartTime, bool nonDecay, uint256 unstakeStartTime, address bucketOwner, uint256 prev, uint256 next)
+// Solidity: function buckets(uint256 ) constant returns(bytes12 canName, uint256 stakedAmount, uint256 stakeDuration, uint256 stakeStartTime, bool nonDecay, uint256 unstakeStartTime, address bucketOwner, uint256 prev, uint256 next)
 func (_Staking *StakingSession) Buckets(arg0 *big.Int) (struct {
-	CanPubKey        []byte
+	CanName          [12]byte
 	StakedAmount     *big.Int
 	StakeDuration    *big.Int
 	StakeStartTime   *big.Int
@@ -221,9 +221,9 @@ func (_Staking *StakingSession) Buckets(arg0 *big.Int) (struct {
 
 // Buckets is a free data retrieval call binding the contract method 0x9b51fb0d.
 //
-// Solidity: function buckets(uint256 ) constant returns(bytes canPubKey, uint256 stakedAmount, uint256 stakeDuration, uint256 stakeStartTime, bool nonDecay, uint256 unstakeStartTime, address bucketOwner, uint256 prev, uint256 next)
+// Solidity: function buckets(uint256 ) constant returns(bytes12 canName, uint256 stakedAmount, uint256 stakeDuration, uint256 stakeStartTime, bool nonDecay, uint256 unstakeStartTime, address bucketOwner, uint256 prev, uint256 next)
 func (_Staking *StakingCallerSession) Buckets(arg0 *big.Int) (struct {
-	CanPubKey        []byte
+	CanName          [12]byte
 	StakedAmount     *big.Int
 	StakeDuration    *big.Int
 	StakeStartTime   *big.Int
@@ -238,7 +238,7 @@ func (_Staking *StakingCallerSession) Buckets(arg0 *big.Int) (struct {
 
 // GetActiveBuckets is a free data retrieval call binding the contract method 0x042f95bd.
 //
-// Solidity: function getActiveBuckets(uint256 _prevIndex, uint256 _limit) constant returns(uint256 count, uint256[] indexes, uint256[] stakeStartTimes, uint256[] stakeDurations, bool[] decays, uint256[] stakedAmounts, bytes candidates, address[] owners)
+// Solidity: function getActiveBuckets(uint256 _prevIndex, uint256 _limit) constant returns(uint256 count, uint256[] indexes, uint256[] stakeStartTimes, uint256[] stakeDurations, bool[] decays, uint256[] stakedAmounts, bytes12[] canNames, address[] owners)
 func (_Staking *StakingCaller) GetActiveBuckets(opts *bind.CallOpts, _prevIndex *big.Int, _limit *big.Int) (struct {
 	Count           *big.Int
 	Indexes         []*big.Int
@@ -246,7 +246,7 @@ func (_Staking *StakingCaller) GetActiveBuckets(opts *bind.CallOpts, _prevIndex 
 	StakeDurations  []*big.Int
 	Decays          []bool
 	StakedAmounts   []*big.Int
-	Candidates      []byte
+	CanNames        [][12]byte
 	Owners          []common.Address
 }, error) {
 	ret := new(struct {
@@ -256,7 +256,7 @@ func (_Staking *StakingCaller) GetActiveBuckets(opts *bind.CallOpts, _prevIndex 
 		StakeDurations  []*big.Int
 		Decays          []bool
 		StakedAmounts   []*big.Int
-		Candidates      []byte
+		CanNames        [][12]byte
 		Owners          []common.Address
 	})
 	out := ret
@@ -266,7 +266,7 @@ func (_Staking *StakingCaller) GetActiveBuckets(opts *bind.CallOpts, _prevIndex 
 
 // GetActiveBuckets is a free data retrieval call binding the contract method 0x042f95bd.
 //
-// Solidity: function getActiveBuckets(uint256 _prevIndex, uint256 _limit) constant returns(uint256 count, uint256[] indexes, uint256[] stakeStartTimes, uint256[] stakeDurations, bool[] decays, uint256[] stakedAmounts, bytes candidates, address[] owners)
+// Solidity: function getActiveBuckets(uint256 _prevIndex, uint256 _limit) constant returns(uint256 count, uint256[] indexes, uint256[] stakeStartTimes, uint256[] stakeDurations, bool[] decays, uint256[] stakedAmounts, bytes12[] canNames, address[] owners)
 func (_Staking *StakingSession) GetActiveBuckets(_prevIndex *big.Int, _limit *big.Int) (struct {
 	Count           *big.Int
 	Indexes         []*big.Int
@@ -274,7 +274,7 @@ func (_Staking *StakingSession) GetActiveBuckets(_prevIndex *big.Int, _limit *bi
 	StakeDurations  []*big.Int
 	Decays          []bool
 	StakedAmounts   []*big.Int
-	Candidates      []byte
+	CanNames        [][12]byte
 	Owners          []common.Address
 }, error) {
 	return _Staking.Contract.GetActiveBuckets(&_Staking.CallOpts, _prevIndex, _limit)
@@ -282,7 +282,7 @@ func (_Staking *StakingSession) GetActiveBuckets(_prevIndex *big.Int, _limit *bi
 
 // GetActiveBuckets is a free data retrieval call binding the contract method 0x042f95bd.
 //
-// Solidity: function getActiveBuckets(uint256 _prevIndex, uint256 _limit) constant returns(uint256 count, uint256[] indexes, uint256[] stakeStartTimes, uint256[] stakeDurations, bool[] decays, uint256[] stakedAmounts, bytes candidates, address[] owners)
+// Solidity: function getActiveBuckets(uint256 _prevIndex, uint256 _limit) constant returns(uint256 count, uint256[] indexes, uint256[] stakeStartTimes, uint256[] stakeDurations, bool[] decays, uint256[] stakedAmounts, bytes12[] canNames, address[] owners)
 func (_Staking *StakingCallerSession) GetActiveBuckets(_prevIndex *big.Int, _limit *big.Int) (struct {
 	Count           *big.Int
 	Indexes         []*big.Int
@@ -290,7 +290,7 @@ func (_Staking *StakingCallerSession) GetActiveBuckets(_prevIndex *big.Int, _lim
 	StakeDurations  []*big.Int
 	Decays          []bool
 	StakedAmounts   []*big.Int
-	Candidates      []byte
+	CanNames        [][12]byte
 	Owners          []common.Address
 }, error) {
 	return _Staking.Contract.GetActiveBuckets(&_Staking.CallOpts, _prevIndex, _limit)
@@ -298,28 +298,28 @@ func (_Staking *StakingCallerSession) GetActiveBuckets(_prevIndex *big.Int, _lim
 
 // GetBucketIndexesByAddress is a free data retrieval call binding the contract method 0x7d0de831.
 //
-// Solidity: function getBucketIndexesByAddress(address owner) constant returns(uint256[])
-func (_Staking *StakingCaller) GetBucketIndexesByAddress(opts *bind.CallOpts, owner common.Address) ([]*big.Int, error) {
+// Solidity: function getBucketIndexesByAddress(address _owner) constant returns(uint256[])
+func (_Staking *StakingCaller) GetBucketIndexesByAddress(opts *bind.CallOpts, _owner common.Address) ([]*big.Int, error) {
 	var (
 		ret0 = new([]*big.Int)
 	)
 	out := ret0
-	err := _Staking.contract.Call(opts, out, "getBucketIndexesByAddress", owner)
+	err := _Staking.contract.Call(opts, out, "getBucketIndexesByAddress", _owner)
 	return *ret0, err
 }
 
 // GetBucketIndexesByAddress is a free data retrieval call binding the contract method 0x7d0de831.
 //
-// Solidity: function getBucketIndexesByAddress(address owner) constant returns(uint256[])
-func (_Staking *StakingSession) GetBucketIndexesByAddress(owner common.Address) ([]*big.Int, error) {
-	return _Staking.Contract.GetBucketIndexesByAddress(&_Staking.CallOpts, owner)
+// Solidity: function getBucketIndexesByAddress(address _owner) constant returns(uint256[])
+func (_Staking *StakingSession) GetBucketIndexesByAddress(_owner common.Address) ([]*big.Int, error) {
+	return _Staking.Contract.GetBucketIndexesByAddress(&_Staking.CallOpts, _owner)
 }
 
 // GetBucketIndexesByAddress is a free data retrieval call binding the contract method 0x7d0de831.
 //
-// Solidity: function getBucketIndexesByAddress(address owner) constant returns(uint256[])
-func (_Staking *StakingCallerSession) GetBucketIndexesByAddress(owner common.Address) ([]*big.Int, error) {
-	return _Staking.Contract.GetBucketIndexesByAddress(&_Staking.CallOpts, owner)
+// Solidity: function getBucketIndexesByAddress(address _owner) constant returns(uint256[])
+func (_Staking *StakingCallerSession) GetBucketIndexesByAddress(_owner common.Address) ([]*big.Int, error) {
+	return _Staking.Contract.GetBucketIndexesByAddress(&_Staking.CallOpts, _owner)
 }
 
 // IsOwner is a free data retrieval call binding the contract method 0x2f54bf6e.
@@ -546,25 +546,25 @@ func (_Staking *StakingTransactorSession) AddAddressesToWhitelist(addrs []common
 	return _Staking.Contract.AddAddressesToWhitelist(&_Staking.TransactOpts, addrs)
 }
 
-// CreateBucket is a paid mutator transaction binding the contract method 0x5aad4e89.
+// CreateBucket is a paid mutator transaction binding the contract method 0xeae20f76.
 //
-// Solidity: function createBucket(bytes _canPubKey, uint256 _amount, uint256 _stakeDuration, bool _nonDecay, bytes _data) returns(uint256)
-func (_Staking *StakingTransactor) CreateBucket(opts *bind.TransactOpts, _canPubKey []byte, _amount *big.Int, _stakeDuration *big.Int, _nonDecay bool, _data []byte) (*types.Transaction, error) {
-	return _Staking.contract.Transact(opts, "createBucket", _canPubKey, _amount, _stakeDuration, _nonDecay, _data)
+// Solidity: function createBucket(bytes12 _canName, uint256 _amount, uint256 _stakeDuration, bool _nonDecay, bytes _data) returns(uint256)
+func (_Staking *StakingTransactor) CreateBucket(opts *bind.TransactOpts, _canName [12]byte, _amount *big.Int, _stakeDuration *big.Int, _nonDecay bool, _data []byte) (*types.Transaction, error) {
+	return _Staking.contract.Transact(opts, "createBucket", _canName, _amount, _stakeDuration, _nonDecay, _data)
 }
 
-// CreateBucket is a paid mutator transaction binding the contract method 0x5aad4e89.
+// CreateBucket is a paid mutator transaction binding the contract method 0xeae20f76.
 //
-// Solidity: function createBucket(bytes _canPubKey, uint256 _amount, uint256 _stakeDuration, bool _nonDecay, bytes _data) returns(uint256)
-func (_Staking *StakingSession) CreateBucket(_canPubKey []byte, _amount *big.Int, _stakeDuration *big.Int, _nonDecay bool, _data []byte) (*types.Transaction, error) {
-	return _Staking.Contract.CreateBucket(&_Staking.TransactOpts, _canPubKey, _amount, _stakeDuration, _nonDecay, _data)
+// Solidity: function createBucket(bytes12 _canName, uint256 _amount, uint256 _stakeDuration, bool _nonDecay, bytes _data) returns(uint256)
+func (_Staking *StakingSession) CreateBucket(_canName [12]byte, _amount *big.Int, _stakeDuration *big.Int, _nonDecay bool, _data []byte) (*types.Transaction, error) {
+	return _Staking.Contract.CreateBucket(&_Staking.TransactOpts, _canName, _amount, _stakeDuration, _nonDecay, _data)
 }
 
-// CreateBucket is a paid mutator transaction binding the contract method 0x5aad4e89.
+// CreateBucket is a paid mutator transaction binding the contract method 0xeae20f76.
 //
-// Solidity: function createBucket(bytes _canPubKey, uint256 _amount, uint256 _stakeDuration, bool _nonDecay, bytes _data) returns(uint256)
-func (_Staking *StakingTransactorSession) CreateBucket(_canPubKey []byte, _amount *big.Int, _stakeDuration *big.Int, _nonDecay bool, _data []byte) (*types.Transaction, error) {
-	return _Staking.Contract.CreateBucket(&_Staking.TransactOpts, _canPubKey, _amount, _stakeDuration, _nonDecay, _data)
+// Solidity: function createBucket(bytes12 _canName, uint256 _amount, uint256 _stakeDuration, bool _nonDecay, bytes _data) returns(uint256)
+func (_Staking *StakingTransactorSession) CreateBucket(_canName [12]byte, _amount *big.Int, _stakeDuration *big.Int, _nonDecay bool, _data []byte) (*types.Transaction, error) {
+	return _Staking.Contract.CreateBucket(&_Staking.TransactOpts, _canName, _amount, _stakeDuration, _nonDecay, _data)
 }
 
 // Pause is a paid mutator transaction binding the contract method 0x8456cb59.
@@ -651,25 +651,25 @@ func (_Staking *StakingTransactorSession) Restake(_bucketIndex *big.Int, _stakeD
 	return _Staking.Contract.Restake(&_Staking.TransactOpts, _bucketIndex, _stakeDuration, _nonDecay, _data)
 }
 
-// Revote is a paid mutator transaction binding the contract method 0x5bad4886.
+// Revote is a paid mutator transaction binding the contract method 0xd3e41fd2.
 //
-// Solidity: function revote(uint256 _bucketIndex, bytes _canPubKey, bytes _data) returns()
-func (_Staking *StakingTransactor) Revote(opts *bind.TransactOpts, _bucketIndex *big.Int, _canPubKey []byte, _data []byte) (*types.Transaction, error) {
-	return _Staking.contract.Transact(opts, "revote", _bucketIndex, _canPubKey, _data)
+// Solidity: function revote(uint256 _bucketIndex, bytes12 _canName, bytes _data) returns()
+func (_Staking *StakingTransactor) Revote(opts *bind.TransactOpts, _bucketIndex *big.Int, _canName [12]byte, _data []byte) (*types.Transaction, error) {
+	return _Staking.contract.Transact(opts, "revote", _bucketIndex, _canName, _data)
 }
 
-// Revote is a paid mutator transaction binding the contract method 0x5bad4886.
+// Revote is a paid mutator transaction binding the contract method 0xd3e41fd2.
 //
-// Solidity: function revote(uint256 _bucketIndex, bytes _canPubKey, bytes _data) returns()
-func (_Staking *StakingSession) Revote(_bucketIndex *big.Int, _canPubKey []byte, _data []byte) (*types.Transaction, error) {
-	return _Staking.Contract.Revote(&_Staking.TransactOpts, _bucketIndex, _canPubKey, _data)
+// Solidity: function revote(uint256 _bucketIndex, bytes12 _canName, bytes _data) returns()
+func (_Staking *StakingSession) Revote(_bucketIndex *big.Int, _canName [12]byte, _data []byte) (*types.Transaction, error) {
+	return _Staking.Contract.Revote(&_Staking.TransactOpts, _bucketIndex, _canName, _data)
 }
 
-// Revote is a paid mutator transaction binding the contract method 0x5bad4886.
+// Revote is a paid mutator transaction binding the contract method 0xd3e41fd2.
 //
-// Solidity: function revote(uint256 _bucketIndex, bytes _canPubKey, bytes _data) returns()
-func (_Staking *StakingTransactorSession) Revote(_bucketIndex *big.Int, _canPubKey []byte, _data []byte) (*types.Transaction, error) {
-	return _Staking.Contract.Revote(&_Staking.TransactOpts, _bucketIndex, _canPubKey, _data)
+// Solidity: function revote(uint256 _bucketIndex, bytes12 _canName, bytes _data) returns()
+func (_Staking *StakingTransactorSession) Revote(_bucketIndex *big.Int, _canName [12]byte, _data []byte) (*types.Transaction, error) {
+	return _Staking.Contract.Revote(&_Staking.TransactOpts, _bucketIndex, _canName, _data)
 }
 
 // SetBucketOwner is a paid mutator transaction binding the contract method 0x9cfe3461.
@@ -847,7 +847,7 @@ func (it *StakingBucketCreatedIterator) Close() error {
 // StakingBucketCreated represents a BucketCreated event raised by the Staking contract.
 type StakingBucketCreated struct {
 	BucketIndex   *big.Int
-	CanPubKey     []byte
+	CanName       [12]byte
 	Amount        *big.Int
 	StakeDuration *big.Int
 	NonDecay      bool
@@ -855,9 +855,9 @@ type StakingBucketCreated struct {
 	Raw           types.Log // Blockchain specific contextual infos
 }
 
-// FilterBucketCreated is a free log retrieval operation binding the contract event 0xda84732a93d1b9fa2abfaa0c9f471f7c5e9fe1f17c6e643a9c1b78446b4a3498.
+// FilterBucketCreated is a free log retrieval operation binding the contract event 0xbecddf0f61f76a4ac94a507fbc32c036d2fb7c4b466cad82dd9a4a2d76b263fe.
 //
-// Solidity: event BucketCreated(uint256 bucketIndex, bytes canPubKey, uint256 amount, uint256 stakeDuration, bool nonDecay, bytes data)
+// Solidity: event BucketCreated(uint256 bucketIndex, bytes12 canName, uint256 amount, uint256 stakeDuration, bool nonDecay, bytes data)
 func (_Staking *StakingFilterer) FilterBucketCreated(opts *bind.FilterOpts) (*StakingBucketCreatedIterator, error) {
 
 	logs, sub, err := _Staking.contract.FilterLogs(opts, "BucketCreated")
@@ -867,9 +867,9 @@ func (_Staking *StakingFilterer) FilterBucketCreated(opts *bind.FilterOpts) (*St
 	return &StakingBucketCreatedIterator{contract: _Staking.contract, event: "BucketCreated", logs: logs, sub: sub}, nil
 }
 
-// WatchBucketCreated is a free log subscription operation binding the contract event 0xda84732a93d1b9fa2abfaa0c9f471f7c5e9fe1f17c6e643a9c1b78446b4a3498.
+// WatchBucketCreated is a free log subscription operation binding the contract event 0xbecddf0f61f76a4ac94a507fbc32c036d2fb7c4b466cad82dd9a4a2d76b263fe.
 //
-// Solidity: event BucketCreated(uint256 bucketIndex, bytes canPubKey, uint256 amount, uint256 stakeDuration, bool nonDecay, bytes data)
+// Solidity: event BucketCreated(uint256 bucketIndex, bytes12 canName, uint256 amount, uint256 stakeDuration, bool nonDecay, bytes data)
 func (_Staking *StakingFilterer) WatchBucketCreated(opts *bind.WatchOpts, sink chan<- *StakingBucketCreated) (event.Subscription, error) {
 
 	logs, sub, err := _Staking.contract.WatchLogs(opts, "BucketCreated")
@@ -974,15 +974,15 @@ func (it *StakingBucketUnstakeIterator) Close() error {
 // StakingBucketUnstake represents a BucketUnstake event raised by the Staking contract.
 type StakingBucketUnstake struct {
 	BucketIndex *big.Int
-	CanPubKey   []byte
+	CanName     [12]byte
 	Amount      *big.Int
 	Data        []byte
 	Raw         types.Log // Blockchain specific contextual infos
 }
 
-// FilterBucketUnstake is a free log retrieval operation binding the contract event 0x901a61583ad259ca62e4fc01633c6dd857b2c0c12f967ee602a76812e9b116fa.
+// FilterBucketUnstake is a free log retrieval operation binding the contract event 0xaa192dc938c20fb63756fbd8f4d9f46092c3252f772b2c549c4688c118b6b475.
 //
-// Solidity: event BucketUnstake(uint256 bucketIndex, bytes canPubKey, uint256 amount, bytes data)
+// Solidity: event BucketUnstake(uint256 bucketIndex, bytes12 canName, uint256 amount, bytes data)
 func (_Staking *StakingFilterer) FilterBucketUnstake(opts *bind.FilterOpts) (*StakingBucketUnstakeIterator, error) {
 
 	logs, sub, err := _Staking.contract.FilterLogs(opts, "BucketUnstake")
@@ -992,9 +992,9 @@ func (_Staking *StakingFilterer) FilterBucketUnstake(opts *bind.FilterOpts) (*St
 	return &StakingBucketUnstakeIterator{contract: _Staking.contract, event: "BucketUnstake", logs: logs, sub: sub}, nil
 }
 
-// WatchBucketUnstake is a free log subscription operation binding the contract event 0x901a61583ad259ca62e4fc01633c6dd857b2c0c12f967ee602a76812e9b116fa.
+// WatchBucketUnstake is a free log subscription operation binding the contract event 0xaa192dc938c20fb63756fbd8f4d9f46092c3252f772b2c549c4688c118b6b475.
 //
-// Solidity: event BucketUnstake(uint256 bucketIndex, bytes canPubKey, uint256 amount, bytes data)
+// Solidity: event BucketUnstake(uint256 bucketIndex, bytes12 canName, uint256 amount, bytes data)
 func (_Staking *StakingFilterer) WatchBucketUnstake(opts *bind.WatchOpts, sink chan<- *StakingBucketUnstake) (event.Subscription, error) {
 
 	logs, sub, err := _Staking.contract.WatchLogs(opts, "BucketUnstake")
@@ -1099,7 +1099,7 @@ func (it *StakingBucketUpdatedIterator) Close() error {
 // StakingBucketUpdated represents a BucketUpdated event raised by the Staking contract.
 type StakingBucketUpdated struct {
 	BucketIndex    *big.Int
-	CanPubKey      []byte
+	CanName        [12]byte
 	StakeDuration  *big.Int
 	StakeStartTime *big.Int
 	NonDecay       bool
@@ -1108,9 +1108,9 @@ type StakingBucketUpdated struct {
 	Raw            types.Log // Blockchain specific contextual infos
 }
 
-// FilterBucketUpdated is a free log retrieval operation binding the contract event 0x7855818f081f6359fc5e8af05b0d59f96f57acd50ff9fdc7b310b42abf6aeb46.
+// FilterBucketUpdated is a free log retrieval operation binding the contract event 0x004bbbedd0138c223ffed73fdab05a22a5d22770de54bea694d06661d59d1600.
 //
-// Solidity: event BucketUpdated(uint256 bucketIndex, bytes canPubKey, uint256 stakeDuration, uint256 stakeStartTime, bool nonDecay, address bucketOwner, bytes data)
+// Solidity: event BucketUpdated(uint256 bucketIndex, bytes12 canName, uint256 stakeDuration, uint256 stakeStartTime, bool nonDecay, address bucketOwner, bytes data)
 func (_Staking *StakingFilterer) FilterBucketUpdated(opts *bind.FilterOpts) (*StakingBucketUpdatedIterator, error) {
 
 	logs, sub, err := _Staking.contract.FilterLogs(opts, "BucketUpdated")
@@ -1120,9 +1120,9 @@ func (_Staking *StakingFilterer) FilterBucketUpdated(opts *bind.FilterOpts) (*St
 	return &StakingBucketUpdatedIterator{contract: _Staking.contract, event: "BucketUpdated", logs: logs, sub: sub}, nil
 }
 
-// WatchBucketUpdated is a free log subscription operation binding the contract event 0x7855818f081f6359fc5e8af05b0d59f96f57acd50ff9fdc7b310b42abf6aeb46.
+// WatchBucketUpdated is a free log subscription operation binding the contract event 0x004bbbedd0138c223ffed73fdab05a22a5d22770de54bea694d06661d59d1600.
 //
-// Solidity: event BucketUpdated(uint256 bucketIndex, bytes canPubKey, uint256 stakeDuration, uint256 stakeStartTime, bool nonDecay, address bucketOwner, bytes data)
+// Solidity: event BucketUpdated(uint256 bucketIndex, bytes12 canName, uint256 stakeDuration, uint256 stakeStartTime, bool nonDecay, address bucketOwner, bytes data)
 func (_Staking *StakingFilterer) WatchBucketUpdated(opts *bind.WatchOpts, sink chan<- *StakingBucketUpdated) (event.Subscription, error) {
 
 	logs, sub, err := _Staking.contract.WatchLogs(opts, "BucketUpdated")
@@ -1227,15 +1227,15 @@ func (it *StakingBucketWithdrawIterator) Close() error {
 // StakingBucketWithdraw represents a BucketWithdraw event raised by the Staking contract.
 type StakingBucketWithdraw struct {
 	BucketIndex *big.Int
-	CanPubKey   []byte
+	CanName     [12]byte
 	Amount      *big.Int
 	Data        []byte
 	Raw         types.Log // Blockchain specific contextual infos
 }
 
-// FilterBucketWithdraw is a free log retrieval operation binding the contract event 0x171355964143e75913fb4f6878740c0c10d077591c11ea6a1bdc49b3323f8dc5.
+// FilterBucketWithdraw is a free log retrieval operation binding the contract event 0x2a79739690fe6bf5933c5d812824e30c2b95d43b6ddadd96148a4493d3b56540.
 //
-// Solidity: event BucketWithdraw(uint256 bucketIndex, bytes canPubKey, uint256 amount, bytes data)
+// Solidity: event BucketWithdraw(uint256 bucketIndex, bytes12 canName, uint256 amount, bytes data)
 func (_Staking *StakingFilterer) FilterBucketWithdraw(opts *bind.FilterOpts) (*StakingBucketWithdrawIterator, error) {
 
 	logs, sub, err := _Staking.contract.FilterLogs(opts, "BucketWithdraw")
@@ -1245,9 +1245,9 @@ func (_Staking *StakingFilterer) FilterBucketWithdraw(opts *bind.FilterOpts) (*S
 	return &StakingBucketWithdrawIterator{contract: _Staking.contract, event: "BucketWithdraw", logs: logs, sub: sub}, nil
 }
 
-// WatchBucketWithdraw is a free log subscription operation binding the contract event 0x171355964143e75913fb4f6878740c0c10d077591c11ea6a1bdc49b3323f8dc5.
+// WatchBucketWithdraw is a free log subscription operation binding the contract event 0x2a79739690fe6bf5933c5d812824e30c2b95d43b6ddadd96148a4493d3b56540.
 //
-// Solidity: event BucketWithdraw(uint256 bucketIndex, bytes canPubKey, uint256 amount, bytes data)
+// Solidity: event BucketWithdraw(uint256 bucketIndex, bytes12 canName, uint256 amount, bytes data)
 func (_Staking *StakingFilterer) WatchBucketWithdraw(opts *bind.WatchOpts, sink chan<- *StakingBucketWithdraw) (event.Subscription, error) {
 
 	logs, sub, err := _Staking.contract.WatchLogs(opts, "BucketWithdraw")

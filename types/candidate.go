@@ -11,7 +11,7 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/iotexproject/iotex-election/pb"
+	pb "github.com/iotexproject/iotex-election/pb/election"
 	"github.com/iotexproject/iotex-election/util"
 )
 

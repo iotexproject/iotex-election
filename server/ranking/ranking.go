@@ -128,7 +128,7 @@ func (s *server) GetCandidates(ctx context.Context, request *pb.GetCandidatesReq
 		fmt.Println("candidate", candidate)
 		response.Candidates[i] = &pb.Candidate{
 			Name:               hex.EncodeToString(candidate.Name()),
-			PubKey:             hex.EncodeToString(candidate.BeaconPubKey()),
+			Address:            hex.EncodeToString(candidate.Address()),
 			TotalWeightedVotes: candidate.Score().Text(10),
 		}
 	}

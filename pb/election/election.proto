@@ -28,7 +28,7 @@ message VoteList {
 
 message Candidate {
 	bytes name = 1;
-	bytes beaconPubKey = 2;
+	bytes address = 2;
 	bytes operatorPubKey = 3;
 	bytes rewardPubKey = 4;
 	uint32 selfStakingWeight = 5;

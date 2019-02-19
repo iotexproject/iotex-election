@@ -18,7 +18,7 @@ import (
 // Candidate defines a delegate candidate
 type Candidate struct {
 	name              []byte
-	beaconPubKey      []byte
+	address           []byte
 	operatorPubKey    []byte
 	rewardPubKey      []byte
 	score             *big.Int
@@ -29,14 +29,14 @@ type Candidate struct {
 // NewCandidate creates a new candidate with scores as 0s
 func NewCandidate(
 	name []byte,
-	beaconPubKey []byte,
+	address []byte,
 	operatorPubKey []byte,
 	rewardPubKey []byte,
 	selfStakingWeight uint32,
 ) *Candidate {
 	return &Candidate{
 		name:              util.CopyBytes(name),
-		beaconPubKey:      util.CopyBytes(beaconPubKey),
+		address:           util.CopyBytes(address),
 		operatorPubKey:    util.CopyBytes(operatorPubKey),
 		rewardPubKey:      util.CopyBytes(rewardPubKey),
 		score:             big.NewInt(0),
@@ -49,7 +49,7 @@ func NewCandidate(
 func (c *Candidate) Clone() *Candidate {
 	return &Candidate{
 		name:              c.Name(),
-		beaconPubKey:      c.BeaconPubKey(),
+		address:           c.Address(),
 		operatorPubKey:    c.OperatorPubKey(),
 		rewardPubKey:      c.RewardPubKey(),
 		score:             c.Score(),
@@ -68,7 +68,7 @@ func (c *Candidate) equal(candidate *Candidate) bool {
 	if !bytes.Equal(c.name, candidate.name) {
 		return false
 	}
-	if !bytes.Equal(c.beaconPubKey, candidate.beaconPubKey) {
+	if !bytes.Equal(c.address, candidate.address) {
 		return false
 	}
 	if !bytes.Equal(c.operatorPubKey, candidate.operatorPubKey) {
@@ -113,9 +113,9 @@ func (c *Candidate) Name() []byte {
 	return util.CopyBytes(c.name)
 }
 
-// BeaconPubKey returns the public key of this candidate on beacon chain
-func (c *Candidate) BeaconPubKey() []byte {
-	return util.CopyBytes(c.beaconPubKey)
+// Address returns the address of this candidate on beacon chain
+func (c *Candidate) Address() []byte {
+	return util.CopyBytes(c.address)
 }
 
 // OperatorPubKey returns the public key of the assigned operator on chain
@@ -147,7 +147,7 @@ func (c *Candidate) SelfStakingWeight() uint32 {
 func (c *Candidate) ToProtoMsg() (*pb.Candidate, error) {
 	return &pb.Candidate{
 		Name:              c.Name(),
-		BeaconPubKey:      c.BeaconPubKey(),
+		Address:           c.Address(),
 		OperatorPubKey:    c.OperatorPubKey(),
 		RewardPubKey:      c.RewardPubKey(),
 		Score:             c.score.Bytes(),
@@ -159,7 +159,7 @@ func (c *Candidate) ToProtoMsg() (*pb.Candidate, error) {
 // FromProtoMsg fills the instance with a protobuf message
 func (c *Candidate) FromProtoMsg(msg *pb.Candidate) error {
 	c.name = util.CopyBytes(msg.GetName())
-	c.beaconPubKey = util.CopyBytes(msg.GetBeaconPubKey())
+	c.address = util.CopyBytes(msg.GetAddress())
 	c.operatorPubKey = util.CopyBytes(msg.GetOperatorPubKey())
 	c.rewardPubKey = util.CopyBytes(msg.GetRewardPubKey())
 	c.score = new(big.Int).SetBytes(msg.GetScore())

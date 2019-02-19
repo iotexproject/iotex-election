@@ -4,6 +4,7 @@ package explorer
 import (
 	"fmt"
 	"reflect"
+
 	"github.com/coopernurse/barrister-go"
 )
 
@@ -12,36 +13,35 @@ const BarristerChecksum string = "7928b11b3d82a4f9a4284f010dc6463a"
 const BarristerDateGenerated int64 = 1549740539248000000
 
 type ChainMeta struct {
-	Height	string	`json:"height"`
-	TotalCandidates	int64	`json:"totalCandidates"`
+	Height          string `json:"height"`
+	TotalCandidates int64  `json:"totalCandidates"`
 }
 
 type Bucket struct {
-	Voter	string	`json:"voter"`
-	Votes	string	`json:"votes"`
-	WeightedVotes	string	`json:"weightedVotes"`
-	RemainingDuration	int64	`json:"remainingDuration"`
+	Voter             string `json:"voter"`
+	Votes             string `json:"votes"`
+	WeightedVotes     string `json:"weightedVotes"`
+	RemainingDuration int64  `json:"remainingDuration"`
 }
 
 type Candidate struct {
-	Name	string	`json:"name"`
-	PubKey	string	`json:"pubKey"`
-	TotalWeightedVotes	string	`json:"totalWeightedVotes"`
+	Name               string `json:"name"`
+	Address            string `json:"pubKey"`
+	TotalWeightedVotes string `json:"totalWeightedVotes"`
 }
 
 type GetCandidatesRequest struct {
-	Height	string	`json:"height"`
-	Offset	int64	`json:"offset"`
-	Limit	int64	`json:"limit"`
+	Height string `json:"height"`
+	Offset int64  `json:"offset"`
+	Limit  int64  `json:"limit"`
 }
 
 type GetBucketsByCandidateRequest struct {
-	Name	string	`json:"name"`
-	Height	string	`json:"height"`
-	Offset	int64	`json:"offset"`
-	Limit	int64	`json:"limit"`
+	Name   string `json:"name"`
+	Height string `json:"height"`
+	Offset int64  `json:"offset"`
+	Limit  int64  `json:"limit"`
 }
-
 
 type Explorer interface {
 	GetMeta() (ChainMeta, error)
@@ -49,7 +49,9 @@ type Explorer interface {
 	GetBucketsByCandidate(request GetBucketsByCandidateRequest) ([]Bucket, error)
 }
 
-func NewExplorerProxy(c barrister.Client) Explorer { return ExplorerProxy{c, barrister.MustParseIdlJson([]byte(IdlJsonRaw))} }
+func NewExplorerProxy(c barrister.Client) Explorer {
+	return ExplorerProxy{c, barrister.MustParseIdlJson([]byte(IdlJsonRaw))}
+}
 
 type ExplorerProxy struct {
 	client barrister.Client

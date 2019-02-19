@@ -32,7 +32,7 @@ struct Bucket {
 struct Candidate {
     name string
     // hex string
-    pubKey string
+    address string
     totalWeightedVotes string
 }
 

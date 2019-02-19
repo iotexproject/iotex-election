@@ -128,7 +128,7 @@ func (calculator *ResultCalculator) AddVotes(votes []*Vote) error {
 			continue
 		}
 		score := calculator.calcScore(v, calculator.mintTime)
-		if bytes.Equal(v.Voter(), candidate.beaconPubKey) {
+		if bytes.Equal(v.Voter(), candidate.address) {
 			score.Mul(score, big.NewInt(int64(candidate.selfStakingWeight)))
 			if err := candidate.addSelfStakingScore(score); err != nil {
 				return err

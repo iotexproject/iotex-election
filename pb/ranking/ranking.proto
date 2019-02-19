@@ -40,7 +40,7 @@ message Bucket {
 message Candidate {
 	string name = 1;
 	// hex string
-	string pubKey = 2;
+	string address = 2;
 	string totalWeightedVotes = 3;
 }
 

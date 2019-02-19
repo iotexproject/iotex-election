@@ -67,7 +67,7 @@ func (e *Impl) GetCandidates(
 	for i := offset; i < offset+limit; i++ {
 		candidate := candidates[i]
 		retval[i].Name = hex.EncodeToString(candidate.Name())
-		retval[i].PubKey = hex.EncodeToString(candidate.BeaconPubKey())
+		retval[i].Address = hex.EncodeToString(candidate.Address())
 		retval[i].TotalWeightedVotes = candidate.Score().Text(10)
 	}
 

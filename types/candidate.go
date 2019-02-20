@@ -19,8 +19,8 @@ import (
 type Candidate struct {
 	name              []byte
 	address           []byte
-	operatorPubKey    []byte
-	rewardPubKey      []byte
+	operatorAddress   []byte
+	rewardAddress     []byte
 	score             *big.Int
 	selfStakingScore  *big.Int
 	selfStakingWeight uint32
@@ -30,15 +30,15 @@ type Candidate struct {
 func NewCandidate(
 	name []byte,
 	address []byte,
-	operatorPubKey []byte,
+	operatorAddress []byte,
 	rewardPubKey []byte,
 	selfStakingWeight uint32,
 ) *Candidate {
 	return &Candidate{
 		name:              util.CopyBytes(name),
 		address:           util.CopyBytes(address),
-		operatorPubKey:    util.CopyBytes(operatorPubKey),
-		rewardPubKey:      util.CopyBytes(rewardPubKey),
+		operatorAddress:   util.CopyBytes(operatorAddress),
+		rewardAddress:     util.CopyBytes(rewardPubKey),
 		score:             big.NewInt(0),
 		selfStakingScore:  big.NewInt(0),
 		selfStakingWeight: selfStakingWeight,
@@ -50,8 +50,8 @@ func (c *Candidate) Clone() *Candidate {
 	return &Candidate{
 		name:              c.Name(),
 		address:           c.Address(),
-		operatorPubKey:    c.OperatorPubKey(),
-		rewardPubKey:      c.RewardPubKey(),
+		operatorAddress:   c.OperatorAddress(),
+		rewardAddress:     c.RewardAddress(),
 		score:             c.Score(),
 		selfStakingScore:  c.SelfStakingScore(),
 		selfStakingWeight: c.SelfStakingWeight(),
@@ -71,10 +71,10 @@ func (c *Candidate) equal(candidate *Candidate) bool {
 	if !bytes.Equal(c.address, candidate.address) {
 		return false
 	}
-	if !bytes.Equal(c.operatorPubKey, candidate.operatorPubKey) {
+	if !bytes.Equal(c.operatorAddress, candidate.operatorAddress) {
 		return false
 	}
-	if !bytes.Equal(c.rewardPubKey, candidate.rewardPubKey) {
+	if !bytes.Equal(c.rewardAddress, candidate.rewardAddress) {
 		return false
 	}
 	if c.score.Cmp(candidate.score) != 0 {
@@ -118,14 +118,14 @@ func (c *Candidate) Address() []byte {
 	return util.CopyBytes(c.address)
 }
 
-// OperatorPubKey returns the public key of the assigned operator on chain
-func (c *Candidate) OperatorPubKey() []byte {
-	return util.CopyBytes(c.operatorPubKey)
+// OperatorAddress returns the address of the assigned operator on chain
+func (c *Candidate) OperatorAddress() []byte {
+	return util.CopyBytes(c.operatorAddress)
 }
 
-// RewardPubKey returns the public key of the assigned benefiter on chain
-func (c *Candidate) RewardPubKey() []byte {
-	return util.CopyBytes(c.rewardPubKey)
+// RewardAddress returns the address of the assigned benefiter on chain
+func (c *Candidate) RewardAddress() []byte {
+	return util.CopyBytes(c.rewardAddress)
 }
 
 // Score returns the total votes (weighted) of this candidate
@@ -148,8 +148,8 @@ func (c *Candidate) ToProtoMsg() (*pb.Candidate, error) {
 	return &pb.Candidate{
 		Name:              c.Name(),
 		Address:           c.Address(),
-		OperatorPubKey:    c.OperatorPubKey(),
-		RewardPubKey:      c.RewardPubKey(),
+		OperatorAddress:   c.OperatorAddress(),
+		RewardAddress:     c.RewardAddress(),
 		Score:             c.score.Bytes(),
 		SelfStakingScore:  c.selfStakingScore.Bytes(),
 		SelfStakingWeight: c.selfStakingWeight,
@@ -160,8 +160,8 @@ func (c *Candidate) ToProtoMsg() (*pb.Candidate, error) {
 func (c *Candidate) FromProtoMsg(msg *pb.Candidate) error {
 	c.name = util.CopyBytes(msg.GetName())
 	c.address = util.CopyBytes(msg.GetAddress())
-	c.operatorPubKey = util.CopyBytes(msg.GetOperatorPubKey())
-	c.rewardPubKey = util.CopyBytes(msg.GetRewardPubKey())
+	c.operatorAddress = util.CopyBytes(msg.GetOperatorAddress())
+	c.rewardAddress = util.CopyBytes(msg.GetRewardAddress())
 	c.score = new(big.Int).SetBytes(msg.GetScore())
 	c.selfStakingScore = new(big.Int).SetBytes(msg.GetSelfStakingScore())
 	c.selfStakingWeight = msg.GetSelfStakingWeight()

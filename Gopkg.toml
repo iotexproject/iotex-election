@@ -54,3 +54,7 @@
   [[prune.project]]
       name = "github.com/ethereum/go-ethereum"
       unused-packages = false
+
+[[constraint]]
+  name = "github.com/golang/mock"
+  version = "1.2.0"

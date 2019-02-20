@@ -8,6 +8,7 @@ package types
 
 import (
 	"encoding/hex"
+	"math/big"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
@@ -135,4 +136,33 @@ func (r *ElectionResult) Deserialize(data []byte) error {
 	}
 
 	return r.FromProtoMsg(pb)
+}
+
+// NewElectionResultForTest creates an election result for test purpose only
+func NewElectionResultForTest(
+	mintTime time.Time,
+) *ElectionResult {
+	return &ElectionResult{
+		mintTime: mintTime,
+		delegates: []*Candidate{
+			&Candidate{
+				name:            []byte("name1"),
+				address:         []byte("address1"),
+				operatorAddress: []byte("io1kfpsvefk74cqxd245j2h5t2pld2wtxzyg6tqrt"),
+				rewardAddress:   []byte("io1kfpsvefk74cqxd245j2h5t2pld2wtxzyg6tqrt"),
+				score:           big.NewInt(15),
+			},
+			&Candidate{
+				name:            []byte("name2"),
+				address:         []byte("address2"),
+				operatorAddress: []byte("io1llr6zs37gxrwmvnczexpg35dptta2mdvjv6w2q"),
+				rewardAddress:   []byte("io1llr6zs37gxrwmvnczexpg35dptta2mdvjv6w2q"),
+				score:           big.NewInt(14),
+			},
+		},
+		votes: map[string][]*Vote{
+			"name1": []*Vote{},
+			"name2": []*Vote{},
+		},
+	}
 }

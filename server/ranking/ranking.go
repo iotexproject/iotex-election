@@ -21,8 +21,8 @@ import (
 	"google.golang.org/grpc/reflection"
 
 	"github.com/iotexproject/iotex-election/committee"
-	pb "github.com/iotexproject/iotex-election/pb/ranking"
 	"github.com/iotexproject/iotex-election/db"
+	pb "github.com/iotexproject/iotex-election/pb/ranking"
 )
 
 // Config defines the config for server
@@ -48,8 +48,13 @@ type server struct {
 
 // NewServer returns an implementation of ranking server
 func NewServer(cfg *Config) (Server, error) {
-	kvStore := db.NewKVStore(cfg.DB)
-	c, err := committee.NewCommittee(kvStore, cfg.Committee)
+	var c committee.Committee
+	var err error
+	if cfg.DB.DBPath != "" {
+		c, err = committee.NewCommitteeWithKVStoreWithNamespace(db.NewBoltDB(cfg.DB), cfg.Committee)
+	} else {
+		c, err = committee.NewCommittee(db.NewInMemKVStore(), cfg.Committee)
+	}
 	if err != nil {
 		return nil, err
 	}

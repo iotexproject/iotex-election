@@ -26,6 +26,9 @@ import (
 	"github.com/iotexproject/iotex-election/util"
 )
 
+// Namespace to store the result in db
+const Namespace = "electionNS"
+
 // CalcBeaconChainHeight calculates the corresponding beacon chain height for an epoch
 type CalcBeaconChainHeight func(uint64) (uint64, error)
 
@@ -79,8 +82,13 @@ type committee struct {
 	mutex                sync.RWMutex
 }
 
+// NewCommitteeWithKVStoreWithNamespace creates a committee with kvstore with namespace
+func NewCommitteeWithKVStoreWithNamespace(kvstore db.KVStoreWithNamespace, cfg Config) (Committee, error) {
+	return NewCommittee(db.NewKVStoreWithNamespaceWrapper(Namespace, kvstore), cfg)
+}
+
 // NewCommittee creates a committee
-func NewCommittee(db db.KVStore, cfg Config) (Committee, error) {
+func NewCommittee(kvstore db.KVStore, cfg Config) (Committee, error) {
 	if !common.IsHexAddress(cfg.StakingContractAddress) {
 		return nil, errors.New("Invalid staking contract address")
 	}
@@ -105,7 +113,7 @@ func NewCommittee(db db.KVStore, cfg Config) (Committee, error) {
 		return nil, errors.New("Invalid self staking threshold")
 	}
 	return &committee{
-		db:                   db,
+		db:                   kvstore,
 		cache:                newResultCache(cfg.CacheSize),
 		heightManager:        newHeightManager(),
 		carrier:              carrier,

@@ -8,6 +8,7 @@ package committee
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"math"
@@ -135,6 +136,10 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 		result, err := ec.fetchResultByHeight(ec.nextHeight)
 		if err == ErrNotExist {
 			break
+		}
+		fmt.Println("height", ec.nextHeight)
+		for _, d := range result.Delegates() {
+			fmt.Println("delegate", hex.EncodeToString(d.Name()), d.Score())
 		}
 		if err == nil {
 			if err := ec.heightManager.add(ec.nextHeight, result.MintTime()); err != nil {

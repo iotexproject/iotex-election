@@ -117,11 +117,11 @@ func (evc *ethereumCarrier) Candidates(
 	if len(retval.Addresses) != num {
 		return nil, nil, errors.New("invalid addresses from GetAllCandidates")
 	}
-	operatorPubKeys, err := decodePubKeys(retval.IoOperatorPubKeys, num)
+	operatorPubKeys, err := decodePubKeys(retval.IoOperatorAddr, num)
 	if err != nil {
 		return nil, nil, err
 	}
-	rewardPubKeys, err := decodePubKeys(retval.IoRewardPubKeys, num)
+	rewardPubKeys, err := decodePubKeys(retval.IoRewardAddr, num)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -132,7 +132,7 @@ func (evc *ethereumCarrier) Candidates(
 			retval.Addresses[i][:],
 			operatorPubKeys[i],
 			rewardPubKeys[i],
-			1, // TODO: read weight from contract
+			retval.Weights[i].Uint64(),
 		)
 	}
 	return new(big.Int).Add(startIndex, big.NewInt(int64(num))), candidates, nil
@@ -189,13 +189,13 @@ func (evc *ethereumCarrier) Votes(
 }
 
 func decodePubKeys(data [][32]byte, num int) ([][]byte, error) {
-	if len(data) != 3*num {
+	if len(data) != 2*num {
 		return nil, errors.New("the length of pub key array is not as expected")
 	}
 	keys := [][]byte{}
 	for i := 0; i < num; i++ {
-		key := append(data[3*i][:], data[3*i+1][:]...)
-		keys = append(keys, append(key, data[3*i+2][0]))
+		key := append(data[2*i][:], data[2*i+1][:9]...)
+		keys = append(keys, key)
 	}
 
 	return keys, nil

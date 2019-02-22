@@ -21,11 +21,10 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/iotexproject/iotex-election/carrier"
+	"github.com/iotexproject/iotex-election/db"
 	"github.com/iotexproject/iotex-election/types"
 	"github.com/iotexproject/iotex-election/util"
-	"github.com/iotexproject/iotex-election/db"
 )
-
 
 // CalcBeaconChainHeight calculates the corresponding beacon chain height for an epoch
 type CalcBeaconChainHeight func(uint64) (uint64, error)
@@ -130,8 +129,24 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 		return errors.Wrap(err, "error when starting db")
 	}
 	if startHeight, err := ec.db.Get(db.NextHeightKey); err == nil {
+		fmt.Println("restoring from db")
 		ec.nextHeight = util.BytesToUint64(startHeight)
+		for height := ec.startHeight; height < ec.nextHeight; height += ec.interval {
+			data, err := ec.db.Get(ec.dbKey(height))
+			if err != nil {
+				return err
+			}
+			r := &types.ElectionResult{}
+			if err := r.Deserialize(data); err != nil {
+				return err
+			}
+			ec.cache.insert(height, r)
+			if err := ec.heightManager.add(height, r.MintTime()); err != nil {
+				return err
+			}
+		}
 	}
+	fmt.Println("catching up via network")
 	for {
 		result, err := ec.fetchResultByHeight(ec.nextHeight)
 		if err == db.ErrNotExist {
@@ -142,13 +157,9 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 			fmt.Println("delegate", hex.EncodeToString(d.Name()), d.Score())
 		}
 		if err == nil {
-			if err := ec.heightManager.add(ec.nextHeight, result.MintTime()); err != nil {
-				return err
-			}
 			if err = ec.storeResult(ec.nextHeight, result); err != nil {
 				return err
 			}
-			ec.cache.insert(ec.nextHeight, result)
 			ec.currentHeight = ec.nextHeight
 			ec.nextHeight += ec.interval
 			continue
@@ -205,8 +216,6 @@ func (ec *committee) OnNewBlock(tipHeight uint64) {
 			log.Println("failed to store result into db", err)
 			return
 		}
-		ec.heightManager.add(ec.nextHeight, result.MintTime())
-		ec.cache.insert(ec.nextHeight, result)
 		ec.nextHeight += ec.interval
 	}
 }
@@ -345,10 +354,13 @@ func (ec *committee) storeResult(height uint64, result *types.ElectionResult) er
 	if err != nil {
 		return err
 	}
-
 	if err := ec.db.Put(ec.dbKey(height), data); err != nil {
 		return errors.Wrapf(err, "failed to put election result into db")
 	}
+	if err := ec.db.Put(db.NextHeightKey, ec.dbKey(height+ec.interval)); err != nil {
+		return err
+	}
+	ec.cache.insert(height, result)
 
-	return ec.db.Put(db.NextHeightKey, ec.dbKey(height+ec.interval))
+	return ec.heightManager.add(height, result.MintTime())
 }

@@ -1,4 +1,6 @@
-dbPath: ""
+db:
+  numOfRetries: 8
+  dbPath: election.db
 
 port: 8089
 

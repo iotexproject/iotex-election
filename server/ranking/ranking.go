@@ -22,11 +22,12 @@ import (
 
 	"github.com/iotexproject/iotex-election/committee"
 	pb "github.com/iotexproject/iotex-election/pb/ranking"
+	"github.com/iotexproject/iotex-election/db"
 )
 
 // Config defines the config for server
 type Config struct {
-	DBPath    string           `yaml:"dbPath"`
+	DB        db.Config        `yaml:"db"`
 	Port      int              `yaml:"port"`
 	Committee committee.Config `yaml:"committee"`
 }
@@ -47,7 +48,8 @@ type server struct {
 
 // NewServer returns an implementation of ranking server
 func NewServer(cfg *Config) (Server, error) {
-	c, err := committee.NewCommittee(nil, cfg.Committee)
+	kvStore := db.NewKVStore(cfg.DB)
+	c, err := committee.NewCommittee(kvStore, cfg.Committee)
 	if err != nil {
 		return nil, err
 	}

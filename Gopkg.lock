@@ -10,14 +10,6 @@
   revision = "c1e4b37418775d8f5e0c0c1a68766d321b32d6ca"
 
 [[projects]]
-  digest = "1:0f98f59e9a2f4070d66f0c9c39561f68fcd1dc837b22a852d28d0003aebd1b1e"
-  name = "github.com/boltdb/bolt"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "2f1ce7a837dcb8da3ec595b1dac9d0632f0f99e8"
-  version = "v1.3.1"
-
-[[projects]]
   branch = "master"
   digest = "1:093bf93a65962e8191e3e8cd8fc6c363f83d43caca9739c906531ba7210a9904"
   name = "github.com/btcsuite/btcd"
@@ -211,6 +203,14 @@
   revision = "2f17a3356c6616cbfc4ae4c38147dc062a68fb0e"
 
 [[projects]]
+  digest = "1:5f7414cf41466d4b4dd7ec52b2cd3e481e08cfd11e7e24fef730c0e483e88bb1"
+  name = "go.etcd.io/bbolt"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "63597a96ec0ad9e6d43c3fc81e809909e0237461"
+  version = "v1.3.2"
+
+[[projects]]
   branch = "master"
   digest = "1:4987dc6844c200891f789cb807ebb453f402e9c76e4189c6ca23e87f9788a3a2"
   name = "golang.org/x/crypto"
@@ -364,7 +364,6 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/boltdb/bolt",
     "github.com/coopernurse/barrister-go",
     "github.com/ethereum/go-ethereum",
     "github.com/ethereum/go-ethereum/accounts/abi",
@@ -382,6 +381,7 @@
     "github.com/golang/protobuf/ptypes/timestamp",
     "github.com/pkg/errors",
     "github.com/stretchr/testify/require",
+    "go.etcd.io/bbolt",
     "golang.org/x/crypto/blake2b",
     "golang.org/x/net/context",
     "google.golang.org/grpc",

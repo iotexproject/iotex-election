@@ -9,8 +9,8 @@ package db
 import (
 	"context"
 
-	"github.com/boltdb/bolt"
 	"github.com/pkg/errors"
+	"go.etcd.io/bbolt"
 )
 
 const (
@@ -119,7 +119,7 @@ func (w *KVStoreWithNamespaceWrapper) Put(key []byte, value []byte) error {
 }
 
 type boltDB struct {
-	db         *bolt.DB
+	db         *bbolt.DB
 	path       string
 	numRetries uint8
 }
@@ -134,7 +134,7 @@ func NewBoltDB(cfg Config) KVStoreWithNamespace {
 
 // Start starts the boltDB
 func (b *boltDB) Start(_ context.Context) error {
-	db, err := bolt.Open(b.path, filemode, nil)
+	db, err := bbolt.Open(b.path, filemode, nil)
 	if err != nil {
 		return errors.Wrapf(ErrIO, err.Error())
 	}
@@ -155,10 +155,10 @@ func (b *boltDB) Stop(_ context.Context) error {
 // Get gets value by key from boltDB
 func (b *boltDB) Get(namespace string, key []byte) ([]byte, error) {
 	var value []byte
-	err := b.db.View(func(tx *bolt.Tx) error {
+	err := b.db.View(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket([]byte(namespace))
 		if bucket == nil {
-			return errors.Wrapf(bolt.ErrBucketNotFound, "bucket = %s", namespace)
+			return errors.Wrapf(bbolt.ErrBucketNotFound, "bucket = %s", namespace)
 		}
 		value = bucket.Get(key)
 		return nil
@@ -176,7 +176,7 @@ func (b *boltDB) Get(namespace string, key []byte) ([]byte, error) {
 func (b *boltDB) Put(namespace string, key []byte, value []byte) error {
 	var err error
 	for c := uint8(0); c < b.numRetries; c++ {
-		err = b.db.Update(func(tx *bolt.Tx) error {
+		err = b.db.Update(func(tx *bbolt.Tx) error {
 			bucket, err := tx.CreateBucketIfNotExists([]byte(namespace))
 			if err != nil {
 				return err

@@ -98,22 +98,22 @@ func NewKVStoreWithNamespaceWrapper(namespace string, store KVStoreWithNamespace
 	}
 }
 
-// Start starts kv store
+// Start starts the kv store
 func (w *KVStoreWithNamespaceWrapper) Start(ctx context.Context) error {
 	return w.store.Start(ctx)
 }
 
-// Stop stops kv store
+// Stop stops the kv store
 func (w *KVStoreWithNamespaceWrapper) Stop(ctx context.Context) error {
 	return w.store.Stop(ctx)
 }
 
-// Get gets the value by key
+// Get gets the value by key from kv store
 func (w *KVStoreWithNamespaceWrapper) Get(key []byte) ([]byte, error) {
 	return w.store.Get(w.namespace, key)
 }
 
-// Put puts key-value pair into store
+// Put puts key-value pair into kv store
 func (w *KVStoreWithNamespaceWrapper) Put(key []byte, value []byte) error {
 	return w.store.Put(w.namespace, key, value)
 }

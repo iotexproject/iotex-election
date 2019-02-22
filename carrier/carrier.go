@@ -8,12 +8,12 @@ package carrier
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"math/big"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -37,6 +37,7 @@ type Carrier interface {
 
 type ethereumCarrier struct {
 	client                  *ethclient.Client
+	beaconChainAPI          string
 	stakingContractAddress  common.Address
 	registerContractAddress common.Address
 }
@@ -53,6 +54,7 @@ func NewEthereumVoteCarrier(
 	}
 	return &ethereumCarrier{
 		client:                  client,
+		beaconChainAPI:          url,
 		stakingContractAddress:  stakingContractAddress,
 		registerContractAddress: registerContractAddress,
 	}, nil
@@ -65,7 +67,10 @@ func (evc *ethereumCarrier) Close() {
 func (evc *ethereumCarrier) BlockTimestamp(height uint64) (time.Time, error) {
 	header, err := evc.client.HeaderByNumber(context.Background(), big.NewInt(0).SetUint64(height))
 	if err != nil {
-		return time.Now(), err
+		if err := evc.resetClient(); err != nil {
+			return time.Now(), errors.Wrap(err, "failed to reset eth client")
+		}
+		return time.Now(), errors.Wrap(err, "failed to get block header")
 	}
 	return time.Unix(header.Time.Int64(), 0), nil
 }
@@ -74,7 +79,10 @@ func (evc *ethereumCarrier) SubscribeNewBlock(cb func(uint64), close chan bool) 
 	headers := make(chan *ethtypes.Header)
 	sub, err := evc.client.SubscribeNewHead(context.Background(), headers)
 	if err != nil {
-		return err
+		if err := evc.resetClient(); err != nil {
+			return errors.Wrap(err, "failed to reset eth client")
+		}
+		return errors.Wrap(err, "failed to subscribe to notifications about the current blockchain head")
 	}
 	go func() {
 		for {
@@ -111,7 +119,10 @@ func (evc *ethereumCarrier) Candidates(
 		big.NewInt(int64(count)),
 	)
 	if err != nil {
-		return nil, nil, err
+		if err := evc.resetClient(); err != nil {
+			return nil, nil, errors.Wrap(err, "failed to reset eth client")
+		}
+		return nil, nil, errors.Wrap(err, "failed to get all candidates")
 	}
 	num := len(retval.Names)
 	if len(retval.Addresses) != num {
@@ -156,7 +167,10 @@ func (evc *ethereumCarrier) Votes(
 		big.NewInt(int64(count)),
 	)
 	if err != nil {
-		return nil, nil, err
+		if err := evc.resetClient(); err != nil {
+			return nil, nil, errors.Wrap(err, "failed to reset eth client")
+		}
+		return nil, nil, errors.Wrap(err, "failed to get active buckets")
 	}
 	votes := []*types.Vote{}
 	num := len(buckets.Indexes)
@@ -186,6 +200,15 @@ func (evc *ethereumCarrier) Votes(
 	}
 
 	return previousIndex, votes, nil
+}
+
+func (evc *ethereumCarrier) resetClient() error {
+	client, err := ethclient.Dial(evc.beaconChainAPI)
+	if err != nil {
+		return err
+	}
+	evc.client = client
+	return nil
 }
 
 func decodePubKeys(data [][32]byte, num int) ([][]byte, error) {

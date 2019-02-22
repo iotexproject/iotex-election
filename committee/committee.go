@@ -23,12 +23,9 @@ import (
 	"github.com/iotexproject/iotex-election/carrier"
 	"github.com/iotexproject/iotex-election/types"
 	"github.com/iotexproject/iotex-election/util"
+	"github.com/iotexproject/iotex-election/db"
 )
 
-var (
-	// ErrNotExist defines an error that the query has no return value in db
-	ErrNotExist = errors.New("not exist in db")
-)
 
 // CalcBeaconChainHeight calculates the corresponding beacon chain height for an epoch
 type CalcBeaconChainHeight func(uint64) (uint64, error)
@@ -66,7 +63,7 @@ type Committee interface {
 }
 
 type committee struct {
-	db                   KVStore
+	db                   db.KVStore
 	carrier              carrier.Carrier
 	retryLimit           uint8
 	paginationSize       uint8
@@ -84,10 +81,7 @@ type committee struct {
 }
 
 // NewCommittee creates a committee
-func NewCommittee(db KVStore, cfg Config) (Committee, error) {
-	if db == nil {
-		db = &store{}
-	}
+func NewCommittee(db db.KVStore, cfg Config) (Committee, error) {
 	if !common.IsHexAddress(cfg.StakingContractAddress) {
 		return nil, errors.New("Invalid staking contract address")
 	}
@@ -132,9 +126,15 @@ func NewCommittee(db KVStore, cfg Config) (Committee, error) {
 func (ec *committee) Start(ctx context.Context) (err error) {
 	ec.mutex.Lock()
 	defer ec.mutex.Unlock()
+	if err := ec.db.Start(ctx); err != nil {
+		return errors.Wrap(err, "error when starting db")
+	}
+	if startHeight, err := ec.db.Get(db.NextHeightKey); err == nil {
+		ec.nextHeight = util.BytesToUint64(startHeight)
+	}
 	for {
 		result, err := ec.fetchResultByHeight(ec.nextHeight)
-		if err == ErrNotExist {
+		if err == db.ErrNotExist {
 			break
 		}
 		fmt.Println("height", ec.nextHeight)
@@ -143,6 +143,9 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 		}
 		if err == nil {
 			if err := ec.heightManager.add(ec.nextHeight, result.MintTime()); err != nil {
+				return err
+			}
+			if err = ec.storeResult(ec.nextHeight, result); err != nil {
 				return err
 			}
 			ec.cache.insert(ec.nextHeight, result)
@@ -219,7 +222,7 @@ func (ec *committee) HeightByTime(ts time.Time) (uint64, error) {
 	defer ec.mutex.RUnlock()
 	height := ec.heightManager.nearestHeightBefore(ts)
 	if height == 0 {
-		return 0, ErrNotExist
+		return 0, db.ErrNotExist
 	}
 
 	return height, nil
@@ -254,7 +257,7 @@ func (ec *committee) resultByHeight(height uint64) (*types.ElectionResult, error
 		return nil, err
 	}
 	if data == nil {
-		return nil, ErrNotExist
+		return nil, db.ErrNotExist
 	}
 	result = &types.ElectionResult{}
 
@@ -283,7 +286,7 @@ func (ec *committee) fetchResultByHeight(height uint64) (*types.ElectionResult, 
 	case nil:
 		break
 	case ethereum.NotFound:
-		return nil, ErrNotExist
+		return nil, db.ErrNotExist
 	default:
 		return nil, err
 	}
@@ -343,5 +346,9 @@ func (ec *committee) storeResult(height uint64, result *types.ElectionResult) er
 		return err
 	}
 
-	return ec.db.Put(ec.dbKey(height), data)
+	if err := ec.db.Put(ec.dbKey(height), data); err != nil {
+		return errors.Wrapf(err, "failed to put election result into db")
+	}
+
+	return ec.db.Put(db.NextHeightKey, ec.dbKey(height+ec.interval))
 }

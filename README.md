@@ -1,2 +1,2 @@
 # iotex-election
-Manage election results from Beacon cain
+Collect and process election information from the governance chain (which is Ethereum for now)

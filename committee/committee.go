@@ -34,18 +34,18 @@ type CalcGravityChainHeight func(uint64) (uint64, error)
 
 // Config defines the config of the committee
 type Config struct {
-	NumOfRetries              uint8    `yaml:"numOfRetries"`
+	NumOfRetries               uint8    `yaml:"numOfRetries"`
 	GravityChainAPIs           []string `yaml:"gravityChainAPIs"`
 	GravityChainHeightInterval uint64   `yaml:"gravityChainHeightInterval"`
 	GravityChainStartHeight    uint64   `yaml:"gravityChainStartHeight"`
-	RegisterContractAddress   string   `yaml:"registerContractAddress"`
-	StakingContractAddress    string   `yaml:"stakingContractAddress"`
-	PaginationSize            uint8    `yaml:"paginationSize"`
-	VoteThreshold             string   `yaml:"voteThreshold"`
-	ScoreThreshold            string   `yaml:"scoreThreshold"`
-	SelfStakingThreshold      string   `yaml:"selfStakingThreshold"`
-	CacheSize                 uint32   `yaml:"cacheSize"`
-	NumOfFetchInParallel      uint8    `yaml:"numOfFetchInParallel"`
+	RegisterContractAddress    string   `yaml:"registerContractAddress"`
+	StakingContractAddress     string   `yaml:"stakingContractAddress"`
+	PaginationSize             uint8    `yaml:"paginationSize"`
+	VoteThreshold              string   `yaml:"voteThreshold"`
+	ScoreThreshold             string   `yaml:"scoreThreshold"`
+	SelfStakingThreshold       string   `yaml:"selfStakingThreshold"`
+	CacheSize                  uint32   `yaml:"cacheSize"`
+	NumOfFetchInParallel       uint8    `yaml:"numOfFetchInParallel"`
 }
 
 // STATUS represents the status of committee
@@ -252,7 +252,7 @@ func (ec *committee) sync(tipHeight uint64) error {
 	results := map[uint64]*types.ElectionResult{}
 	errs := map[uint64]error{}
 	for nextHeight := ec.nextHeight; nextHeight < ec.currentHeight; nextHeight += ec.interval {
-		if nextHeight > ec.currentHeight-10 {
+		if nextHeight > ec.currentHeight-12 {
 			break
 		}
 		wg.Add(1)

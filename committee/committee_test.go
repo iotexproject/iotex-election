@@ -11,15 +11,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/iotexproject/iotex-election/types"
-
 	"github.com/stretchr/testify/require"
+
+	"github.com/iotexproject/iotex-election/types"
 )
 
 func TestCalcWeightedVotes(t *testing.T) {
 	require := require.New(t)
-	cfg := getCfg()
-	commp, err := NewCommittee(nil, cfg)
+	committee := &committee{}
 	startTime := time.Now()
 	duration := time.Hour * 24 * 14
 	vote1, err := types.NewVote(
@@ -33,16 +32,13 @@ func TestCalcWeightedVotes(t *testing.T) {
 	)
 	require.NoError(err)
 	// now.Before(v.StartTime()),return 0
-	ret := commp.(*committee).calcWeightedVotes(vote1, startTime.Add(-1*time.Hour))
-	require.Equal(0, ret.Cmp(big.NewInt(0)))
+	require.Equal(0, committee.calcWeightedVotes(vote1, startTime.Add(-1*time.Hour)).Cmp(big.NewInt(0)))
 
 	// decay is true,startTime+duration is after now,remainingTime is 24*14-24=13*24 hours,weight is ~1.140,ret is 3422048
-	ret = commp.(*committee).calcWeightedVotes(vote1, startTime.Add(time.Hour*24))
-	require.Equal(0, ret.Cmp(big.NewInt(3422048)))
+	require.Equal(0, committee.calcWeightedVotes(vote1, startTime.Add(time.Hour*24)).Cmp(big.NewInt(3422048)))
 
 	// decay is true,startTime+duration is before now,remainingTime is 0 hours,weight is 1,ret is 3000000
-	ret = commp.(*committee).calcWeightedVotes(vote1, time.Now().Add(24*15*time.Hour))
-	require.Equal(0, ret.Cmp(big.NewInt(3000000)))
+	require.Equal(0, committee.calcWeightedVotes(vote1, time.Now().Add(24*15*time.Hour)).Cmp(big.NewInt(3000000)))
 
 	vote2, err := types.NewVote(
 		startTime,
@@ -55,12 +51,10 @@ func TestCalcWeightedVotes(t *testing.T) {
 	)
 
 	// decay is false,remainingTime is duration,weight ~1.144，ret is 3434242,whatever now is
-	ret = commp.(*committee).calcWeightedVotes(vote2, startTime.Add(time.Hour*24))
-	require.Equal(0, ret.Cmp(big.NewInt(3434242)))
-
-	ret = commp.(*committee).calcWeightedVotes(vote2, startTime.Add(24*15*time.Hour))
-	require.Equal(0, ret.Cmp(big.NewInt(3434242)))
+	require.Equal(0, committee.calcWeightedVotes(vote2, startTime.Add(time.Hour*24)).Cmp(big.NewInt(3434242)))
+	require.Equal(0, committee.calcWeightedVotes(vote2, startTime.Add(24*15*time.Hour)).Cmp(big.NewInt(3434242)))
 }
+
 func TestVoteFilter(t *testing.T) {
 	require := require.New(t)
 	c := &committee{voteThreshold: big.NewInt(10)}
@@ -88,11 +82,13 @@ func TestVoteFilter(t *testing.T) {
 	require.NoError(err)
 	require.False(c.voteFilter(vote2))
 }
+
 func TestCandidateFilter(t *testing.T) {
 	require := require.New(t)
-	cfg := getCfg()
-	commp, err := NewCommittee(nil, cfg)
-	require.NoError(err)
+	committee := &committee{
+		scoreThreshold:       big.NewInt(10),
+		selfStakingThreshold: big.NewInt(10),
+	}
 	// candidate1 selfStaking and score both smaller than committee's threshold
 	candidate1 := types.NewCandidate(
 		[]byte("candidate1"),
@@ -103,7 +99,7 @@ func TestCandidateFilter(t *testing.T) {
 	)
 	candidate1.SetScore(big.NewInt(9))
 	candidate1.SetSelfStakingTokens(big.NewInt(9))
-	require.True(commp.(*committee).candidateFilter(candidate1))
+	require.True(committee.candidateFilter(candidate1))
 	// candidate2 selfStaking is below committee's threshold,score is bigger than committee's threshold
 	candidate2 := types.NewCandidate(
 		[]byte("candidate2"),
@@ -114,7 +110,7 @@ func TestCandidateFilter(t *testing.T) {
 	)
 	candidate2.SetScore(big.NewInt(11))
 	candidate2.SetSelfStakingTokens(big.NewInt(9))
-	require.True(commp.(*committee).candidateFilter(candidate2))
+	require.True(committee.candidateFilter(candidate2))
 	// candidate3 selfStaking is bigger than committee's threshold,score is smaller than committee's threshold
 	candidate3 := types.NewCandidate(
 		[]byte("candidate3"),
@@ -125,7 +121,7 @@ func TestCandidateFilter(t *testing.T) {
 	)
 	candidate3.SetScore(big.NewInt(9))
 	candidate3.SetSelfStakingTokens(big.NewInt(11))
-	require.True(commp.(*committee).candidateFilter(candidate3))
+	require.True(committee.candidateFilter(candidate3))
 	// candidate3 selfStaking and score both bigger than committee's threshold
 	candidate4 := types.NewCandidate(
 		[]byte("candidate4"),
@@ -136,19 +132,5 @@ func TestCandidateFilter(t *testing.T) {
 	)
 	candidate4.SetScore(big.NewInt(11))
 	candidate4.SetSelfStakingTokens(big.NewInt(11))
-	require.False(commp.(*committee).candidateFilter(candidate4))
-}
-func getCfg() (cfg Config) {
-	cfg.NumOfRetries = 8
-	cfg.GravityChainAPIs = []string{"https://kovan.infura.io"}
-	cfg.GravityChainHeightInterval = 100
-	cfg.GravityChainStartHeight = 7368630
-	cfg.RegisterContractAddress = "0xb4ca6cf2fe760517a3f92120acbe577311252663"
-	cfg.StakingContractAddress = "0xdedf0c1610d8a75ca896d8c93a0dc39abf7daff4"
-	cfg.PaginationSize = 100
-	cfg.VoteThreshold = "10"
-	cfg.ScoreThreshold = "10"
-	cfg.SelfStakingThreshold = "10"
-	cfg.CacheSize = 100
-	return
+	require.False(committee.candidateFilter(candidate4))
 }

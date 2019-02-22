@@ -26,6 +26,9 @@ import (
 	"github.com/iotexproject/iotex-election/util"
 )
 
+// Namespace to store the result in db
+const Namespace = "electionNS"
+
 // CalcBeaconChainHeight calculates the corresponding beacon chain height for an epoch
 type CalcBeaconChainHeight func(uint64) (uint64, error)
 

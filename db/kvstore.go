@@ -9,13 +9,12 @@ package db
 import (
 	"context"
 
-	"github.com/pkg/errors"
 	"github.com/boltdb/bolt"
+	"github.com/pkg/errors"
 )
 
 const (
 	filemode = 0600
-	electionNS = "elections"
 )
 
 var (
@@ -29,8 +28,8 @@ var (
 
 // Config defines the config of db
 type Config struct {
-	NumOfRetries              uint8  `yaml:"numOfRetries"`
-	DBPath                    string `yaml:"dbPath"`
+	NumOfRetries uint8  `yaml:"numOfRetries"`
+	DBPath       string `yaml:"dbPath"`
 }
 
 // KVStore defines the db interface using in committee
@@ -42,11 +41,14 @@ type KVStore interface {
 }
 
 // NewKVStore creates a new key-value store
-func NewKVStore(cfg Config) KVStore {
+func NewKVStore(namespace string, cfg Config) KVStore {
 	if cfg.DBPath == "" || cfg.NumOfRetries < 1 {
 		return &memStore{}
 	}
-	return &boltDB{numRetries: cfg.NumOfRetries, path: cfg.DBPath}
+	return NewKVStoreWithNamespace(
+		namespace,
+		&boltDB{numRetries: cfg.NumOfRetries, path: cfg.DBPath},
+	)
 }
 
 type memStore struct {
@@ -66,8 +68,8 @@ func (m *memStore) Stop(_ context.Context) error {
 }
 
 // Get gets value by key from in-memory store
-func (s *memStore) Get(key []byte) ([]byte, error) {
-	value, ok := s.kv[string(key)]
+func (m *memStore) Get(key []byte) ([]byte, error) {
+	value, ok := m.kv[string(key)]
 	if !ok {
 		return nil, errors.Wrapf(ErrNotExist, "key = %s", string(key))
 	}
@@ -75,14 +77,47 @@ func (s *memStore) Get(key []byte) ([]byte, error) {
 }
 
 // Put stores key and value to in-memory store
-func (s *memStore) Put(key []byte, value []byte) error {
-	s.kv[string(key)] = value
+func (m *memStore) Put(key []byte, value []byte) error {
+	m.kv[string(key)] = value
 	return nil
 }
 
+// KVStoreWithNamespace defines the db interface with namesapce
+type KVStoreWithNamespace interface {
+	Start(context.Context) error
+	Stop(context.Context) error
+	Get(string, []byte) ([]byte, error)
+	Put(string, []byte, []byte) error
+}
+
+type KVStoreWithNamespaceWrapper struct {
+	store     KVStoreWithNamespace
+	namespace string
+}
+
+func NewKVStoreWithNamespace(namespace string, store KVStoreWithNamespace) KVStore {
+	return &KVStoreWithNamespaceWrapper{
+		namespace: namespace,
+		store:     store,
+	}
+}
+
+func (w *KVStoreWithNamespaceWrapper) Start(ctx context.Context) error {
+	return w.store.Start(ctx)
+}
+func (w *KVStoreWithNamespaceWrapper) Stop(ctx context.Context) error {
+	return w.store.Stop(ctx)
+}
+func (w *KVStoreWithNamespaceWrapper) Get(key []byte) ([]byte, error) {
+	return w.store.Get(w.namespace, key)
+}
+func (w *KVStoreWithNamespaceWrapper) Put(key []byte, value []byte) error {
+	return w.store.Put(w.namespace, key, value)
+}
+
 type boltDB struct {
-	db *bolt.DB
-	path string
+	db         *bolt.DB
+	path       string
 	numRetries uint8
 }
 
@@ -107,14 +142,14 @@ func (b *boltDB) Stop(_ context.Context) error {
 }
 
 // Get gets value by key from boltDB
-func (b *boltDB) Get(key []byte) ([]byte, error) {
+func (b *boltDB) Get(namespace string, key []byte) ([]byte, error) {
 	var value []byte
 	err := b.db.View(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket([]byte(electionNS))
+		bucket := tx.Bucket([]byte(namespace))
 		if bucket == nil {
-			return errors.Wrapf(bolt.ErrBucketNotFound, "bucket = %s", electionNS)
+			return errors.Wrapf(bolt.ErrBucketNotFound, "bucket = %s", namespace)
 		}
-		value  = bucket.Get(key)
+		value = bucket.Get(key)
 		return nil
 	})
 	if err != nil {
@@ -127,11 +162,11 @@ func (b *boltDB) Get(key []byte) ([]byte, error) {
 }
 
 // Put stores key and value to boltDB
-func (b *boltDB) Put(key []byte, value []byte) error {
+func (b *boltDB) Put(namespace string, key []byte, value []byte) error {
 	var err error
 	for c := uint8(0); c < b.numRetries; c++ {
 		err = b.db.Update(func(tx *bolt.Tx) error {
-			bucket, err := tx.CreateBucketIfNotExists([]byte(electionNS))
+			bucket, err := tx.CreateBucketIfNotExists([]byte(namespace))
 			if err != nil {
 				return err
 			}
@@ -144,4 +179,3 @@ func (b *boltDB) Put(key []byte, value []byte) error {
 	}
 	return err
 }
-

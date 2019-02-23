@@ -20,6 +20,8 @@ import (
 func main() {
 	var configPath string
 	flag.StringVar(&configPath, "config", "server.yaml", "path of server config file")
+	flag.Parse()
+
 	data, err := ioutil.ReadFile(configPath)
 	if err != nil {
 		zap.L().Fatal("failed to load config file", zap.Error(err))

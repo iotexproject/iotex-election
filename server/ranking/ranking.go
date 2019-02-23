@@ -9,13 +9,12 @@ package ranking
 import (
 	"encoding/hex"
 	"errors"
-	"fmt"
-	"log"
 	"net"
 	"strconv"
 	"time"
 
 	"github.com/golang/protobuf/ptypes/empty"
+	"go.uber.org/zap"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -70,16 +69,16 @@ func (s *server) Start(ctx context.Context) error {
 	if err := s.electionCommittee.Start(ctx); err != nil {
 		return err
 	}
-	log.Printf("Listen to port %d\n", s.port)
+	zap.L().Info("Listen to port", zap.Int("port", s.port))
 	portStr := ":" + strconv.Itoa(s.port)
 	lis, err := net.Listen("tcp", portStr)
 	if err != nil {
-		log.Printf("Ranking server failed to listen port. Error: %v\n", err)
+		zap.L().Error("Ranking server failed to listen port.", zap.Error(err))
 		return err
 	}
 	go func() {
 		if err := s.grpcServer.Serve(lis); err != nil {
-			log.Fatalf("Failed to serve %v\n", err)
+			zap.L().Fatal("Failed to serve", zap.Error(err))
 		}
 	}()
 	return nil
@@ -129,10 +128,8 @@ func (s *server) GetCandidates(ctx context.Context, request *pb.GetCandidatesReq
 	response := &pb.CandidateResponse{
 		Candidates: make([]*pb.Candidate, limit),
 	}
-	fmt.Println("candidates", candidates)
 	for i := offset; i < offset+limit; i++ {
 		candidate := candidates[i]
-		fmt.Println("candidate", candidate)
 		response.Candidates[i] = &pb.Candidate{
 			Name:               hex.EncodeToString(candidate.Name()),
 			Address:            hex.EncodeToString(candidate.Address()),

@@ -10,8 +10,8 @@ import (
 	"context"
 	"flag"
 	"io/ioutil"
-	"log"
 
+	"go.uber.org/zap"
 	yaml "gopkg.in/yaml.v2"
 
 	"github.com/iotexproject/iotex-election/server/ranking"
@@ -22,19 +22,20 @@ func main() {
 	flag.StringVar(&configPath, "config", "server.yaml", "path of server config file")
 	data, err := ioutil.ReadFile(configPath)
 	if err != nil {
-		log.Fatalf("failed to load config file %v", err)
+		zap.L().Fatal("failed to load config file", zap.Error(err))
 	}
 	var config ranking.Config
 	if err := yaml.Unmarshal(data, &config); err != nil {
-		log.Fatalf("failed to unmarshal config %v", err)
+		zap.L().Fatal("failed to unmarshal config", zap.Error(err))
 	}
 	rankingServer, err := ranking.NewServer(&config)
 	if err != nil {
-		log.Fatalf("failed to create ranking server %v", err)
+		zap.L().Fatal("failed to create ranking server", zap.Error(err))
 	}
 	if err := rankingServer.Start(context.Background()); err != nil {
-		log.Fatalf("failed to start ranking server %v", err)
+		zap.L().Fatal("failed to start ranking server", zap.Error(err))
 	}
+	zap.L().Info("Service started")
 	defer rankingServer.Stop(context.Background())
 	select {}
 }

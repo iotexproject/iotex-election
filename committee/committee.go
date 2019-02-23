@@ -8,9 +8,6 @@ package committee
 
 import (
 	"context"
-	"encoding/hex"
-	"fmt"
-	"log"
 	"math"
 	"math/big"
 	"sync"
@@ -19,6 +16,7 @@ import (
 	ethereum "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 
 	"github.com/iotexproject/iotex-election/carrier"
 	"github.com/iotexproject/iotex-election/db"
@@ -44,7 +42,7 @@ type Config struct {
 	VoteThreshold             string `yaml:"voteThreshold"`
 	ScoreThreshold            string `yaml:"scoreThreshold"`
 	SelfStakingThreshold      string `yaml:"selfStakingThreshold"`
-	CacheSize                 uint8  `yaml:"cacheSize"`
+	CacheSize                 uint32 `yaml:"cacheSize"`
 }
 
 // Committee defines an interface of an election committee
@@ -137,7 +135,7 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 		return errors.Wrap(err, "error when starting db")
 	}
 	if startHeight, err := ec.db.Get(db.NextHeightKey); err == nil {
-		fmt.Println("restoring from db")
+		zap.L().Info("restoring from db")
 		ec.nextHeight = util.BytesToUint64(startHeight)
 		for height := ec.startHeight; height < ec.nextHeight; height += ec.interval {
 			data, err := ec.db.Get(ec.dbKey(height))
@@ -154,15 +152,11 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 			}
 		}
 	}
-	fmt.Println("catching up via network")
+	zap.L().Info("catching up via network")
 	for {
 		result, err := ec.fetchResultByHeight(ec.nextHeight)
 		if err == db.ErrNotExist {
 			break
-		}
-		fmt.Println("height", ec.nextHeight)
-		for _, d := range result.Delegates() {
-			fmt.Println("delegate", hex.EncodeToString(d.Name()), d.Score())
 		}
 		if err == nil {
 			if err = ec.storeResult(ec.nextHeight, result); err != nil {
@@ -176,9 +170,9 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 	}
 	for i := uint8(0); i < ec.retryLimit; i++ {
 		if err = ec.carrier.SubscribeNewBlock(ec.OnNewBlock, ec.terminate); err == nil {
-			break
+			return
 		}
-		fmt.Println("retry new block subscription")
+		zap.L().Warn("retry new block subscription")
 	}
 	return
 }
@@ -197,31 +191,36 @@ func (ec *committee) OnNewBlock(tipHeight uint64) {
 		ec.currentHeight = tipHeight
 	}
 	for {
-		if ec.nextHeight > ec.currentHeight {
+		if ec.nextHeight >= ec.currentHeight {
 			break
 		}
 		var result *types.ElectionResult
 		var err error
 		for i := uint8(0); i < ec.retryLimit; i++ {
 			if result, err = ec.fetchResultByHeight(ec.nextHeight); err != nil {
-				log.Println(err)
+				zap.L().Error(
+					"failed to fetch result by height",
+					zap.Error(err),
+					zap.Uint64("height", ec.nextHeight),
+					zap.Uint8("tried", i+1),
+				)
 				continue
 			}
 			break
 		}
 		if result == nil {
-			log.Printf("failed to fetch result for %d\n", ec.nextHeight)
+			zap.L().Error("failed to fetch result", zap.Uint64("height", ec.nextHeight))
 			return
 		}
 		if err = ec.heightManager.validate(ec.nextHeight, result.MintTime()); err != nil {
-			log.Fatalln(
+			zap.L().Fatal(
 				"Unexpected status that the upcoming block height or time is invalid",
-				err,
+				zap.Error(err),
 			)
 			return
 		}
 		if err = ec.storeResult(ec.nextHeight, result); err != nil {
-			log.Println("failed to store result into db", err)
+			zap.L().Error("failed to store result", zap.Error(err))
 			return
 		}
 		ec.nextHeight += ec.interval
@@ -297,7 +296,7 @@ func (ec *committee) calcWeightedVotes(v *types.Vote, now time.Time) *big.Int {
 }
 
 func (ec *committee) fetchResultByHeight(height uint64) (*types.ElectionResult, error) {
-	fmt.Printf("fetch result for %d\n", height)
+	zap.L().Debug("fetch result", zap.Uint64("height", height))
 	mintTime, err := ec.carrier.BlockTimestamp(height)
 	switch errors.Cause(err) {
 	case nil:

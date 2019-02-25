@@ -12,8 +12,7 @@ import (
 	"time"
 )
 
-const baseTime = time.Unix(int64(1546272000), 0) // 2019-01-01 00:00:00
-
+var baseTime = time.Unix(int64(1546272000), 0) // 2019-01-01 00:00:00
 var hm *heightManager
 
 func TestNewHeightManager(t *testing.T) {

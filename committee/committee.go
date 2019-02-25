@@ -173,7 +173,8 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 		if err = ec.carrier.SubscribeNewBlock(ec.OnNewBlock, ec.terminate); err == nil {
 			return
 		}
-		zap.L().Warn("retry new block subscription")
+		zap.L().Warn("retry new block subscription", zap.Error(err))
+		time.Sleep(time.Duration(i) * time.Second)
 	}
 	return
 }
@@ -298,7 +299,7 @@ func (ec *committee) calcWeightedVotes(v *types.Vote, now time.Time) *big.Int {
 }
 
 func (ec *committee) fetchResultByHeight(height uint64) (*types.ElectionResult, error) {
-	zap.L().Debug("fetch result", zap.Uint64("height", height))
+	zap.L().Info("fetch result", zap.Uint64("height", height))
 	mintTime, err := ec.carrier.BlockTimestamp(height)
 	switch errors.Cause(err) {
 	case nil:

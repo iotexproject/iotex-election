@@ -138,6 +138,7 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 		zap.L().Info("restoring from db")
 		ec.nextHeight = util.BytesToUint64(startHeight)
 		for height := ec.startHeight; height < ec.nextHeight; height += ec.interval {
+			zap.L().Info("loading", zap.Uint64("height", height))
 			data, err := ec.db.Get(ec.dbKey(height))
 			if err != nil {
 				return err
@@ -181,6 +182,7 @@ func (ec *committee) Stop(ctx context.Context) error {
 	ec.mutex.Lock()
 	defer ec.mutex.Unlock()
 	ec.terminate <- true
+	ec.carrier.Close()
 	return nil
 }
 

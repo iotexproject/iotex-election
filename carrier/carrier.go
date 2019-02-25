@@ -32,11 +32,13 @@ type Carrier interface {
 	Candidates(uint64, *big.Int, uint8) (*big.Int, []*types.Candidate, error)
 	// Votes returns the votes on height
 	Votes(uint64, *big.Int, uint8) (*big.Int, []*types.Vote, error)
+	// Close closes carrier
+	Close()
 }
 
 type ethereumCarrier struct {
 	client                  *ethclient.Client
-	clientUrl               string
+	clientURL               string
 	stakingContractAddress  common.Address
 	registerContractAddress common.Address
 }
@@ -53,7 +55,7 @@ func NewEthereumVoteCarrier(
 	}
 	return &ethereumCarrier{
 		client:                  client,
-		clientUrl:               url,
+		clientURL:               url,
 		stakingContractAddress:  stakingContractAddress,
 		registerContractAddress: registerContractAddress,
 	}, nil
@@ -67,7 +69,7 @@ func (evc *ethereumCarrier) reset(err error) error {
 	if err.Error() == "tls: use of closed connection" {
 		evc.client.Close()
 		var newErr error
-		if evc.client, newErr = ethclient.Dial(evc.clientUrl); newErr != nil {
+		if evc.client, newErr = ethclient.Dial(evc.clientURL); newErr != nil {
 			err = newErr
 		}
 	}
@@ -212,7 +214,12 @@ func decodeAddress(data [][32]byte, num int) ([][]byte, error) {
 	}
 	keys := [][]byte{}
 	for i := 0; i < num; i++ {
-		key := append(data[2*i][:], data[2*i+1][:9]...)
+		var key []byte
+		if data[2*i][0] == 48 && data[2*i][1] == 120 {
+			key = append(data[2*i][2:], data[2*i+1][:11]...)
+		} else {
+			key = append(data[2*i][:], data[2*i+1][:9]...)
+		}
 		keys = append(keys, key)
 	}
 

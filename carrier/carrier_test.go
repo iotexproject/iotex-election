@@ -27,6 +27,7 @@ func TestVoteCarrier(t *testing.T) {
 		common.HexToAddress("0xf488342896e4ef30022a88d869caaa329d476aa9"),
 	)
 	require.NoError(err)
+	defer carrier.Close()
 	t.Run("Candidates", func(t *testing.T) {
 		nextIndex, candidates, err := carrier.Candidates(uint64(10412500), big.NewInt(1), uint8(15))
 		require.Equal(0, big.NewInt(11).Cmp(nextIndex))

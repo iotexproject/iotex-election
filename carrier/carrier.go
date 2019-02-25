@@ -65,6 +65,7 @@ func (evc *ethereumCarrier) Close() {
 
 func (evc *ethereumCarrier) reset(err error) error {
 	if err.Error() == "tls: use of closed connection" {
+		evc.client.Close()
 		var newErr error
 		if evc.client, newErr = ethclient.Dial(evc.clientUrl); newErr != nil {
 			err = newErr
@@ -93,9 +94,14 @@ func (evc *ethereumCarrier) SubscribeNewBlock(cb func(uint64), close chan bool) 
 			select {
 			case closed := <-close:
 				close <- closed
-				break
+				return
 			case err := <-sub.Err():
-				zap.L().Fatal("error when listening to ethereum block", zap.Error(err))
+				if err := evc.reset(err); err.Error() != "tls: use of closed connection" {
+					zap.L().Fatal("failed to reset client", zap.Error(err))
+				}
+				if sub, err = evc.client.SubscribeNewHead(context.Background(), headers); err != nil {
+					zap.L().Fatal("failed to resubscribe new head", zap.Error(err))
+				}
 			case header := <-headers:
 				zap.L().Debug("New ethereum block", zap.Uint64("height", header.Number.Uint64()))
 				cb(header.Number.Uint64())

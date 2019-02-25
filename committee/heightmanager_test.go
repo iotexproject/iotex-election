@@ -10,16 +10,13 @@ import (
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
-var baseTime = time.Unix(int64(1546272000), 0) // 2019-01-01 00:00:00
-var hm *heightManager
-
 func TestNewHeightManager(t *testing.T) {
-	hm = newHeightManager()
-	if hm == nil {
-		t.Error("newHeightManager() failed")
-	}
+	hm := newHeightManager()
+	require.NotNil(t, hm)
 }
 
 // 0-1546272000
@@ -38,7 +35,10 @@ func TestAdd(t *testing.T) {
 		args    args
 		wantErr bool
 	}
+
 	tests := []test{}
+	baseTime := time.Unix(int64(1546272000), 0) // 2019-01-01 00:00:00
+	hm := newHeightManager()
 
 	for i := 0; i < 5; i++ {
 		ts := baseTime.Add(time.Second * time.Duration(15*i)) // increments in 15 seconds
@@ -49,8 +49,11 @@ func TestAdd(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := tt.m.add(tt.args.height, tt.args.ts); (err != nil) != tt.wantErr {
-				t.Errorf("heightManager.add() error = %v, wantErr %v", err, tt.wantErr)
+			err := tt.m.add(tt.args.height, tt.args.ts)
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
 			}
 		})
 	}
@@ -61,6 +64,14 @@ func TestValidate(t *testing.T) {
 		height uint64
 		ts     time.Time
 	}
+
+	baseTime := time.Unix(int64(1546272000), 0) // 2019-01-01 00:00:00
+	hm := newHeightManager()
+	for i := 0; i < 5; i++ {
+		ts := baseTime.Add(time.Second * time.Duration(15*i)) // increments in 15 seconds
+		hm.add(uint64(i), ts)
+	}
+
 	tests := []struct {
 		name    string
 		m       *heightManager
@@ -74,8 +85,11 @@ func TestValidate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := tt.m.validate(tt.args.height, tt.args.ts); (err != nil) != tt.wantErr {
-				t.Errorf("heightManager.validate() error = %v, wantErr %v", err, tt.wantErr)
+			err := tt.m.validate(tt.args.height, tt.args.ts)
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
 			}
 		})
 	}
@@ -85,6 +99,14 @@ func TestNearestHeightBefore(t *testing.T) {
 	type args struct {
 		ts time.Time
 	}
+
+	baseTime := time.Unix(int64(1546272000), 0) // 2019-01-01 00:00:00
+	hm := newHeightManager()
+	for i := 0; i < 5; i++ {
+		ts := baseTime.Add(time.Second * time.Duration(15*i)) // increments in 15 seconds
+		hm.add(uint64(i), ts)
+	}
+
 	tests := []struct {
 		name string
 		m    *heightManager
@@ -106,6 +128,13 @@ func TestNearestHeightBefore(t *testing.T) {
 }
 
 func TestLastestHeight(t *testing.T) {
+	baseTime := time.Unix(int64(1546272000), 0) // 2019-01-01 00:00:00
+	hm := newHeightManager()
+	for i := 0; i < 5; i++ {
+		ts := baseTime.Add(time.Second * time.Duration(15*i)) // increments in 15 seconds
+		hm.add(uint64(i), ts)
+	}
+
 	tests := []struct {
 		name string
 		m    *heightManager

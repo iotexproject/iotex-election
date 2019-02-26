@@ -33,7 +33,7 @@ type CalcBeaconChainHeight func(uint64) (uint64, error)
 // Config defines the config of the committee
 type Config struct {
 	NumOfRetries              uint8  `yaml:"numOfRetries"`
-	BeaconChainAPI            string `yaml:"beaconChainAPI"`
+	BeaconChainAPIs           []string `yaml:"beaconChainAPIs"`
 	BeaconChainHeightInterval uint64 `yaml:"beaconChainHeightInterval"`
 	BeaconChainStartHeight    uint64 `yaml:"beaconChainStartHeight"`
 	RegisterContractAddress   string `yaml:"registerContractAddress"`
@@ -91,7 +91,9 @@ func NewCommittee(kvstore db.KVStore, cfg Config) (Committee, error) {
 		return nil, errors.New("Invalid staking contract address")
 	}
 	carrier, err := carrier.NewEthereumVoteCarrier(
-		cfg.BeaconChainAPI,
+		0,
+		cfg.BeaconChainAPIs,
+		cfg.NumOfRetries,
 		common.HexToAddress(cfg.RegisterContractAddress),
 		common.HexToAddress(cfg.StakingContractAddress),
 	)
@@ -174,14 +176,14 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 		}
 		return err
 	}
-	for i := uint8(0); i < ec.retryLimit; i++ {
-		if err = ec.carrier.SubscribeNewBlock(ec.OnNewBlock, ec.terminate); err == nil {
+	for {
+		if success := ec.retrySubscribeNewBlock(); success {
 			return
 		}
-		zap.L().Warn("retry new block subscription", zap.Error(err))
-		time.Sleep(time.Duration(i) * time.Second)
+		if err := ec.carrier.RotateClient(); err != nil {
+			return errors.Wrap(err, "failed to rotate carrier client")
+		}
 	}
-	return
 }
 
 func (ec *committee) Stop(ctx context.Context) error {
@@ -204,17 +206,14 @@ func (ec *committee) OnNewBlock(tipHeight uint64) {
 		}
 		var result *types.ElectionResult
 		var err error
-		for i := uint8(0); i < ec.retryLimit; i++ {
-			if result, err = ec.fetchResultByHeight(ec.nextHeight); err != nil {
-				zap.L().Error(
-					"failed to fetch result by height",
-					zap.Error(err),
-					zap.Uint64("height", ec.nextHeight),
-					zap.Uint8("tried", i+1),
-				)
-				continue
+		for {
+			if result, err = ec.retryFetchResultByHeight(); err == nil {
+				break
 			}
-			break
+			if err := ec.carrier.RotateClient(); err != nil {
+				zap.L().Error("failed to rotate carrier client", zap.Error(err))
+				return
+			}
 		}
 		if result == nil {
 			zap.L().Error("failed to fetch result", zap.Uint64("height", ec.nextHeight))
@@ -378,4 +377,33 @@ func (ec *committee) storeResult(height uint64, result *types.ElectionResult) er
 	ec.cache.insert(height, result)
 
 	return ec.heightManager.add(height, result.MintTime())
+}
+
+func (ec *committee) retrySubscribeNewBlock() bool {
+	for i := uint8(0); i < ec.retryLimit; i++ {
+		err := ec.carrier.SubscribeNewBlock(ec.OnNewBlock, ec.terminate)
+		if err == nil {
+			return true
+		}
+		zap.L().Warn("retry new block subscription", zap.Error(err))
+		time.Sleep(time.Duration(i) * time.Second)
+	}
+	return false
+}
+
+func (ec *committee) retryFetchResultByHeight() (*types.ElectionResult, error) {
+	var result *types.ElectionResult
+	var err error
+	for i := uint8(0); i < ec.retryLimit; i++ {
+		if result, err = ec.fetchResultByHeight(ec.nextHeight); err == nil {
+			return result, nil
+		}
+		zap.L().Error(
+			"failed to fetch result by height",
+			zap.Error(err),
+			zap.Uint64("height", ec.nextHeight),
+			zap.Uint8("tried", i+1),
+		)
+	}
+	return result, err
 }

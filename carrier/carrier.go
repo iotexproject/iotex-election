@@ -12,6 +12,7 @@ import (
 	"math/big"
 	"time"
 
+	ethereum "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -32,30 +33,41 @@ type Carrier interface {
 	Candidates(uint64, *big.Int, uint8) (*big.Int, []*types.Candidate, error)
 	// Votes returns the votes on height
 	Votes(uint64, *big.Int, uint8) (*big.Int, []*types.Vote, error)
+	// RotateClientURL rotates client URL index and sets new client
+	RotateClient() error
 	// Close closes carrier
 	Close()
 }
 
 type ethereumCarrier struct {
 	client                  *ethclient.Client
-	clientURL               string
+	currentClientURLIndex   int
+	clientURLs              []string
+	retryLimitPerURL        uint8
 	stakingContractAddress  common.Address
 	registerContractAddress common.Address
 }
 
 // NewEthereumVoteCarrier defines a carrier to fetch votes from ethereum contract
 func NewEthereumVoteCarrier(
-	url string,
+	startURLIndex			int,
+	clientURLs              []string,
+	retryLimitPerURL        uint8,
 	registerContractAddress common.Address,
 	stakingContractAddress common.Address,
 ) (Carrier, error) {
-	client, err := ethclient.Dial(url)
+	if startURLIndex < 0 || startURLIndex >= len(clientURLs) {
+		return nil, errors.New("invalid starting URL index")
+	}
+	client, err := ethclient.Dial(clientURLs[startURLIndex])
 	if err != nil {
 		return nil, err
 	}
 	return &ethereumCarrier{
 		client:                  client,
-		clientURL:               url,
+		currentClientURLIndex:   startURLIndex,
+		clientURLs:              clientURLs,
+		retryLimitPerURL:        retryLimitPerURL,
 		stakingContractAddress:  stakingContractAddress,
 		registerContractAddress: registerContractAddress,
 	}, nil
@@ -65,7 +77,7 @@ func (evc *ethereumCarrier) Close() {
 	evc.client.Close()
 }
 
-func (evc *ethereumCarrier) reset(err error) error {
+func (evc *ethereumCarrier) redial(err error) error {
 	switch err.Error() {
 	case "tls: use of closed connection":
 		fallthrough
@@ -73,7 +85,7 @@ func (evc *ethereumCarrier) reset(err error) error {
 		zap.L().Warn("reset ethclient", zap.Error(err))
 		evc.client.Close()
 		var newErr error
-		if evc.client, newErr = ethclient.Dial(evc.clientURL); newErr != nil {
+		if evc.client, newErr = ethclient.Dial(evc.clientURLs[evc.currentClientURLIndex]); newErr != nil {
 			err = newErr
 		}
 	}
@@ -84,7 +96,7 @@ func (evc *ethereumCarrier) reset(err error) error {
 func (evc *ethereumCarrier) BlockTimestamp(height uint64) (time.Time, error) {
 	header, err := evc.client.HeaderByNumber(context.Background(), big.NewInt(0).SetUint64(height))
 	if err != nil {
-		return time.Now(), evc.reset(err)
+		return time.Now(), evc.redial(err)
 	}
 	return time.Unix(header.Time.Int64(), 0), nil
 }
@@ -93,7 +105,7 @@ func (evc *ethereumCarrier) SubscribeNewBlock(cb func(uint64), close chan bool) 
 	headers := make(chan *ethtypes.Header)
 	sub, err := evc.client.SubscribeNewHead(context.Background(), headers)
 	if err != nil {
-		return evc.reset(err)
+		return evc.redial(err)
 	}
 	go func() {
 		for {
@@ -102,11 +114,13 @@ func (evc *ethereumCarrier) SubscribeNewBlock(cb func(uint64), close chan bool) 
 				close <- closed
 				return
 			case err := <-sub.Err():
-				if err := evc.reset(err); err.Error() != "tls: use of closed connection" {
-					zap.L().Fatal("failed to reset client", zap.Error(err))
-				}
-				if sub, err = evc.client.SubscribeNewHead(context.Background(), headers); err != nil {
-					zap.L().Fatal("failed to resubscribe new head", zap.Error(err))
+				for {
+					if sub, err = evc.retrySubscribeNewHead(err, headers); err == nil {
+						break
+					}
+					if err := evc.RotateClient(); err != nil {
+						zap.L().Error("failed to rotate client", zap.Error(err))
+					}
 				}
 			case header := <-headers:
 				zap.L().Debug("New ethereum block", zap.Uint64("height", header.Number.Uint64()))
@@ -127,7 +141,7 @@ func (evc *ethereumCarrier) Candidates(
 	}
 	caller, err := contract.NewRegisterCaller(evc.registerContractAddress, evc.client)
 	if err != nil {
-		return nil, nil, evc.reset(err)
+		return nil, nil, evc.redial(err)
 	}
 	retval, err := caller.GetAllCandidates(
 		&bind.CallOpts{BlockNumber: new(big.Int).SetUint64(height)},
@@ -172,7 +186,7 @@ func (evc *ethereumCarrier) Votes(
 	}
 	caller, err := contract.NewStakingCaller(evc.stakingContractAddress, evc.client)
 	if err != nil {
-		return nil, nil, evc.reset(err)
+		return nil, nil, evc.redial(err)
 	}
 	buckets, err := caller.GetActiveBuckets(
 		&bind.CallOpts{BlockNumber: new(big.Int).SetUint64(height)},
@@ -210,6 +224,35 @@ func (evc *ethereumCarrier) Votes(
 	}
 
 	return previousIndex, votes, nil
+}
+
+func (evc *ethereumCarrier) RotateClient() error {
+	evc.currentClientURLIndex++
+	if evc.currentClientURLIndex == len(evc.clientURLs) {
+		evc.currentClientURLIndex = 0
+	}
+	evc.client.Close()
+	var err error
+	if evc.client, err = ethclient.Dial(evc.clientURLs[evc.currentClientURLIndex]); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (evc *ethereumCarrier) retrySubscribeNewHead(err error, headers chan *ethtypes.Header) (ethereum.Subscription, error) {
+	var sub ethereum.Subscription
+	var newErr error
+	for i := uint8(0); i < evc.retryLimitPerURL; i++ {
+		if newErr := evc.redial(err); newErr.Error() != "tls: use of closed connection" {
+			zap.L().Error("failed to redial client", zap.Error(newErr))
+			continue
+		}
+		if sub, newErr = evc.client.SubscribeNewHead(context.Background(), headers); newErr == nil {
+			return sub, nil
+		}
+		zap.L().Error("failed to resubscribe new head", zap.Error(newErr))
+	}
+	return sub, newErr
 }
 
 func decodeAddress(data [][32]byte, num int) ([][]byte, error) {

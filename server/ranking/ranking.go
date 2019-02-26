@@ -66,6 +66,7 @@ func NewServer(cfg *Config) (Server, error) {
 }
 
 func (s *server) Start(ctx context.Context) error {
+	zap.L().Info("Start ranking server")
 	if err := s.electionCommittee.Start(ctx); err != nil {
 		return err
 	}

@@ -8,9 +8,9 @@ committee:
   numOfRetries: 8
   beaconChainAPI: wss://kovan.infura.io/ws
   beaconChainHeightInterval: 100
-  beaconChainStartHeight: 10420000
-  registerContractAddress: 0x67A99F0D2cBde47E1A59F1FabF334db207A48C48
-  stakingContractAddress: 0xf488342896e4ef30022a88d869caaa329d476aa9
+  beaconChainStartHeight: 10439100
+  registerContractAddress: 0x1c0e85f8804f1448073aac395453c9e52835d968
+  stakingContractAddress: 0xd546bb3fc2db18618b7c16f155800c9897688f3e
   paginationSize: 100
   voteThreshold: "100000000000000000000"
   scoreThreshold: "2000000000000000000000000"

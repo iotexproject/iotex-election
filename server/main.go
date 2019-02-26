@@ -34,6 +34,7 @@ func main() {
 	if err != nil {
 		zap.L().Fatal("failed to create ranking server", zap.Error(err))
 	}
+	zap.L().Info("New server created")
 	if err := rankingServer.Start(context.Background()); err != nil {
 		zap.L().Fatal("failed to start ranking server", zap.Error(err))
 	}

@@ -23,21 +23,25 @@ func TestVoteCarrier(t *testing.T) {
 	// TODO: update contract address once finalize it
 	carrier, err := NewEthereumVoteCarrier(
 		"wss://kovan.infura.io/ws",
-		common.HexToAddress("0x67A99F0D2cBde47E1A59F1FabF334db207A48C48"),
-		common.HexToAddress("0xf488342896e4ef30022a88d869caaa329d476aa9"),
+		common.HexToAddress("0x1c0e85f8804f1448073aac395453c9e52835d968"),
+		common.HexToAddress("0xd546bb3fc2db18618b7c16f155800c9897688f3e"),
 	)
 	require.NoError(err)
 	defer carrier.Close()
 	t.Run("Candidates", func(t *testing.T) {
-		nextIndex, candidates, err := carrier.Candidates(uint64(10412500), big.NewInt(1), uint8(15))
-		require.Equal(0, big.NewInt(11).Cmp(nextIndex))
+		nextIndex, candidates, err := carrier.Candidates(uint64(10439100), big.NewInt(1), uint8(26))
+		require.Equal(0, big.NewInt(25).Cmp(nextIndex))
 		require.NoError(err)
-		require.Equal(10, len(candidates))
+		require.Equal(24, len(candidates))
 		names := []string{
-			"616263000000000000000000", "323233343536373839306131", "323233343536373839306133",
-			"323233343536373839306132", "323233343536373839306135", "323233343536373839306134",
-			"323233343536373839306138", "323233343536373839306136", "323233343536373839306137",
-			"323233343536373839306139",
+			"726f626f7462703030303030", "726f626f7462703030303032", "726f626f7462703030303036",
+			"726f626f7462703030303031", "726f626f7462703030303037", "726f626f7462703030303035",
+			"726f626f7462703030303038", "726f626f7462703030303034", "726f626f7462703030303033",
+			"726f626f7462703030303039", "726f626f7462703030303131", "726f626f7462703030303130",
+			"726f626f7462703030303135", "726f626f7462703030303133", "726f626f7462703030303137",
+			"726f626f7462703030303136", "726f626f7462703030303132", "726f626f7462703030303134",
+			"726f626f7462703030303230", "726f626f7462703030303231", "726f626f7462703030303138",
+			"726f626f7462703030303232", "726f626f7462703030303233", "726f626f7462703030303139",
 		}
 		for i, name := range names {
 			bname, err := hex.DecodeString(name)
@@ -46,18 +50,18 @@ func TestVoteCarrier(t *testing.T) {
 		}
 	})
 	t.Run("Votes", func(t *testing.T) {
-		lastIndex, votes, err := carrier.Votes(uint64(10377500), big.NewInt(0), uint8(3))
+		lastIndex, votes, err := carrier.Votes(uint64(10439100), big.NewInt(0), uint8(3))
 		require.NoError(err)
-		require.Equal(0, big.NewInt(1).Cmp(lastIndex))
-		require.Equal(1, len(votes))
-		require.Equal(int64(1550363360), votes[0].StartTime().Unix())
+		require.Equal(0, big.NewInt(3).Cmp(lastIndex))
+		require.Equal(3, len(votes))
+		require.Equal(int64(1551138764), votes[0].StartTime().Unix())
 		require.Equal(24*7*time.Hour, votes[0].Duration())
-		amount, ok := new(big.Int).SetString("250000000000000000000", 10)
+		amount, ok := new(big.Int).SetString("1200000000000000000000000", 10)
 		require.True(ok)
 		require.Equal(0, amount.Cmp(votes[0].Amount()))
 		require.Equal(true, votes[0].Decay())
-		require.Equal(0, strings.Compare("95a971937f343591352c56eabf04a1d69de18c4e", hex.EncodeToString(votes[0].Voter())))
-		canName, err := hex.DecodeString("726f626f7432000000000000")
+		require.Equal(0, strings.Compare("10c7f115eb6efcf55483d63e6fb78fa39b5f02de", hex.EncodeToString(votes[0].Voter())))
+		canName, err := hex.DecodeString("726f626f7462703030303030")
 		require.NoError(err)
 		require.True(bytes.Equal(canName, votes[0].Candidate()))
 	})

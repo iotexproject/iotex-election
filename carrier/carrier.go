@@ -12,7 +12,6 @@ import (
 	"math/big"
 	"time"
 
-	ethereum "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -43,31 +42,27 @@ type ethereumCarrier struct {
 	client                  *ethclient.Client
 	currentClientURLIndex   int
 	clientURLs              []string
-	retryLimitPerURL        uint8
 	stakingContractAddress  common.Address
 	registerContractAddress common.Address
 }
 
 // NewEthereumVoteCarrier defines a carrier to fetch votes from ethereum contract
 func NewEthereumVoteCarrier(
-	startURLIndex			int,
 	clientURLs              []string,
-	retryLimitPerURL        uint8,
 	registerContractAddress common.Address,
 	stakingContractAddress common.Address,
 ) (Carrier, error) {
-	if startURLIndex < 0 || startURLIndex >= len(clientURLs) {
-		return nil, errors.New("invalid starting URL index")
+	if len(clientURLs) == 0 {
+		return nil, errors.New("client URL list is empty")
 	}
-	client, err := ethclient.Dial(clientURLs[startURLIndex])
+	client, err := ethclient.Dial(clientURLs[0])
 	if err != nil {
 		return nil, err
 	}
 	return &ethereumCarrier{
 		client:                  client,
-		currentClientURLIndex:   startURLIndex,
+		currentClientURLIndex:   0,
 		clientURLs:              clientURLs,
-		retryLimitPerURL:        retryLimitPerURL,
 		stakingContractAddress:  stakingContractAddress,
 		registerContractAddress: registerContractAddress,
 	}, nil
@@ -75,22 +70,6 @@ func NewEthereumVoteCarrier(
 
 func (evc *ethereumCarrier) Close() {
 	evc.client.Close()
-}
-
-func (evc *ethereumCarrier) redial(err error) error {
-	switch err.Error() {
-	case "tls: use of closed connection":
-		fallthrough
-	case "EOF":
-		zap.L().Warn("reset ethclient", zap.Error(err))
-		evc.client.Close()
-		var newErr error
-		if evc.client, newErr = ethclient.Dial(evc.clientURLs[evc.currentClientURLIndex]); newErr != nil {
-			err = newErr
-		}
-	}
-
-	return err
 }
 
 func (evc *ethereumCarrier) BlockTimestamp(height uint64) (time.Time, error) {
@@ -115,12 +94,13 @@ func (evc *ethereumCarrier) SubscribeNewBlock(cb func(uint64), close chan bool) 
 				return
 			case err := <-sub.Err():
 				for {
-					if sub, err = evc.retrySubscribeNewHead(err, headers); err == nil {
-						break
-					}
-					if err := evc.RotateClient(); err != nil {
+					if err := evc.rotateClient(); err != nil {
 						zap.L().Error("failed to rotate client", zap.Error(err))
 					}
+					if sub, err = evc.client.SubscribeNewHead(context.Background(), headers); err == nil {
+						break
+					}
+					zap.L().Error("failed to resubscribe new head", zap.Error(err))
 				}
 			case header := <-headers:
 				zap.L().Debug("New ethereum block", zap.Uint64("height", header.Number.Uint64()))
@@ -227,32 +207,34 @@ func (evc *ethereumCarrier) Votes(
 }
 
 func (evc *ethereumCarrier) RotateClient() error {
-	evc.currentClientURLIndex++
-	if evc.currentClientURLIndex == len(evc.clientURLs) {
-		evc.currentClientURLIndex = 0
+	return evc.rotateClient()
+}
+
+func (evc *ethereumCarrier) redial(err error) error {
+	switch err.Error() {
+	case "tls: use of closed connection":
+		fallthrough
+	case "EOF":
+		zap.L().Warn("reset ethclient", zap.Error(err))
+		evc.client.Close()
+		var newErr error
+		if evc.client, newErr = ethclient.Dial(evc.clientURLs[evc.currentClientURLIndex]); newErr != nil {
+			err = newErr
+		}
 	}
+
+	return err
+}
+
+func (evc *ethereumCarrier) rotateClient() error {
+	evc.currentClientURLIndex++
+	evc.currentClientURLIndex = (evc.currentClientURLIndex + 1) % len(evc.clientURLs)
 	evc.client.Close()
 	var err error
 	if evc.client, err = ethclient.Dial(evc.clientURLs[evc.currentClientURLIndex]); err != nil {
 		return err
 	}
 	return nil
-}
-
-func (evc *ethereumCarrier) retrySubscribeNewHead(err error, headers chan *ethtypes.Header) (ethereum.Subscription, error) {
-	var sub ethereum.Subscription
-	var newErr error
-	for i := uint8(0); i < evc.retryLimitPerURL; i++ {
-		if newErr := evc.redial(err); newErr.Error() != "tls: use of closed connection" {
-			zap.L().Error("failed to redial client", zap.Error(newErr))
-			continue
-		}
-		if sub, newErr = evc.client.SubscribeNewHead(context.Background(), headers); newErr == nil {
-			return sub, nil
-		}
-		zap.L().Error("failed to resubscribe new head", zap.Error(newErr))
-	}
-	return sub, newErr
 }
 
 func decodeAddress(data [][32]byte, num int) ([][]byte, error) {

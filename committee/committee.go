@@ -91,9 +91,7 @@ func NewCommittee(kvstore db.KVStore, cfg Config) (Committee, error) {
 		return nil, errors.New("Invalid staking contract address")
 	}
 	carrier, err := carrier.NewEthereumVoteCarrier(
-		0,
 		cfg.BeaconChainAPIs,
-		cfg.NumOfRetries,
 		common.HexToAddress(cfg.RegisterContractAddress),
 		common.HexToAddress(cfg.StakingContractAddress),
 	)
@@ -177,9 +175,10 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 		return err
 	}
 	for {
-		if success := ec.retrySubscribeNewBlock(); success {
+		if err = ec.carrier.SubscribeNewBlock(ec.OnNewBlock, ec.terminate); err == nil {
 			return
 		}
+		zap.L().Warn("retry new block subscription by rotating client", zap.Error(err))
 		if err := ec.carrier.RotateClient(); err != nil {
 			return errors.Wrap(err, "failed to rotate carrier client")
 		}
@@ -377,18 +376,6 @@ func (ec *committee) storeResult(height uint64, result *types.ElectionResult) er
 	ec.cache.insert(height, result)
 
 	return ec.heightManager.add(height, result.MintTime())
-}
-
-func (ec *committee) retrySubscribeNewBlock() bool {
-	for i := uint8(0); i < ec.retryLimit; i++ {
-		err := ec.carrier.SubscribeNewBlock(ec.OnNewBlock, ec.terminate)
-		if err == nil {
-			return true
-		}
-		zap.L().Warn("retry new block subscription", zap.Error(err))
-		time.Sleep(time.Duration(i) * time.Second)
-	}
-	return false
 }
 
 func (ec *committee) retryFetchResultByHeight() (*types.ElectionResult, error) {

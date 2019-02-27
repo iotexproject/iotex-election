@@ -32,17 +32,17 @@ type CalcBeaconChainHeight func(uint64) (uint64, error)
 
 // Config defines the config of the committee
 type Config struct {
-	NumOfRetries              uint8  `yaml:"numOfRetries"`
+	NumOfRetries              uint8    `yaml:"numOfRetries"`
 	BeaconChainAPIs           []string `yaml:"beaconChainAPIs"`
-	BeaconChainHeightInterval uint64 `yaml:"beaconChainHeightInterval"`
-	BeaconChainStartHeight    uint64 `yaml:"beaconChainStartHeight"`
-	RegisterContractAddress   string `yaml:"registerContractAddress"`
-	StakingContractAddress    string `yaml:"stakingContractAddress"`
-	PaginationSize            uint8  `yaml:"paginationSize"`
-	VoteThreshold             string `yaml:"voteThreshold"`
-	ScoreThreshold            string `yaml:"scoreThreshold"`
-	SelfStakingThreshold      string `yaml:"selfStakingThreshold"`
-	CacheSize                 uint32 `yaml:"cacheSize"`
+	BeaconChainHeightInterval uint64   `yaml:"beaconChainHeightInterval"`
+	BeaconChainStartHeight    uint64   `yaml:"beaconChainStartHeight"`
+	RegisterContractAddress   string   `yaml:"registerContractAddress"`
+	StakingContractAddress    string   `yaml:"stakingContractAddress"`
+	PaginationSize            uint8    `yaml:"paginationSize"`
+	VoteThreshold             string   `yaml:"voteThreshold"`
+	ScoreThreshold            string   `yaml:"scoreThreshold"`
+	SelfStakingThreshold      string   `yaml:"selfStakingThreshold"`
+	CacheSize                 uint32   `yaml:"cacheSize"`
 }
 
 // Committee defines an interface of an election committee
@@ -259,7 +259,7 @@ func (ec *committee) ResultByHeight(height uint64) (*types.ElectionResult, error
 func (ec *committee) resultByHeight(height uint64) (*types.ElectionResult, error) {
 	if height < ec.startHeight {
 		return nil, errors.Errorf(
-			"height %d is higher than start height %d",
+			"height %d is lower than start height %d",
 			height,
 			ec.startHeight,
 		)

@@ -6,7 +6,8 @@ port: 8089
 
 committee:
   numOfRetries: 8
-  beaconChainAPI: wss://kovan.infura.io/ws
+  beaconChainAPIs:
+    - wss://kovan.infura.io/ws
   beaconChainHeightInterval: 100
   beaconChainStartHeight: 10439100
   registerContractAddress: 0x1c0e85f8804f1448073aac395453c9e52835d968

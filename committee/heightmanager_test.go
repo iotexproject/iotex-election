@@ -78,10 +78,16 @@ func TestValidate(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{"0-1546272000", hm, args{0, baseTime}, true},
-		{"4-1546272060", hm, args{4, baseTime.Add(time.Second * 60)}, true},
-		{"5-1546272060", hm, args{5, baseTime.Add(time.Second * 60)}, true},
-		{"5-1546272075", hm, args{5, baseTime.Add(time.Second * 75)}, false},
+		{"0-1546272000", hm, args{0, baseTime}, true},                        // h < latest, t < latest
+		{"0-1546272060", hm, args{0, baseTime.Add(time.Second * 60)}, true},  // h < latest, t = latest
+		{"0-1546272061", hm, args{0, baseTime.Add(time.Second * 61)}, true},  // h < latest, t > latest
+		{"4-1546272000", hm, args{4, baseTime}, true},                        // h = latest, t < latest
+		{"4-1546272060", hm, args{4, baseTime.Add(time.Second * 60)}, true},  // h = latest, t = latest
+		{"4-1546272061", hm, args{4, baseTime.Add(time.Second * 61)}, true},  // h = latest, t > latest
+		{"5-1546272000", hm, args{5, baseTime}, true},                        // h > latest, t < latest
+		{"5-1546272060", hm, args{5, baseTime.Add(time.Second * 60)}, true},  // h > latest, t = latest
+		{"5-1546272061", hm, args{5, baseTime.Add(time.Second * 61)}, false}, // h > latest, t > latest
+
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -113,10 +119,20 @@ func TestNearestHeightBefore(t *testing.T) {
 		args args
 		want uint64
 	}{
+		{"1546271970", hm, args{baseTime.Add(time.Second * -30)}, 0},
 		{"1546271999", hm, args{baseTime.Add(time.Second * -1)}, 0},
+		{"1546272000", hm, args{baseTime}, 0},
 		{"1546272001", hm, args{baseTime.Add(time.Second * 1)}, 0},
-		{"1546272035", hm, args{baseTime.Add(time.Second * 35)}, 2},
-		{"1546272065", hm, args{baseTime.Add(time.Second * 65)}, 4},
+		{"1546272014", hm, args{baseTime.Add(time.Second * 14)}, 0},
+		{"1546272015", hm, args{baseTime.Add(time.Second * 15)}, 1},
+		{"1546272016", hm, args{baseTime.Add(time.Second * 16)}, 1},
+		{"1546272029", hm, args{baseTime.Add(time.Second * 29)}, 1},
+		{"1546272030", hm, args{baseTime.Add(time.Second * 30)}, 2},
+		{"1546272031", hm, args{baseTime.Add(time.Second * 31)}, 2},
+		{"1546272059", hm, args{baseTime.Add(time.Second * 59)}, 3},
+		{"1546272060", hm, args{baseTime.Add(time.Second * 60)}, 4},
+		{"1546272061", hm, args{baseTime.Add(time.Second * 61)}, 4},
+		{"1546272090", hm, args{baseTime.Add(time.Second * 90)}, 4},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -130,23 +146,10 @@ func TestNearestHeightBefore(t *testing.T) {
 func TestLastestHeight(t *testing.T) {
 	baseTime := time.Unix(int64(1546272000), 0) // 2019-01-01 00:00:00
 	hm := newHeightManager()
+	require.Equal(t, uint64(0), hm.lastestHeight())
 	for i := 0; i < 5; i++ {
 		ts := baseTime.Add(time.Second * time.Duration(15*i)) // increments in 15 seconds
 		hm.add(uint64(i), ts)
-	}
-
-	tests := []struct {
-		name string
-		m    *heightManager
-		want uint64
-	}{
-		{"LastHeight", hm, 4},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.m.lastestHeight(); got != tt.want {
-				t.Errorf("heightManager.lastestHeight() = %v, want %v", got, tt.want)
-			}
-		})
+		require.Equal(t, uint64(i), hm.lastestHeight())
 	}
 }

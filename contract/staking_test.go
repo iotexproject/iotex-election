@@ -22,37 +22,26 @@ func TestStakingContract(t *testing.T) {
 	client, err := ethclient.Dial("https://kovan.infura.io")
 	require.NoError(t, err)
 	caller, err := NewStakingCaller(
-		common.HexToAddress("0xf488342896e4ef30022a88d869caaa329d476aa9"),
+		common.HexToAddress("0xdedf0c1610d8a75ca896d8c93a0dc39abf7daff4"),
 		client,
 	)
 	require.NoError(t, err)
 	retval, err := caller.GetActiveBuckets(
-		&bind.CallOpts{BlockNumber: big.NewInt(10377538)},
+		&bind.CallOpts{BlockNumber: big.NewInt(10454030)},
 		big.NewInt(0),
 		big.NewInt(10),
 	)
 	require.NoError(t, err)
-	require.Equal(t, big.NewInt(2), retval.Count)
+	require.Equal(t, big.NewInt(10), retval.Count)
 
-	amount, ok := new(big.Int).SetString("250000000000000000000", 10)
+	amount, ok := new(big.Int).SetString("500000000000000000000", 10)
 	require.True(t, ok)
-	require.Equal(t, true, retval.Decays[0])
+	require.Equal(t, false, retval.Decays[0])
 	require.Equal(t, 0, amount.Cmp(retval.StakedAmounts[0]))
-	require.Equal(t, 0, big.NewInt(7).Cmp(retval.StakeDurations[0]))
-	require.Equal(t, 0, big.NewInt(1550363360).Cmp(retval.StakeStartTimes[0]))
-	canName, err := hex.DecodeString("726f626f7432000000000000")
+	require.Equal(t, 0, big.NewInt(14).Cmp(retval.StakeDurations[0]))
+	require.Equal(t, 0, big.NewInt(1551375520).Cmp(retval.StakeStartTimes[0]))
+	canName, err := hex.DecodeString("696f783132336b6b61617363")
 	require.NoError(t, err)
 	require.True(t, bytes.Equal(canName, retval.CanNames[0][:]))
-	require.Equal(t, common.HexToAddress("0x95a971937F343591352c56EABf04a1D69DE18c4E"), retval.Owners[0])
-
-	amount, ok = new(big.Int).SetString("100000000000000000000", 10)
-	require.True(t, ok)
-	require.Equal(t, false, retval.Decays[1])
-	require.Equal(t, 0, amount.Cmp(retval.StakedAmounts[1]))
-	require.Equal(t, 0, big.NewInt(350).Cmp(retval.StakeDurations[1]))
-	require.Equal(t, 0, big.NewInt(1550363864).Cmp(retval.StakeStartTimes[1]))
-	canName, err = hex.DecodeString("726f626f7431000000000000")
-	require.NoError(t, err)
-	require.True(t, bytes.Equal(canName, retval.CanNames[1][:]))
-	require.Equal(t, common.HexToAddress("1D23bF4b8c64e4cdaC4448A5aF777FebF9fedE90"), retval.Owners[1])
+	require.Equal(t, common.HexToAddress("0x4Cd9dE46FED0c91fecc15d8392468f7EFEE34E25"), retval.Owners[0])
 }

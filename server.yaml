@@ -9,9 +9,9 @@ committee:
   beaconChainAPIs:
     - wss://kovan.infura.io/ws
   beaconChainHeightInterval: 100
-  beaconChainStartHeight: 10439100
-  registerContractAddress: 0x1c0e85f8804f1448073aac395453c9e52835d968
-  stakingContractAddress: 0xd546bb3fc2db18618b7c16f155800c9897688f3e
+  beaconChainStartHeight: 10454100
+  registerContractAddress: 0xb4ca6cf2fe760517a3f92120acbe577311252663
+  stakingContractAddress: 0xdedf0c1610d8a75ca896d8c93a0dc39abf7daff4
   paginationSize: 100
   voteThreshold: "100000000000000000000"
   scoreThreshold: "2000000000000000000000000"

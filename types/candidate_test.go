@@ -35,11 +35,11 @@ func TestCandidate(t *testing.T) {
 	})
 	t.Run("add-scores", func(t *testing.T) {
 		require.Error(c.addScore(big.NewInt(-1)))
-		require.Error(c.addSelfStakingScore(big.NewInt(-1)))
+		require.Error(c.addSelfStakingTokens(big.NewInt(-1)))
 		require.NoError(c.addScore(big.NewInt(1)))
 		require.Equal(0, c.Score().Cmp(big.NewInt(1)))
-		require.NoError(c.addSelfStakingScore(big.NewInt(1)))
-		require.Equal(0, c.SelfStakingScore().Cmp(big.NewInt(1)))
+		require.NoError(c.addSelfStakingTokens(big.NewInt(1)))
+		require.Equal(0, c.SelfStakingTokens().Cmp(big.NewInt(1)))
 		c.reset()
 	})
 }

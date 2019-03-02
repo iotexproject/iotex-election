@@ -148,16 +148,16 @@ func TestResultCalculator(t *testing.T) {
 		require.NoError(err)
 		delegates := result.Delegates()
 		require.Equal(2, len(delegates))
-		ec4 := candidates[3].Clone()
-		ec4.score = big.NewInt(2090)
-		ec4.selfStakingScore = big.NewInt(1320)
+		ec4 := candidates[2].Clone()
+		ec4.score = big.NewInt(2051)
+		ec4.selfStakingTokens = big.NewInt(1000)
 		ec5 := candidate5.Clone()
-		ec5.score = big.NewInt(2137)
-		ec5.selfStakingScore = big.NewInt(1002)
+		ec5.score = big.NewInt(3755)
+		ec5.selfStakingTokens = big.NewInt(1010)
 		expectedDelegates := []*Candidate{ec5, ec4}
 		expectedVotes := [][]*big.Int{
-			[]*big.Int{big.NewInt(342), big.NewInt(660), big.NewInt(1135)},
-			[]*big.Int{big.NewInt(500), big.NewInt(820), big.NewInt(770)},
+			[]*big.Int{big.NewInt(1960), big.NewInt(660), big.NewInt(1135)},
+			[]*big.Int{big.NewInt(700), big.NewInt(900), big.NewInt(451)},
 		}
 		for i, d := range delegates {
 			require.NotNil(expectedDelegates[i])
@@ -187,11 +187,11 @@ func mockCalcWeight(v *Vote, t time.Time) *big.Int {
 
 func mockCandidateFilter(
 	ScoreThreshold int64,
-	SelfStakingScoreThreshold int64,
+	SelfStakingTokenThreshold int64,
 ) CandidateFilterFunc {
 	return func(c *Candidate) bool {
 		return c.Score().Cmp(big.NewInt(ScoreThreshold)) < 0 ||
-			c.SelfStakingScore().Cmp(big.NewInt(SelfStakingScoreThreshold)) < 0
+			c.SelfStakingTokens().Cmp(big.NewInt(SelfStakingTokenThreshold)) < 0
 	}
 }
 
@@ -242,7 +242,8 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*Vote {
 	require.NoError(err)
 	votes = append(votes, vote)
 	// votes from voter3
-	// 1 * 70 * 10 = 1000
+	// 70 * 10 = 700
+	// 1 * 70 * 10 = 700
 	vote, err = NewVote(
 		mintTime.Add(-3*time.Hour),
 		1*time.Hour,
@@ -254,11 +255,12 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*Vote {
 	)
 	require.NoError(err)
 	votes = append(votes, vote)
-	// (2 + 1) * 10 * 10 = 300
+	// 30 * 10 = 300
+	// (2 + 1) * 30 * 10 = 600
 	vote, err = NewVote(
 		mintTime.Add(-1*time.Hour),
 		2*time.Hour,
-		big.NewInt(20),
+		big.NewInt(30),
 		big.NewInt(0),
 		[]byte("voter3"),
 		[]byte("candidate3"),
@@ -292,11 +294,12 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*Vote {
 	require.NoError(err)
 	votes = append(votes, vote)
 	// votes from voter5
-	// (8 + 1) * 19 * 2 = 342
+	// 490 * 2 = 980
+	// (1 + 1) * 490 * 2 = 1960
 	vote, err = NewVote(
 		mintTime.Add(-6*time.Hour),
-		14*time.Hour,
-		big.NewInt(19),
+		7*time.Hour,
+		big.NewInt(490),
 		big.NewInt(0),
 		[]byte("voter5"),
 		[]byte("candidate5"),
@@ -304,6 +307,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*Vote {
 	)
 	require.NoError(err)
 	votes = append(votes, vote)
+	// 15 * 2 = 30
 	// (21 + 1) * 15 * 2 = 660
 	vote, err = NewVote(
 		mintTime.Add(-10*time.Hour),
@@ -354,11 +358,11 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*Vote {
 	)
 	require.NoError(err)
 	votes = append(votes, vote)
-	// (11 + 1) * 11 = 132
+	// (11 + 1) * 41 = 492
 	vote, err = NewVote(
 		mintTime.Add(-1*time.Hour),
 		11*time.Hour,
-		big.NewInt(11),
+		big.NewInt(41),
 		big.NewInt(21),
 		[]byte("voter7"),
 		[]byte("candidate3"),

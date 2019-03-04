@@ -39,13 +39,13 @@ func (p itemList) Less(i, j int) bool {
 		return true
 	}
 	switch {
-	case p[i].Priority > p[j].Priority:
-		return false
 	case p[i].Priority < p[j].Priority:
+		return false
+	case p[i].Priority > p[j].Priority:
 		return true
 	}
 	// This is a corner case, which rarely happens.
-	return strings.Compare(p[i].Key, p[j].Key) < 0
+	return strings.Compare(p[i].Key, p[j].Key) > 0
 }
 
 // VoteFilterFunc defines the function to filter vote

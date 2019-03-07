@@ -113,7 +113,7 @@ func (c *Candidate) Name() []byte {
 	return util.CopyBytes(c.name)
 }
 
-// Address returns the address of this candidate on beacon chain
+// Address returns the address of this candidate on gravity chain
 func (c *Candidate) Address() []byte {
 	return util.CopyBytes(c.address)
 }

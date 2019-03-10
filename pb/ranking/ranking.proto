@@ -26,6 +26,8 @@ service Ranking {
 message ChainMeta {
 	string height = 1;
 	uint64 totalCandidates = 2;
+	string totalVotedStakes = 3;
+	string totalVotes = 4;
 }
 
 message Bucket {
@@ -33,8 +35,8 @@ message Bucket {
 	string voter = 1;
 	string votes = 2;
 	string weightedVotes = 3;
-	// seconds
-	uint64 remainingDuration  = 4;
+	// human readable duration
+	string remainingDuration = 4;
 }
 
 message Candidate {
@@ -46,15 +48,15 @@ message Candidate {
 
 message GetCandidatesRequest {
 	string height = 1;
-	uint64 offset = 2;
-	uint64 limit =3;
+	uint32 offset = 2;
+	uint32 limit =3;
 }
 
 message GetBucketsByCandidateRequest {
 	string name = 1;
 	string height = 2;
-	uint64 offset = 3;
-	uint64 limit = 4;
+	uint32 offset = 3;
+	uint32 limit = 4;
 }
 
 message CandidateResponse {

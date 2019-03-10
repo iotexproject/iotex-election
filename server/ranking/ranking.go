@@ -9,12 +9,13 @@ package ranking
 import (
 	"encoding/hex"
 	"errors"
+	"log"
 	"net"
 	"strconv"
-	"time"
 
 	"github.com/golang/protobuf/ptypes/empty"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -47,8 +48,16 @@ type server struct {
 
 // NewServer returns an implementation of ranking server
 func NewServer(cfg *Config) (Server, error) {
+	zapCfg := zap.NewDevelopmentConfig()
+	zapCfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+	zapCfg.Level.SetLevel(zap.InfoLevel)
+	l, err := zapCfg.Build()
+	if err != nil {
+		log.Panic("Failed to init zap global logger, no zap log will be shown till zap is properly initialized: ", err)
+	}
+	zap.ReplaceGlobals(l)
+
 	var c committee.Committee
-	var err error
 	if cfg.DB.DBPath != "" {
 		c, err = committee.NewCommitteeWithKVStoreWithNamespace(db.NewBoltDB(cfg.DB), cfg.Committee)
 	} else {
@@ -99,18 +108,15 @@ func (s *server) GetMeta(ctx context.Context, empty *empty.Empty) (*pb.ChainMeta
 	}
 
 	return &pb.ChainMeta{
-		Height:          strconv.FormatUint(height, 10),
-		TotalCandidates: uint64(len(result.Delegates())),
+		Height:           strconv.FormatUint(height, 10),
+		TotalCandidates:  uint64(len(result.Delegates())),
+		TotalVotedStakes: result.TotalVotedStakes().Text(10),
+		TotalVotes:       result.TotalVotes().Text(10),
 	}, nil
 }
 
 // GetCandidates returns a list of candidates sorted by weighted votes
 func (s *server) GetCandidates(ctx context.Context, request *pb.GetCandidatesRequest) (*pb.CandidateResponse, error) {
-	offset := request.Offset
-	limit := request.Limit
-	if offset < 0 || limit < 0 {
-		return nil, errors.New("offset and limit should be positive number")
-	}
 	height, err := strconv.ParseUint(request.Height, 10, 64)
 	if err != nil {
 		return nil, err
@@ -120,17 +126,19 @@ func (s *server) GetCandidates(ctx context.Context, request *pb.GetCandidatesReq
 		return nil, err
 	}
 	candidates := result.Delegates()
-	if uint64(len(candidates)) <= offset {
+	offset := request.Offset
+	if len(candidates) <= int(offset) {
 		return nil, errors.New("offset is larger than candidate length")
 	}
-	if uint64(len(candidates)) < offset+limit {
-		limit = uint64(len(candidates)) - offset
+	limit := request.Limit
+	if len(candidates) < int(offset+limit) {
+		limit = uint32(len(candidates)) - offset
 	}
 	response := &pb.CandidateResponse{
 		Candidates: make([]*pb.Candidate, limit),
 	}
-	for i := offset; i < offset+limit; i++ {
-		candidate := candidates[i]
+	for i := uint32(0); i < limit; i++ {
+		candidate := candidates[offset+i]
 		response.Candidates[i] = &pb.Candidate{
 			Name:               hex.EncodeToString(candidate.Name()),
 			Address:            hex.EncodeToString(candidate.Address()),
@@ -151,19 +159,35 @@ func (s *server) GetBucketsByCandidate(ctx context.Context, request *pb.GetBucke
 	if err != nil {
 		return nil, err
 	}
-	votes := result.VotesByDelegate([]byte(request.Name))
+	name, err := hex.DecodeString(request.Name)
+	if err != nil {
+		return nil, err
+	}
+	if len(name) != 12 {
+		return nil, errors.New("invalid candidate name")
+	}
+	votes := result.VotesByDelegate(name)
 	if votes == nil {
 		return nil, errors.New("No buckets for the candidate")
 	}
-	response := &pb.BucketResponse{
-		Buckets: make([]*pb.Bucket, len(votes)),
+	offset := request.Offset
+	if int(offset) >= len(votes) {
+		return nil, errors.New("offset is out of range")
 	}
-	for i, vote := range votes {
+	limit := request.Limit
+	if int(offset+limit) >= len(votes) {
+		limit = uint32(len(votes)) - offset
+	}
+	response := &pb.BucketResponse{
+		Buckets: make([]*pb.Bucket, limit),
+	}
+	for i := uint32(0); i < limit; i++ {
+		vote := votes[offset+i]
 		response.Buckets[i] = &pb.Bucket{
 			Voter:             hex.EncodeToString(vote.Voter()),
 			Votes:             vote.Amount().Text(10),
 			WeightedVotes:     vote.WeightedAmount().Text(10),
-			RemainingDuration: uint64(vote.RemainingTime(result.MintTime()) / time.Second),
+			RemainingDuration: vote.RemainingTime(result.MintTime()).String(),
 		}
 	}
 

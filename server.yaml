@@ -9,7 +9,7 @@ committee:
   beaconChainAPIs:
     - wss://kovan.infura.io/ws
   beaconChainHeightInterval: 100
-  beaconChainStartHeight: 10454100
+  beaconChainStartHeight: 10518000
   registerContractAddress: 0xb4ca6cf2fe760517a3f92120acbe577311252663
   stakingContractAddress: 0xdedf0c1610d8a75ca896d8c93a0dc39abf7daff4
   paginationSize: 100

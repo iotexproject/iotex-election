@@ -233,13 +233,13 @@ func (evc *ethereumCarrier) redial(err error) error {
 }
 
 func (evc *ethereumCarrier) rotateClient() error {
-	evc.currentClientURLIndex++
 	evc.currentClientURLIndex = (evc.currentClientURLIndex + 1) % len(evc.clientURLs)
 	evc.client.Close()
-	var err error
-	if evc.client, err = ethclient.Dial(evc.clientURLs[evc.currentClientURLIndex]); err != nil {
+	client, err := ethclient.Dial(evc.clientURLs[evc.currentClientURLIndex])
+	if err != nil {
 		return err
 	}
+	evc.client = client
 	return nil
 }
 

@@ -20,9 +20,11 @@ func TestElectionResult(t *testing.T) {
 	require := require.New(t)
 	t.Run("without-data", func(t *testing.T) {
 		result := &ElectionResult{
-			mintTime:  time.Now(),
-			delegates: []*Candidate{},
-			votes:     map[string][]*Vote{},
+			mintTime:         time.Now(),
+			delegates:        []*Candidate{},
+			votes:            map[string][]*Vote{},
+			totalVotes:       new(big.Int),
+			totalVotedStakes: new(big.Int),
 		}
 		b, err := result.Serialize()
 		require.NoError(err)
@@ -59,9 +61,11 @@ func TestElectionResult(t *testing.T) {
 			votes[hex.EncodeToString(c.name)] = []*Vote{v1, v2}
 		}
 		result := &ElectionResult{
-			mintTime:  time.Now(),
-			delegates: candidates,
-			votes:     votes,
+			mintTime:         time.Now(),
+			delegates:        candidates,
+			votes:            votes,
+			totalVotes:       new(big.Int),
+			totalVotedStakes: new(big.Int),
 		}
 		b, err := result.Serialize()
 		require.NoError(err)

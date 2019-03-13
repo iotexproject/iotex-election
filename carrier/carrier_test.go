@@ -67,34 +67,15 @@ func TestVoteCarrier(t *testing.T) {
 		require.Equal(int64(1548986420), ts.Unix())
 	})
 	t.Run("SubscribeNewBlock", func(t *testing.T) {
-		close := make(chan bool)
 		heightChan := make(chan uint64)
-		go func() {
-			time.Sleep(30 * time.Second)
-			close <- true
-		}()
-		for {
-			err := carrier.SubscribeNewBlock(func(height uint64) {
-				heightChan <- height
-			}, close)
-			if err == nil {
-				break
-			}
+		reportChan := make(chan error)
+		unsubscribe := make(chan bool)
+		carrier.SubscribeNewBlock(heightChan, reportChan, unsubscribe)
+		select {
+		case <-heightChan:
+			break
+		case err := <-reportChan:
+			require.NoError(err)
 		}
-		lastHeight := uint64(0)
-		var i int
-		for i = 0; i < 5; i++ {
-			select {
-			case height := <-heightChan:
-				if i != 0 {
-					require.Equal(lastHeight+1, height)
-				}
-				lastHeight = height
-			case <-close:
-				close <- true
-				break
-			}
-		}
-		require.Equal(5, i)
 	})
 }

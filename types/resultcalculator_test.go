@@ -98,8 +98,8 @@ func TestResultCalculator(t *testing.T) {
 				false,
 			)
 			require.NoError(err)
-			calculator.AddVotes([]*Vote{vote})
-			require.Equal(int32(0), calculator.totalVotes)
+			require.NoError(calculator.AddVotes([]*Vote{vote}))
+			require.Equal(0, big.NewInt(40).Cmp(calculator.totalVotes))
 		})
 		t.Run("vote-not-qualified", func(t *testing.T) {
 			vote, err := NewVote(
@@ -113,7 +113,7 @@ func TestResultCalculator(t *testing.T) {
 			)
 			require.NoError(err)
 			calculator.AddVotes([]*Vote{vote})
-			require.Equal(int32(0), calculator.totalVotes)
+			require.Equal(0, big.NewInt(40).Cmp(calculator.totalVotes))
 		})
 		t.Run("after-calculated", func(t *testing.T) {
 			calculator.Calculate()

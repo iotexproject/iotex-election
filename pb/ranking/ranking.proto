@@ -44,6 +44,7 @@ message Candidate {
 	// hex string
 	string address = 2;
 	string totalWeightedVotes = 3;
+	string SelfStakingTokens = 4;
 }
 
 message GetCandidatesRequest {

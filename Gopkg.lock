@@ -91,7 +91,7 @@
   version = "v1.2.0"
 
 [[projects]]
-  digest = "1:19e1717be26f549febea402e08b46db7919d164324a24ff67e0c81dfb11316b8"
+  digest = "1:f2bc519aefa5511928d70d067ae2828cfa60fd3947cc8d166f070a0ce705f782"
   name = "github.com/golang/protobuf"
   packages = [
     "proto",
@@ -103,8 +103,8 @@
     "ptypes/timestamp",
   ]
   pruneopts = "UT"
-  revision = "aa810b61a9c79d51363740d207bb46cf8e620ed5"
-  version = "v1.2.0"
+  revision = "b5d812f8a3706043e23a9cd5babf2e5423744d30"
+  version = "v1.3.1"
 
 [[projects]]
   branch = "master"
@@ -405,6 +405,7 @@
     "github.com/stretchr/testify/require",
     "go.etcd.io/bbolt",
     "go.uber.org/zap",
+    "go.uber.org/zap/zapcore",
     "golang.org/x/crypto/blake2b",
     "golang.org/x/net/context",
     "google.golang.org/grpc",

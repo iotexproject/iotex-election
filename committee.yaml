@@ -1,0 +1,12 @@
+numOfRetries: 8
+beaconChainAPIs:
+- https://mainnet.infura.io/v3/b355cae6fafc4302b106b937ee6c15af
+beaconChainHeightInterval: 100
+beaconChainStartHeight: 7368630
+registerContractAddress: 0x95724986563028deb58f15c5fac19fa09304f32d
+stakingContractAddress: 0x87c9dbff0016af23f5b1ab9b8e072124ab729193
+paginationSize: 100
+voteThreshold: "0"
+scoreThreshold: "0"
+selfStakingThreshold: "0"
+cacheSize: 100

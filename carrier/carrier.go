@@ -162,6 +162,13 @@ func (evc *EthereumCarrier) candidates(
 	var caller *contract.RegisterCaller
 	for i := 0; i < len(evc.clientURLs); i++ {
 		if caller, err = contract.NewRegisterCaller(evc.registerContractAddress, evc.client); err == nil {
+			var count *big.Int
+			if count, err = caller.CandidateCount(opts); err != nil {
+				return
+			}
+			if startIndex.Cmp(count) >= 0 {
+				return
+			}
 			if result, err = caller.GetAllCandidates(opts, startIndex, limit); err == nil {
 				return
 			}

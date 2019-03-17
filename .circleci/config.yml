@@ -12,3 +12,11 @@ jobs:
       - checkout
       - run: go get -v -t -d ./...
       - run: go test -v ./...
+
+
+
+workflows:
+  version: 2
+  commit:
+    jobs:
+      - build_test_docker

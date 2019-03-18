@@ -8,27 +8,24 @@ package main
 
 import (
 	"encoding/csv"
+	"encoding/hex"
 	"flag"
 	"io/ioutil"
 	"log"
-	"math/big"
 	"os"
 	"strconv"
-	"time"
 
 	"go.uber.org/zap"
 	yaml "gopkg.in/yaml.v2"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
-
-	"github.com/iotexproject/iotex-election/carrier"
 	"github.com/iotexproject/iotex-election/committee"
 )
 
 func main() {
 	var configPath string
+	var height uint64
 	flag.StringVar(&configPath, "config", "committee.yaml", "path of server config file")
+	flag.Uint64Var(&height, "height", 0, "ethereuem height")
 	flag.Parse()
 
 	data, err := ioutil.ReadFile(configPath)
@@ -39,55 +36,36 @@ func main() {
 	if err := yaml.Unmarshal(data, &config); err != nil {
 		zap.L().Fatal("failed to unmarshal config", zap.Error(err))
 	}
-	c, err := carrier.NewEthereumVoteCarrier(
-		config.BeaconChainAPIs,
-		common.HexToAddress(config.RegisterContractAddress),
-		common.HexToAddress(config.StakingContractAddress),
-	)
+	committee, err := committee.NewCommittee(nil, config)
 	if err != nil {
-		zap.L().Fatal("failed create carrier", zap.Error(err))
+		zap.L().Fatal("failed to create committee", zap.Error(err))
 	}
-	ecarrier, ok := c.(*carrier.EthereumCarrier)
-	if !ok {
-		zap.L().Fatal("failed to cast ethereum vote carrier")
-	}
-	height, err := ecarrier.TipHeight()
+	result, err := committee.FetchResultByHeight(height)
 	if err != nil {
-		zap.L().Fatal("failed to get tip height", zap.Error(err))
+		zap.L().Fatal("failed to fetch result", zap.Uint64("height", height))
 	}
 	writer := csv.NewWriter(os.Stdout)
-	previousIndex := big.NewInt(0)
-	for {
-		result, err := ecarrier.Buckets(
-			&bind.CallOpts{BlockNumber: new(big.Int).SetUint64(height)},
-			previousIndex,
-			big.NewInt(int64(config.PaginationSize)),
-		)
-		if err != nil {
-			zap.L().Fatal("failed to fetch votes", zap.Error(err))
-		}
-		if result.Count == nil || result.Count.Cmp(big.NewInt(0)) == 0 || len(result.Indexes) == 0 {
-			break
-		}
-		for i, index := range result.Indexes {
-			if big.NewInt(0).Cmp(index) == 0 { // back to start, this is a redundant condition
-				break
-			}
-			duration := time.Duration(result.StakeDurations[i].Uint64()*24) * time.Hour
-			record := []string{
-				index.String(),
-				time.Unix(result.StakeStartTimes[i].Int64(), 0).String(),
-				duration.String(),
-				result.StakedAmounts[i].String(),
-				string(result.CanNames[i][:]),
-				result.Owners[i].String(),
-				strconv.FormatBool(result.Decays[i]),
-			}
-			if err := writer.Write(record); err != nil {
+	writer.Write([]string{
+		"voter",
+		"startTime",
+		"duration",
+		"decay",
+		"tokens",
+		"votes",
+		"votee",
+	})
+	for _, delegate := range result.Delegates() {
+		for _, vote := range result.VotesByDelegate(delegate.Name()) {
+			if err := writer.Write([]string{
+				hex.EncodeToString(vote.Voter()),
+				vote.StartTime().String(),
+				vote.Duration().String(),
+				strconv.FormatBool(vote.Decay()),
+				vote.Amount().String(),
+				vote.WeightedAmount().String(),
+				string(vote.Candidate()),
+			}); err != nil {
 				log.Fatalln("error writing record to csv:", err)
-			}
-			if index.Cmp(previousIndex) > 0 {
-				previousIndex = index
 			}
 		}
 	}

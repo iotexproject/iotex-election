@@ -25,11 +25,13 @@ import (
 )
 
 type Bucket struct {
-	bucketID string
-	stakes   string
-	bpname   string
-	ethAddr  string
+	ethAddr string
+	stakes  string
+	bpname  string
 }
+
+// voter,startTime,duration,decay,tokens,votes,votee
+//e16d79bc05455fb4e3a56dec88d1a338d6d6c354,2019-03-05 00:59:00 -0800 PST,336h0m0s,true,10000000000000000000000,10380178401692392586853,iosg
 
 func main() {
 	buckets := load()
@@ -61,10 +63,9 @@ func load() []Bucket {
 			log.Fatal(error)
 		}
 		buckets = append(buckets, Bucket{
-			bucketID: line[0],
-			stakes:   line[3],
-			bpname:   line[4],
-			ethAddr:  line[5],
+			ethAddr: line[0],
+			stakes:  line[5],
+			bpname:  line[6],
 		})
 	}
 	return buckets

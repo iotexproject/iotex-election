@@ -21,6 +21,8 @@ import (
 	"os"
 	"sort"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/iotexproject/iotex-address/address"
 	. "github.com/logrusorgru/aurora"
 )
 
@@ -46,7 +48,7 @@ func main() {
 	for _, k := range keys {
 		fmt.Println(Bold(Cyan(">>>" + k + "<<<")))
 		for kk, vv := range bps[k] {
-			fmt.Println(kk, ":", vv)
+			fmt.Println(toIoAddr(kk) + "\t" + kk + "\t" + vv)
 		}
 	}
 }
@@ -112,4 +114,11 @@ func addStrs(a, b string) string {
 	c := new(big.Int)
 	c.Add(aaa, bbb)
 	return c.String()
+}
+
+func toIoAddr(addr string) string {
+	ethAddr := common.HexToAddress(addr)
+	pkHash := ethAddr.Bytes()
+	ioAddr, _ := address.FromBytes(pkHash)
+	return ioAddr.String()
 }

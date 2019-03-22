@@ -6,3 +6,9 @@ Dumper dumps the information from staking contract (0x87c9dbff0016af23f5b1ab9b8e
 
 # Processor
 Processor processes the csv produced by Dumper and generate another csv that breaks down the votes to each voters for each delegate. See the samples for more information.
+
+# Generate breakdown of votes
+```
+go run tools/dumper/dumper.go > tools/processor/stats.csv
+go run tools/processor/processor.go
+```

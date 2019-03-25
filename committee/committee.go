@@ -205,7 +205,7 @@ func (ec *committee) Sync(tipHeight uint64) error {
 }
 
 func (ec *committee) sync(tipHeight uint64) error {
-	zap.L().Info("new block", zap.Uint64("height", tipHeight))
+	zap.L().Info("new ethereum block", zap.Uint64("height", tipHeight))
 	if ec.currentHeight < tipHeight {
 		ec.currentHeight = tipHeight
 	}
@@ -380,7 +380,7 @@ func (ec *committee) FetchResultByHeight(height uint64) (*types.ElectionResult, 
 }
 
 func (ec *committee) fetchResultByHeight(height uint64) (*types.ElectionResult, error) {
-	zap.L().Info("fetch result", zap.Uint64("height", height))
+	zap.L().Info("fetch result from ethereum", zap.Uint64("height", height))
 	calculator, err := ec.calculator(height)
 	if err != nil {
 		return nil, err

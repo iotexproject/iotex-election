@@ -10,6 +10,7 @@ import (
 	"context"
 	"math"
 	"math/big"
+	"sort"
 	"sync"
 	"time"
 
@@ -43,6 +44,7 @@ type Config struct {
 	ScoreThreshold            string   `yaml:"scoreThreshold"`
 	SelfStakingThreshold      string   `yaml:"selfStakingThreshold"`
 	CacheSize                 uint32   `yaml:"cacheSize"`
+	NumOfFetchInParallel      uint8    `yaml:"numOfFetchInParallel"`
 }
 
 // Committee defines an interface of an election committee
@@ -67,6 +69,7 @@ type committee struct {
 	carrier              carrier.Carrier
 	retryLimit           uint8
 	paginationSize       uint8
+	fetchInParallel      uint8
 	voteThreshold        *big.Int
 	scoreThreshold       *big.Int
 	selfStakingThreshold *big.Int
@@ -115,6 +118,10 @@ func NewCommittee(kvstore db.KVStore, cfg Config) (Committee, error) {
 	if !ok {
 		return nil, errors.New("Invalid self staking threshold")
 	}
+	fetchInParallel := uint8(10)
+	if cfg.NumOfFetchInParallel > 0 {
+		fetchInParallel = cfg.NumOfFetchInParallel
+	}
 	return &committee{
 		db:                   kvstore,
 		cache:                newResultCache(cfg.CacheSize),
@@ -122,6 +129,7 @@ func NewCommittee(kvstore db.KVStore, cfg Config) (Committee, error) {
 		carrier:              carrier,
 		retryLimit:           cfg.NumOfRetries,
 		paginationSize:       cfg.PaginationSize,
+		fetchInParallel:      fetchInParallel,
 		voteThreshold:        voteThreshold,
 		scoreThreshold:       scoreThreshold,
 		selfStakingThreshold: selfStakingThreshold,
@@ -209,27 +217,47 @@ func (ec *committee) sync(tipHeight uint64) error {
 	if ec.currentHeight < tipHeight {
 		ec.currentHeight = tipHeight
 	}
-	for {
-		if ec.nextHeight >= ec.currentHeight {
+	var wg sync.WaitGroup
+	limiter := make(chan bool, ec.fetchInParallel)
+	results := map[uint64]*types.ElectionResult{}
+	errs := map[uint64]error{}
+	for nextHeight := ec.nextHeight; nextHeight < ec.currentHeight; nextHeight += ec.interval {
+		if nextHeight >= ec.currentHeight {
 			break
 		}
-		result, err := ec.retryFetchResultByHeight()
-		if err != nil {
+		wg.Add(1)
+		go func(height uint64) {
+			defer func() {
+				<-limiter
+				wg.Done()
+			}()
+			limiter <- true
+			results[height], errs[height] = ec.retryFetchResultByHeight(height)
+		}(nextHeight)
+	}
+	wg.Wait()
+	var heights []uint64
+	for height := range results {
+		heights = append(heights, height)
+	}
+	sort.Slice(heights, func(i, j int) bool {
+		return heights[i] < heights[j]
+	})
+	for _, height := range heights {
+		result := results[height]
+		if err := errs[height]; err != nil {
 			return err
 		}
-		if result == nil {
-			return errors.Errorf("failed to fetch result for height %d", ec.nextHeight)
-		}
-		if err = ec.heightManager.validate(ec.nextHeight, result.MintTime()); err != nil {
+		if err := ec.heightManager.validate(height, result.MintTime()); err != nil {
 			zap.L().Fatal(
 				"Unexpected status that the upcoming block height or time is invalid",
 				zap.Error(err),
 			)
 		}
-		if err = ec.storeResult(ec.nextHeight, result); err != nil {
-			return errors.Wrapf(err, "failed to store result of height %d", ec.nextHeight)
+		if err := ec.storeResult(height, result); err != nil {
+			return errors.Wrapf(err, "failed to store result of height %d", height)
 		}
-		ec.nextHeight += ec.interval
+		ec.nextHeight = height + ec.interval
 	}
 	return nil
 }
@@ -423,17 +451,17 @@ func (ec *committee) storeResult(height uint64, result *types.ElectionResult) er
 	return ec.heightManager.add(height, result.MintTime())
 }
 
-func (ec *committee) retryFetchResultByHeight() (*types.ElectionResult, error) {
+func (ec *committee) retryFetchResultByHeight(height uint64) (*types.ElectionResult, error) {
 	var result *types.ElectionResult
 	var err error
 	for i := uint8(0); i < ec.retryLimit; i++ {
-		if result, err = ec.fetchResultByHeight(ec.nextHeight); err == nil {
+		if result, err = ec.fetchResultByHeight(height); err == nil {
 			return result, nil
 		}
 		zap.L().Error(
 			"failed to fetch result by height",
 			zap.Error(err),
-			zap.Uint64("height", ec.nextHeight),
+			zap.Uint64("height", height),
 			zap.Uint8("tried", i+1),
 		)
 	}

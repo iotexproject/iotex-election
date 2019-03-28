@@ -341,7 +341,7 @@ func (ec *committee) calculator(height uint64) (*types.ResultCalculator, error) 
 		},
 		ec.calcWeightedVotes,
 		func(c *types.Candidate) bool {
-			return ec.selfStakingThreshold.Cmp(c.SelfStakingTokens()) > 0 &&
+			return ec.selfStakingThreshold.Cmp(c.SelfStakingTokens()) > 0 ||
 				ec.scoreThreshold.Cmp(c.Score()) > 0
 		},
 	), nil

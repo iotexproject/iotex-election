@@ -8,7 +8,6 @@ package committee
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"math/big"
 	"sort"
@@ -226,7 +225,6 @@ func (ec *committee) Stop(ctx context.Context) error {
 
 func (ec *committee) Status() STATUS {
 	lastUpdateTimestamp := atomic.LoadInt64(&ec.lastUpdateTimestamp)
-	fmt.Println("lastUpdateTimestamp", lastUpdateTimestamp)
 	switch {
 	case lastUpdateTimestamp == 0:
 		return STARTING
@@ -292,7 +290,6 @@ func (ec *committee) sync(tipHeight uint64) error {
 		ec.nextHeight = height + ec.interval
 	}
 	atomic.StoreInt64(&ec.lastUpdateTimestamp, time.Now().Unix())
-	fmt.Println("set lastUpdateTimestamp:", ec.lastUpdateTimestamp)
 
 	return nil
 }

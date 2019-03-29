@@ -18,6 +18,7 @@ import (
 	"go.uber.org/zap"
 	yaml "gopkg.in/yaml.v2"
 
+	"github.com/iotexproject/iotex-core/address"
 	"github.com/iotexproject/iotex-election/committee"
 )
 
@@ -53,9 +54,12 @@ func main() {
 		"tokens",
 		"votes",
 		"votee",
+		"voterIoAddr",
 	})
 	for _, delegate := range result.Delegates() {
 		for _, vote := range result.VotesByDelegate(delegate.Name()) {
+			ioAddr, _ := address.FromBytes(vote.Voter())
+			ioAddrStr := ioAddr.String()
 			if err := writer.Write([]string{
 				hex.EncodeToString(vote.Voter()),
 				vote.StartTime().String(),
@@ -64,6 +68,7 @@ func main() {
 				vote.Amount().String(),
 				vote.WeightedAmount().String(),
 				string(vote.Candidate()),
+				ioAddrStr,
 			}); err != nil {
 				log.Fatalln("error writing record to csv:", err)
 			}

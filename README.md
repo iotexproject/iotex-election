@@ -6,3 +6,34 @@ Collect and process election information from the governance chain (which is Eth
 1. rm election.db
 2. go build -o ./bin/server -v ./server
 3. ./bin/server
+
+
+# Tools
+
+## Dumper
+### Build
+```sh
+[foo@bar iotex-election]$  go build -ldflags "-extldflags=-Wl,--allow-multiple-definition" -x -o ./bin/dumper -v ./tools/dumper
+```
+### Dump votes to csv
+```sh
+[foo@bar iotex-election]$ ./bin/dumper > stats.csv
+```
+### Run from source
+```sh
+[foo@bar iotex-election]$ go run -ldflags "-extldflags=-Wl,--allow-multiple-definition" tools/dumper/dumper.go > stats.csv
+```
+
+## Processor
+### Build
+```sh
+[foo@bar iotex-election]$ go build -o ./bin/processor -v ./tools/processor
+```
+### Process votes
+```sh
+[foo@bar iotex-election]$ ./bin/processor
+```
+### Run from source
+```sh
+[foo@bar iotex-election]$ go run tools/processor/processor.go
+```

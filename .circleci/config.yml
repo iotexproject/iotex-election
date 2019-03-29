@@ -7,25 +7,24 @@ jobs:
     docker:
       - image: circleci/golang:1.11.6
       
-    working_directory: ~/go/src/github.com/iotexproject/iotex-election
+    working_directory: ~/go/src/github.com/iotexproject/${CIRCLE_PROJECT_REPONAME}
     steps:
       - checkout
-      - run: echo ${CIRCLE_PROJECT_USERNAME} ${CIRCLE_PROJECT_REPONAME}
       - restore_cache:
           key: gopkg-{{ .Branch }}-{{ checksum "Gopkg.lock" }}
           paths:
-              - ~/go/src/github.com/iotexproject/iotex-election/vendor
+              - ~/go/src/github.com/iotexproject/${CIRCLE_PROJECT_REPONAME}/vendor
       - run:
           name: "get vendor"
           command: |
             export GOPATH=~/go
-            if [ ! -d ~/go/src/github.com/iotexproject/iotex-election/vendor ]; then
+            if [ ! -d ~/go/src/github.com/iotexproject/${CIRCLE_PROJECT_REPONAME}/vendor ]; then
                 dep ensure
             fi
       - save_cache:
           key: gopkg-{{ .Branch }}-{{ checksum "Gopkg.lock" }}
           paths:
-              - ~/go/src/github.com/iotexproject/iotex-election/vendor
+              - ~/go/src/github.com/iotexproject/${CIRCLE_PROJECT_REPONAME}/vendor
       - run: 
           name: go test
           command: |

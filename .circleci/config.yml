@@ -15,7 +15,6 @@ jobs:
           command: |
             export GOPATH=~/go
             go get -v -t -d ./...
-            
             set -e 
             for d in $(go list ./...); do
               go test -short -v -coverprofile=profile.out -covermode=count "$d"
@@ -24,7 +23,7 @@ jobs:
                 rm profile.out
               fi
             done
-          
+      - run: bash <(curl -s https://codecov.io/bash) 
 workflows:
   version: 2
   commit:

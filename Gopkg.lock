@@ -7,7 +7,7 @@
   name = "github.com/aristanetworks/goarista"
   packages = ["monotime"]
   pruneopts = "UT"
-  revision = "c1e4b37418775d8f5e0c0c1a68766d321b32d6ca"
+  revision = "a123909ec740ba2ed43a293e3febaf7618aa67d5"
 
 [[projects]]
   branch = "master"
@@ -15,7 +15,7 @@
   name = "github.com/btcsuite/btcd"
   packages = ["btcec"]
   pruneopts = "UT"
-  revision = "306aecffea325e97f513b3ff0cf7895a5310651d"
+  revision = "aa6e0f35703c1438cc45860ddc0c3f6e6c633c93"
 
 [[projects]]
   branch = "master"
@@ -107,20 +107,44 @@
   version = "v1.3.1"
 
 [[projects]]
-  branch = "master"
-  digest = "1:4a0c6bb4805508a6287675fac876be2ac1182539ca8a32468d8128882e9d5009"
+  digest = "1:e4f5819333ac698d294fe04dbf640f84719658d5c7ce195b10060cc37292ce79"
   name = "github.com/golang/snappy"
   packages = ["."]
   pruneopts = "UT"
-  revision = "2e65f85255dbc3072edf28d6b5b8efc472979f5a"
+  revision = "2a8bb927dd31d8daada140a5d09578521ce5c36a"
+  version = "v0.0.1"
 
 [[projects]]
-  digest = "1:236d7e1bdb50d8f68559af37dbcf9d142d56b431c9b2176d41e2a009b664cda8"
+  digest = "1:582b704bebaa06b48c29b0cec224a6058a09c86883aaddabde889cd1a5f73e1b"
   name = "github.com/google/uuid"
   packages = ["."]
   pruneopts = "UT"
-  revision = "9b3b1e0f5f99ae461456d768e7d301a7acdaa2d8"
-  version = "v1.1.0"
+  revision = "0cd6bf5da1e1c83f8b45653022c74f71af0538a4"
+  version = "v1.1.1"
+
+[[projects]]
+  branch = "master"
+  digest = "1:36b33bdfeab512dc87e88eed34156b0e5cacf3b24cb3a29d9c90f8cb8462b2eb"
+  name = "github.com/iotexproject/iotex-address"
+  packages = [
+    "address",
+    "address/bech32",
+  ]
+  pruneopts = "UT"
+  revision = "6f79c578a9766e0caf7e5fd88613d48f59f00bb4"
+
+[[projects]]
+  digest = "1:794fe384d034639b91d76734f2e05edb8bf80735401c0a9bcd9d3df2def70d0f"
+  name = "github.com/iotexproject/iotex-core"
+  packages = [
+    "address",
+    "address/bech32",
+    "pkg/hash",
+    "pkg/log",
+  ]
+  pruneopts = "UT"
+  revision = "13a7ae07317e0f360b9d1e7c445a12a1069d61c8"
+  version = "v0.4.4"
 
 [[projects]]
   branch = "master"
@@ -182,8 +206,7 @@
   version = "v1.3.0"
 
 [[projects]]
-  branch = "master"
-  digest = "1:685fdfea42d825ebd39ee0994354b46c374cf2c2b2d97a41a8dee1807c6a9b62"
+  digest = "1:5b180f17d5bc50b765f4dcf0d126c72979531cbbd7f7929bf3edd87fb801ea2d"
   name = "github.com/syndtr/goleveldb"
   packages = [
     "leveldb",
@@ -200,7 +223,8 @@
     "leveldb/util",
   ]
   pruneopts = "UT"
-  revision = "2f17a3356c6616cbfc4ae4c38147dc062a68fb0e"
+  revision = "9d007e481048296f09f59bd19bb7ae584563cd95"
+  version = "v1.0.0"
 
 [[projects]]
   digest = "1:5f7414cf41466d4b4dd7ec52b2cd3e481e08cfd11e7e24fef730c0e483e88bb1"
@@ -251,11 +275,11 @@
     "scrypt",
   ]
   pruneopts = "UT"
-  revision = "74369b46fc6756741c016591724fd1cb8e26845f"
+  revision = "a5d413f7728c81fb97d96a2b722368945f651e78"
 
 [[projects]]
   branch = "master"
-  digest = "1:fbb0ef3cbe401b91d1d02d8a9a2e8a1d6a5c5cad9f4b48be81b155f2a7fbcda0"
+  digest = "1:c06c3387e06540d35b612e59c9af35744d98779496c9267c3443cf1e2e81513c"
   name = "golang.org/x/net"
   packages = [
     "context",
@@ -268,18 +292,18 @@
     "websocket",
   ]
   pruneopts = "UT"
-  revision = "3a22650c66bd7f4fb6d1e8072ffd7b75c8a27898"
+  revision = "74de082e2cca95839e88aa0aeee5aadf6ce7710f"
 
 [[projects]]
   branch = "master"
-  digest = "1:dd386553dd2290f2bb9a7dabbbca60df074487882eed7cbf9a892c4284e30b96"
+  digest = "1:adfb8e8e1334e23944e536d1b004789ba3ae2b460417a876a5c1b4a5c3658bc1"
   name = "golang.org/x/sys"
   packages = [
     "cpu",
     "unix",
   ]
   pruneopts = "UT"
-  revision = "d0b11bdaac8adb652bff00e49bcacf992835621a"
+  revision = "9eb1bfa1ce65ae8a6ff3114b0aaf9a41a6cf3560"
 
 [[projects]]
   digest = "1:a2ab62866c75542dd18d2b069fec854577a20211d7c0ea6ae746072a1dccdd18"
@@ -306,12 +330,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:f57e88c4326d5433c2f4eb28fcd1662be003cb0d11dd13710c8828e687303c76"
+  digest = "1:40229fb45632bffd6a9404c890601cfb7266f829539b69153a13793aa0c05d85"
   name = "golang.org/x/tools"
   packages = [
     "go/ast/astutil",
     "go/gcexportdata",
-    "go/internal/cgo",
     "go/internal/gcimporter",
     "go/internal/packagesdriver",
     "go/packages",
@@ -323,18 +346,18 @@
     "internal/semver",
   ]
   pruneopts = "UT"
-  revision = "97f80cd5504df5e234a0ce7ba9a0f412468307fb"
+  revision = "0ec5c269d481877e08b598fe3cdadce903fffb4a"
 
 [[projects]]
   branch = "master"
-  digest = "1:077c1c599507b3b3e9156d17d36e1e61928ee9b53a5b420f10f28ebd4a0b275c"
+  digest = "1:c3076e7defee87de1236f1814beb588f40a75544c60121e6eb38b3b3721783e2"
   name = "google.golang.org/genproto"
   packages = ["googleapis/rpc/status"]
   pruneopts = "UT"
-  revision = "bd968387e4aa590b3c6e4ba38ecac1ed314d43ad"
+  revision = "d831d65fe17df2e52bcc4316d4a9f7a418701f43"
 
 [[projects]]
-  digest = "1:468bc9b39a60a4ac6726976d60d32cb0fbcaf749fea4139be8cec53fdfbd82d5"
+  digest = "1:87d21766dc058648c95ae9f929496931684f576e2fbd7c80e36ab7c07b6896cf"
   name = "google.golang.org/grpc"
   packages = [
     ".",
@@ -372,8 +395,8 @@
     "tap",
   ]
   pruneopts = "UT"
-  revision = "a02b0774206b209466313a0b525d2c738fe407eb"
-  version = "v1.18.0"
+  revision = "3507fb8e1a5ad030303c106fef3a47c9fdad16ad"
+  version = "v1.19.1"
 
 [[projects]]
   branch = "v2"
@@ -409,6 +432,8 @@
     "github.com/golang/protobuf/ptypes/duration",
     "github.com/golang/protobuf/ptypes/empty",
     "github.com/golang/protobuf/ptypes/timestamp",
+    "github.com/iotexproject/iotex-address/address",
+    "github.com/iotexproject/iotex-core/address",
     "github.com/logrusorgru/aurora",
     "github.com/pkg/errors",
     "github.com/stretchr/testify/require",

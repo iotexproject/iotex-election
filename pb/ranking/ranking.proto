@@ -21,6 +21,9 @@ service Ranking {
 
 	// get buckets by candidate
 	rpc getBucketsByCandidate(GetBucketsByCandidateRequest) returns (BucketResponse) {}
+
+	// health endpoint
+	rpc isHealth(google.protobuf.Empty) returns (HealthCheckResponse) {}
 }
 
 message ChainMeta {
@@ -58,6 +61,15 @@ message GetBucketsByCandidateRequest {
 	string height = 2;
 	uint32 offset = 3;
 	uint32 limit = 4;
+}
+
+message HealthCheckResponse {
+	enum Status {
+		STARTING = 0;
+		ACTIVE = 1;
+		INACTIVE = 2;
+	}
+	Status status = 1;
 }
 
 message CandidateResponse {

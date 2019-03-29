@@ -8,10 +8,12 @@ package committee
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"math/big"
 	"sort"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	ethereum "github.com/ethereum/go-ethereum"
@@ -47,6 +49,18 @@ type Config struct {
 	NumOfFetchInParallel      uint8    `yaml:"numOfFetchInParallel"`
 }
 
+// STATUS represents the status of committee
+type STATUS uint8
+
+const (
+	// STARTING stands for a starting status
+	STARTING STATUS = iota
+	// ACTIVE stands for an active status
+	ACTIVE
+	// INACTIVE stands for an inactive status
+	INACTIVE
+)
+
 // Committee defines an interface of an election committee
 // It could be considered as a light state db of beacon chain, that
 type Committee interface {
@@ -62,6 +76,8 @@ type Committee interface {
 	HeightByTime(timestamp time.Time) (uint64, error)
 	// LatestHeight returns the height with latest result
 	LatestHeight() uint64
+	// Status returns the committee status
+	Status() STATUS
 }
 
 type committee struct {
@@ -74,13 +90,16 @@ type committee struct {
 	scoreThreshold       *big.Int
 	selfStakingThreshold *big.Int
 	interval             uint64
-	cache                *resultCache
-	heightManager        *heightManager
-	startHeight          uint64
-	nextHeight           uint64
-	currentHeight        uint64
-	terminate            chan bool
-	mutex                sync.RWMutex
+
+	cache         *resultCache
+	heightManager *heightManager
+
+	startHeight         uint64
+	nextHeight          uint64
+	currentHeight       uint64
+	lastUpdateTimestamp int64
+	terminate           chan bool
+	mutex               sync.RWMutex
 }
 
 // NewCommitteeWithKVStoreWithNamespace creates a committee with kvstore with namespace
@@ -205,6 +224,19 @@ func (ec *committee) Stop(ctx context.Context) error {
 	return ec.db.Stop(ctx)
 }
 
+func (ec *committee) Status() STATUS {
+	lastUpdateTimestamp := atomic.LoadInt64(&ec.lastUpdateTimestamp)
+	fmt.Println("lastUpdateTimestamp", lastUpdateTimestamp)
+	switch {
+	case lastUpdateTimestamp == 0:
+		return STARTING
+	case lastUpdateTimestamp > time.Now().Add(-60*time.Second).Unix():
+		return ACTIVE
+	default:
+		return INACTIVE
+	}
+}
+
 func (ec *committee) Sync(tipHeight uint64) error {
 	ec.mutex.Lock()
 	defer ec.mutex.Unlock()
@@ -259,6 +291,9 @@ func (ec *committee) sync(tipHeight uint64) error {
 		}
 		ec.nextHeight = height + ec.interval
 	}
+	atomic.StoreInt64(&ec.lastUpdateTimestamp, time.Now().Unix())
+	fmt.Println("set lastUpdateTimestamp:", ec.lastUpdateTimestamp)
+
 	return nil
 }
 

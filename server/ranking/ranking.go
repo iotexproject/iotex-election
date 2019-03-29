@@ -9,6 +9,7 @@ package ranking
 import (
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"log"
 	"net"
 	"strconv"
@@ -76,9 +77,6 @@ func NewServer(cfg *Config) (Server, error) {
 
 func (s *server) Start(ctx context.Context) error {
 	zap.L().Info("Start ranking server")
-	if err := s.electionCommittee.Start(ctx); err != nil {
-		return err
-	}
 	zap.L().Info("Listen to port", zap.Int("port", s.port))
 	portStr := ":" + strconv.Itoa(s.port)
 	lis, err := net.Listen("tcp", portStr)
@@ -91,6 +89,9 @@ func (s *server) Start(ctx context.Context) error {
 			zap.L().Fatal("Failed to serve", zap.Error(err))
 		}
 	}()
+	if err := s.electionCommittee.Start(ctx); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -112,6 +113,22 @@ func (s *server) GetMeta(ctx context.Context, empty *empty.Empty) (*pb.ChainMeta
 		TotalCandidates:  uint64(len(result.Delegates())),
 		TotalVotedStakes: result.TotalVotedStakes().Text(10),
 		TotalVotes:       result.TotalVotes().Text(10),
+	}, nil
+}
+
+func (s *server) IsHealth(ctx context.Context, empty *empty.Empty) (*pb.HealthCheckResponse, error) {
+	var status pb.HealthCheckResponse_Status
+	switch s.electionCommittee.Status() {
+	case committee.STARTING:
+		status = pb.HealthCheckResponse_STARTING
+	case committee.ACTIVE:
+		status = pb.HealthCheckResponse_ACTIVE
+	case committee.INACTIVE:
+		status = pb.HealthCheckResponse_INACTIVE
+	}
+	fmt.Println("response ", status)
+	return &pb.HealthCheckResponse{
+		Status: status,
 	}, nil
 }
 

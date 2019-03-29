@@ -18,7 +18,7 @@ import (
 	"go.uber.org/zap"
 	yaml "gopkg.in/yaml.v2"
 
-	"github.com/iotexproject/iotex-core/address/bech32"
+	"github.com/iotexproject/iotex-core/address"
 	"github.com/iotexproject/iotex-election/committee"
 )
 
@@ -54,10 +54,12 @@ func main() {
 		"tokens",
 		"votes",
 		"votee",
-		"voterIOTEX",
+		"voterIoAddr",
 	})
 	for _, delegate := range result.Delegates() {
 		for _, vote := range result.VotesByDelegate(delegate.Name()) {
+			ioAddr, _ := address.FromBytes(vote.Voter())
+			ioAddrStr := ioAddr.String()
 			if err := writer.Write([]string{
 				hex.EncodeToString(vote.Voter()),
 				vote.StartTime().String(),
@@ -66,23 +68,11 @@ func main() {
 				vote.Amount().String(),
 				vote.WeightedAmount().String(),
 				string(vote.Candidate()),
-				getIotexAddress(vote.Voter()),
+				ioAddrStr,
 			}); err != nil {
 				log.Fatalln("error writing record to csv:", err)
 			}
 		}
 	}
 	writer.Flush()
-}
-
-func getIotexAddress(ethAddress []byte) string {
-	grouped, err := bech32.ConvertBits(ethAddress, 8, 5, true)
-	if err != nil {
-		log.Fatalln("Error when grouping the payload into 5 bit groups.", err)
-	}
-	encodedAddr, err := bech32.Encode("io", grouped)
-	if err != nil {
-		log.Fatalln("Error when encoding bytes into a base32 string.", err)
-	}
-	return encodedAddr
 }

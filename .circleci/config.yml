@@ -10,6 +10,22 @@ jobs:
     working_directory: ~/go/src/github.com/iotexproject/iotex-election
     steps:
       - checkout
+      - run: echo ${CIRCLE_PROJECT_USERNAME} ${CIRCLE_PROJECT_REPONAME}
+      - restore_cache:
+          key: gopkg-{{ .Branch }}-{{ checksum "Gopkg.lock" }}
+          paths:
+              - ~/go/src/github.com/iotexproject/iotex-election/vendor
+      - run:
+          name: "get vendor"
+          command: |
+            export GOPATH=~/go
+            if [ ! -d ~/go/src/github.com/iotexproject/iotex-election/vendor ]; then
+                dep ensure
+            fi
+      - save_cache:
+          key: gopkg-{{ .Branch }}-{{ checksum "Gopkg.lock" }}
+          paths:
+              - ~/go/src/github.com/iotexproject/iotex-election/vendor
       - run: 
           name: go test
           command: |

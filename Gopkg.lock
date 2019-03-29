@@ -134,19 +134,6 @@
   revision = "6f79c578a9766e0caf7e5fd88613d48f59f00bb4"
 
 [[projects]]
-  digest = "1:794fe384d034639b91d76734f2e05edb8bf80735401c0a9bcd9d3df2def70d0f"
-  name = "github.com/iotexproject/iotex-core"
-  packages = [
-    "address",
-    "address/bech32",
-    "pkg/hash",
-    "pkg/log",
-  ]
-  pruneopts = "UT"
-  revision = "13a7ae07317e0f360b9d1e7c445a12a1069d61c8"
-  version = "v0.4.4"
-
-[[projects]]
   branch = "master"
   digest = "1:be40f095cd741773905744f16c1f7a21fd9226ccd0529f019deb7da6d667f71c"
   name = "github.com/logrusorgru/aurora"
@@ -433,7 +420,6 @@
     "github.com/golang/protobuf/ptypes/empty",
     "github.com/golang/protobuf/ptypes/timestamp",
     "github.com/iotexproject/iotex-address/address",
-    "github.com/iotexproject/iotex-core/address",
     "github.com/logrusorgru/aurora",
     "github.com/pkg/errors",
     "github.com/stretchr/testify/require",

@@ -6,7 +6,9 @@ jobs:
   build_test_docker:
     docker:
       - image: circleci/golang:1.11.6
-      
+    environment:
+      - GOPATH: "~/go"
+      - CIRCLE_PROJECT_REPONAME: iotex-election
     working_directory: ~/go/src/github.com/iotexproject/${CIRCLE_PROJECT_REPONAME}
     steps:
       - checkout
@@ -17,7 +19,7 @@ jobs:
       - run:
           name: "get vendor"
           command: |
-            export GOPATH=~/go
+            #export GOPATH=~/go
             if [ ! -d ~/go/src/github.com/iotexproject/${CIRCLE_PROJECT_REPONAME}/vendor ]; then
                 dep ensure
             fi
@@ -28,7 +30,7 @@ jobs:
       - run: 
           name: go test
           command: |
-            export GOPATH=~/go
+            #export GOPATH=~/go
             go get -v -t -d ./...
             set -e 
             for d in $(go list ./...); do

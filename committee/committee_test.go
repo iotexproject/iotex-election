@@ -45,6 +45,8 @@ func TestResultCalculator(t *testing.T) {
 	require.NoError(rc.AddCandidates(candidates))
 	require.NoError(rc.AddVotes(votes))
 	result, err := rc.Calculate()
+	fmt.Println(result.TotalVotedStakes())
+	fmt.Println(result.TotalVotes())
 	require.NoError(err)
 	delegates := result.Delegates()
 	require.Equal(4, len(delegates))

@@ -51,7 +51,7 @@ func TestResultCalculator(t *testing.T) {
 	for _, delegate := range delegates {
 		fmt.Println(string(delegate.Name()))
 		fmt.Println(string(delegate.Address()))
-		fmt.Println(delegate.Score())
+		fmt.Println(delegate.Score().Text(10))
 	}
 	//expectedVotes := [][]*big.Int{
 	//	[]*big.Int{big.NewInt(1960), big.NewInt(660), big.NewInt(1135)},

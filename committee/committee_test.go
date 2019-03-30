@@ -53,7 +53,7 @@ func TestResultCalculator(t *testing.T) {
 		[]byte{},
 		true,
 	)
-	require.Error(err)
+	require.NoError(err)
 	require.NotNil(vote)
 
 	votes := []*types.Vote{vote}

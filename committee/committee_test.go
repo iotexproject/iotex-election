@@ -44,15 +44,15 @@ func TestResultCalculator(t *testing.T) {
 		mintTime,
 		mockVoteFilter(10),
 		mockCalcWeight,
-		mockCandidateFilter(10, 10),
+		mockCandidateFilter(1000, 10),
 	)
 	//require.NoError(err)
 	require.NotNil(rc)
 	require.NoError(rc.AddCandidates(candidates))
 	require.NoError(rc.AddVotes(votes))
 	result, err := rc.Calculate()
-	fmt.Println(result.String())
 	require.NoError(err)
+	fmt.Println(result.String())
 
 	votesBy := result.VotesByDelegate([]byte("voter1"))
 	for _, v := range votesBy {
@@ -65,6 +65,8 @@ func TestResultCalculator(t *testing.T) {
 		fmt.Println(string(delegate.Name()))
 		fmt.Println(string(delegate.Address()))
 		fmt.Println(delegate.Score().Text(10))
+		fmt.Println(delegate.SelfStakingTokens().Text(10))
+		fmt.Println(delegate.SelfStakingWeight())
 	}
 	//expectedVotes := [][]*big.Int{
 	//	[]*big.Int{big.NewInt(1960), big.NewInt(660), big.NewInt(1135)},
@@ -83,7 +85,7 @@ func TestResultCalculator(t *testing.T) {
 func genTestVotes(mintTime time.Time, require *require.Assertions) []*types.Vote {
 	votes := []*types.Vote{}
 	// votes from voter1
-	// (2 + 1) * 100 = 300
+	// (10 + 1) * 100 = 300
 	vote, err := types.NewVote(
 		mintTime.Add(-2*time.Hour),
 		10*time.Hour,
@@ -95,12 +97,12 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*types.Vote
 	)
 	require.NoError(err)
 	votes = append(votes, vote)
-	// will be filtered with low amount
+	// (3 + 1) * 9 = 300
 	vote, err = types.NewVote(
 		mintTime.Add(-2*time.Hour),
 		3*time.Hour,
-		big.NewInt(9),
-		big.NewInt(1),
+		big.NewInt(9), //amount
+		big.NewInt(1), //weight
 		[]byte("voter2"),
 		[]byte("candidate2"),
 		true,

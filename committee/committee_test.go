@@ -56,8 +56,8 @@ func TestResultCalculator(t *testing.T) {
 		24*time.Hour,
 		big.NewInt(4), //amount
 		big.NewInt(5), //weighted
-		[]byte{"vote1"},
-		[]byte{"candidate1"},
+		[]byte("vote1"),
+		[]byte("candidate1"),
 		false,
 	)
 	require.NoError(err)
@@ -67,8 +67,8 @@ func TestResultCalculator(t *testing.T) {
 		24*time.Hour,
 		big.NewInt(4), //amount
 		big.NewInt(5), //weighted
-		[]byte{"vote2"},
-		[]byte{"condidate2"},
+		[]byte("vote2"),
+		[]byte("condidate2"),
 		false,
 	)
 	require.NoError(err)

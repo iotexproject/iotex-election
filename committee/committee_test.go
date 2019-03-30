@@ -21,7 +21,7 @@ import (
 func TestResultCalculator(t *testing.T) {
 	require := require.New(t)
 	now := time.Now()
-	mintTime := now.Add(-10 * time.Hour)
+	mintTime := now.Add(-3 * time.Hour)
 	candidates := genTestCandidates()
 	votes := genTestVotes(mintTime, require)
 
@@ -86,7 +86,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*types.Vote
 	// (2 + 1) * 100 = 300
 	vote, err := types.NewVote(
 		mintTime.Add(-2*time.Hour),
-		40*time.Hour,
+		10*time.Hour,
 		big.NewInt(100),
 		big.NewInt(11),
 		[]byte("voter1"),
@@ -98,9 +98,9 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*types.Vote
 	// will be filtered with low amount
 	vote, err = types.NewVote(
 		mintTime.Add(-2*time.Hour),
-		20*time.Hour,
+		3*time.Hour,
 		big.NewInt(90),
-		big.NewInt(11),
+		big.NewInt(1),
 		[]byte("voter2"),
 		[]byte("candidate2"),
 		true,

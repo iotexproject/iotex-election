@@ -2,6 +2,8 @@
 #
 # Check https://circleci.com/docs/2.0/language-go/ for more details
 version: 2
+orbs:
+  codecov: codecov/codecov@1.0.4
 jobs:
   build_test_docker:
     docker:
@@ -41,6 +43,9 @@ jobs:
                 rm profile.out
               fi
             done
+      - codecov/upload:
+          file: coverage.txt
+          flags: frontend
       - run: bash <(curl -s https://codecov.io/bash) 
 
 workflows:

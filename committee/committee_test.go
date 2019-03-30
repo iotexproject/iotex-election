@@ -27,9 +27,9 @@ func TestResultCalculator(t *testing.T) {
 	cfg.RegisterContractAddress = "0x95724986563028deb58f15c5fac19fa09304f32d"
 	cfg.StakingContractAddress = "0x87c9dbff0016af23f5b1ab9b8e072124ab729193"
 	cfg.PaginationSize = 100
-	cfg.VoteThreshold = "1"
-	cfg.ScoreThreshold = "1"
-	cfg.SelfStakingThreshold = "1"
+	cfg.VoteThreshold = "0"
+	cfg.ScoreThreshold = "0"
+	cfg.SelfStakingThreshold = "0"
 	cfg.CacheSize = 100
 	commp, err := NewCommittee(nil, cfg)
 	require.NoError(err)
@@ -48,15 +48,15 @@ func TestResultCalculator(t *testing.T) {
 		[]byte("candidate2 addr"),
 		[]byte("operatorPubKey2"),
 		[]byte("rewardPubKey2"),
-		2,
+		1,
 	)
 	startTime := time.Now()
 	candidates := []*types.Candidate{candidate1, candidate2}
 	vote1, err := types.NewVote(
 		startTime,
 		24*7*time.Hour,
-		big.NewInt(4),        //amount
-		big.NewInt(5),        //weighted
+		big.NewInt(3),        //amount
+		big.NewInt(3),        //weighted
 		[]byte("vote1"),      //voter
 		[]byte("candidate1"), //candidate
 		true,
@@ -67,7 +67,7 @@ func TestResultCalculator(t *testing.T) {
 		startTime,
 		24*7*time.Hour,
 		big.NewInt(4), //amount
-		big.NewInt(5), //weighted
+		big.NewInt(4), //weighted
 		[]byte("vote2"),
 		[]byte("condidate2"),
 		true,

@@ -44,7 +44,7 @@ func TestResultCalculator(t *testing.T) {
 		mintTime,
 		mockVoteFilter(8),
 		mockCalcWeight,
-		mockCandidateFilter(10, 0),
+		mockCandidateFilter(10, 8),
 	)
 	//require.NoError(err)
 	require.NotNil(rc)
@@ -125,7 +125,7 @@ func genTestCandidates() []*types.Candidate {
 			[]byte("candidate2addr"),
 			[]byte("operatorPubKey2"),
 			[]byte("rewardPubKey2"),
-			1,
+			10,
 		),
 	}
 }

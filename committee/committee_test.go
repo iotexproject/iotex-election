@@ -117,7 +117,7 @@ func genTestCandidates() []*types.Candidate {
 			[]byte("candidate2addr"),
 			[]byte("operatorPubKey2"),
 			[]byte("rewardPubKey2"),
-			1,
+			12,
 		),
 	}
 }

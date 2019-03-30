@@ -82,6 +82,10 @@ func TestResultCalculator(t *testing.T) {
 	sorted, err := rc.Calculate()
 	require.NoError(err)
 	fmt.Println(sorted.String())
-	fmt.Println(sorted.Delegates())
-	fmt.Println(sorted.VotesByDelegate([]byte("vote2")))
+	//fmt.Println(sorted.Delegates())
+	//fmt.Println(sorted.VotesByDelegate([]byte("vote2")))
+	candis := sorted.Delegates()
+	for _, candi := range candis {
+		fmt.Println(candi.Name())
+	}
 }

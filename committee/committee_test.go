@@ -80,7 +80,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*types.Vote
 	// (2 + 1) * 100 = 300
 	vote, err := types.NewVote(
 		mintTime.Add(-2*time.Hour),
-		4*time.Hour,
+		40*time.Hour,
 		big.NewInt(100),
 		big.NewInt(11),
 		[]byte("voter1"),
@@ -92,7 +92,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*types.Vote
 	// will be filtered with low amount
 	vote, err = types.NewVote(
 		mintTime.Add(-2*time.Hour),
-		10*time.Hour,
+		20*time.Hour,
 		big.NewInt(9),
 		big.NewInt(11),
 		[]byte("voter2"),

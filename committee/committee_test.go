@@ -58,7 +58,7 @@ func TestResultCalculator(t *testing.T) {
 		big.NewInt(5), //weighted
 		[]byte{"vote1"},
 		[]byte{"candidate1"},
-		true,
+		false,
 	)
 	require.NoError(err)
 	require.NotNil(vote1)

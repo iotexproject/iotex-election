@@ -44,7 +44,7 @@ func TestResultCalculator(t *testing.T) {
 		mintTime,
 		mockVoteFilter(10),
 		mockCalcWeight,
-		mockCandidateFilter(10, 0),
+		mockCandidateFilter(10, 1),
 	)
 	//require.NoError(err)
 	require.NotNil(rc)
@@ -93,7 +93,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*types.Vote
 	vote, err = types.NewVote(
 		mintTime.Add(-2*time.Hour),
 		20*time.Hour,
-		big.NewInt(9),
+		big.NewInt(90),
 		big.NewInt(11),
 		[]byte("voter2"),
 		[]byte("candidate2"),

@@ -7,6 +7,7 @@
 package committee
 
 import (
+	"fmt"
 	"math/big"
 	"testing"
 	"time"
@@ -46,14 +47,10 @@ func TestResultCalculator(t *testing.T) {
 	result, err := rc.Calculate()
 	require.NoError(err)
 	delegates := result.Delegates()
-	require.Equal(2, len(delegates))
-	//ec4 := candidates[2].Clone()
-	//ec4.score = big.NewInt(2051)
-	//ec4.selfStakingTokens = big.NewInt(1000)
-	//ec5 := candidate5.Clone()
-	//ec5.score = big.NewInt(3755)
-	//ec5.selfStakingTokens = big.NewInt(1010)
-	//expectedDelegates := []*Candidate{ec5, ec4}
+	require.Equal(4, len(delegates))
+	for _, delegate := range delegates {
+		fmt.Println(delegate)
+	}
 	//expectedVotes := [][]*big.Int{
 	//	[]*big.Int{big.NewInt(1960), big.NewInt(660), big.NewInt(1135)},
 	//	[]*big.Int{big.NewInt(700), big.NewInt(900), big.NewInt(451)},

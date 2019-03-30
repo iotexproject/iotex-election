@@ -48,7 +48,7 @@ func TestResultCalculator(t *testing.T) {
 		[]byte("voter1"),
 		[]byte("operatorPubKey1"),
 		[]byte("rewardPubKey1"),
-		1,
+		2,
 	)
 	candidates := []*types.Candidate{candidate1, candidate2}
 	vote, err := types.NewVote(

@@ -38,16 +38,16 @@ func TestResultCalculator(t *testing.T) {
 	require.NotNil(rc)
 	candidate1 := types.NewCandidate(
 		[]byte("candidate1"),
-		[]byte("voter1"),
+		[]byte("candidate1 addr"),
 		[]byte("operatorPubKey1"),
 		[]byte("rewardPubKey1"),
 		1,
 	)
 	candidate2 := types.NewCandidate(
 		[]byte("candidate2"),
-		[]byte("voter1"),
-		[]byte("operatorPubKey1"),
-		[]byte("rewardPubKey1"),
+		[]byte("candidate2 addr"),
+		[]byte("operatorPubKey2"),
+		[]byte("rewardPubKey2"),
 		2,
 	)
 	candidates := []*types.Candidate{candidate1, candidate2}

@@ -351,7 +351,13 @@ func (ec *committee) fetchVotesByHeight(height uint64) ([]*types.Vote, error) {
 
 	return allVotes, nil
 }
-
+func (ec *committee) voteFilter(v *types.Vote) bool {
+	return ec.voteThreshold.Cmp(v.Amount()) > 0
+}
+func (ec *committee) candidateFilter(c *types.Candidate) bool {
+	return ec.selfStakingThreshold.Cmp(c.SelfStakingTokens()) > 0 ||
+		ec.scoreThreshold.Cmp(c.Score()) > 0
+}
 func (ec *committee) calculator(height uint64) (*types.ResultCalculator, error) {
 	mintTime, err := ec.carrier.BlockTimestamp(height)
 	switch errors.Cause(err) {
@@ -364,14 +370,9 @@ func (ec *committee) calculator(height uint64) (*types.ResultCalculator, error) 
 	}
 	return types.NewResultCalculator(
 		mintTime,
-		func(v *types.Vote) bool {
-			return ec.voteThreshold.Cmp(v.Amount()) > 0
-		},
+		ec.voteFilter,
 		ec.calcWeightedVotes,
-		func(c *types.Candidate) bool {
-			return ec.selfStakingThreshold.Cmp(c.SelfStakingTokens()) > 0 ||
-				ec.scoreThreshold.Cmp(c.Score()) > 0
-		},
+		ec.candidateFilter,
 	), nil
 }
 

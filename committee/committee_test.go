@@ -53,7 +53,7 @@ func TestResultCalculator(t *testing.T) {
 	candidates := []*types.Candidate{candidate1, candidate2}
 	vote, err := types.NewVote(
 		time.Now(),
-		-24*7*time.Hour,
+		24*time.Hour,
 		big.NewInt(3), //amount
 		big.NewInt(3), //weighted
 		[]byte{},

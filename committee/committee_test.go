@@ -38,13 +38,14 @@ func TestResultCalculator(t *testing.T) {
 	cfg.CacheSize = 100
 	commp, err := NewCommittee(nil, cfg)
 	require.NoError(err)
-	rc, err := commp.(*committee).calculator(7368630)
-
+	rc, err := commp.(*committee).calculator(10)
+	result, err := rc.Calculate()
+	fmt.Println(result.String())
 	require.NoError(err)
 	require.NotNil(rc)
 	require.NoError(rc.AddCandidates(candidates))
 	require.NoError(rc.AddVotes(votes))
-	result, err := rc.Calculate()
+	result, err = rc.Calculate()
 	fmt.Println(result.String())
 	require.NoError(err)
 	delegates := result.Delegates()
@@ -85,129 +86,16 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*types.Vote
 	votes = append(votes, vote)
 	// will be filtered with low amount
 	vote, err = types.NewVote(
-		mintTime.Add(-85*time.Hour),
-		100*time.Hour,
+		mintTime.Add(-2*time.Hour),
+		10*time.Hour,
 		big.NewInt(9),
 		big.NewInt(0),
-		[]byte("voter1"),
+		[]byte("voter2"),
 		[]byte("candidate1"),
 		true,
 	)
 	require.NoError(err)
-	votes = append(votes, vote)
-	// votes from voter2
-	// (1 + 1) * 100 = 200
-	vote, err = types.NewVote(
-		mintTime.Add(-10*time.Hour),
-		1*time.Hour,
-		big.NewInt(100),
-		big.NewInt(0),
-		[]byte("voter2"),
-		[]byte("candidate2"),
-		false,
-	)
-	require.NoError(err)
-	votes = append(votes, vote)
-	// votes from voter3
-	// 70 * 10 = 700
-	// 1 * 70 * 10 = 700
-	vote, err = types.NewVote(
-		mintTime.Add(-3*time.Hour),
-		1*time.Hour,
-		big.NewInt(70),
-		big.NewInt(0),
-		[]byte("voter3"),
-		[]byte("candidate3"),
-		true,
-	)
-	require.NoError(err)
-	votes = append(votes, vote)
-	// 30 * 10 = 300
-	// (2 + 1) * 30 * 10 = 600
-	vote, err = types.NewVote(
-		mintTime.Add(-1*time.Hour),
-		2*time.Hour,
-		big.NewInt(30),
-		big.NewInt(1),
-		[]byte("voter3"),
-		[]byte("candidate3"),
-		false,
-	)
-	require.NoError(err)
-	votes = append(votes, vote)
-	// votes from voter4
-	// (9 + 1) * 50 = 500
-	vote, err = types.NewVote(
-		mintTime.Add(-10*time.Hour),
-		9*time.Hour,
-		big.NewInt(50),
-		big.NewInt(1),
-		[]byte("voter4"),
-		[]byte("candidate4"),
-		false,
-	)
-	require.NoError(err)
-	votes = append(votes, vote)
-	// (40 + 1) * 20 = 820
-	vote, err = types.NewVote(
-		mintTime.Add(-60*time.Hour),
-		100*time.Hour,
-		big.NewInt(20),
-		big.NewInt(1),
-		[]byte("voter4"),
-		[]byte("candidate4"),
-		true,
-	)
-	require.NoError(err)
-	votes = append(votes, vote)
-	// votes from voter7
-	// start time > mint time, filtered
-	vote, err = types.NewVote(
-		mintTime.Add(1*time.Hour),
-		21*time.Hour,
-		big.NewInt(45),
-		big.NewInt(1),
-		[]byte("voter7"),
-		[]byte("candidate2"),
-		false,
-	)
-	require.NoError(err)
-	votes = append(votes, vote)
-	// (21 + 1) * 90 = 1980
-	vote, err = types.NewVote(
-		mintTime.Add(-1*time.Hour),
-		21*time.Hour,
-		big.NewInt(90),
-		big.NewInt(1),
-		[]byte("voter7"),
-		[]byte("candidate2"),
-		false,
-	)
-	require.NoError(err)
-	votes = append(votes, vote)
-	// (11 + 1) * 41 = 492
-	vote, err = types.NewVote(
-		mintTime.Add(-1*time.Hour),
-		11*time.Hour,
-		big.NewInt(41),
-		big.NewInt(21),
-		[]byte("voter7"),
-		[]byte("candidate3"),
-		true,
-	)
-	require.NoError(err)
-	votes = append(votes, vote)
-	// (10 + 1) * 70 = 770
-	vote, err = types.NewVote(
-		mintTime.Add(-10*time.Hour),
-		20*time.Hour,
-		big.NewInt(70),
-		big.NewInt(1),
-		[]byte("voter7"),
-		[]byte("candidate4"),
-		true,
-	)
-	require.NoError(err)
+
 	return append(votes, vote)
 }
 func genTestCandidates() []*types.Candidate {
@@ -224,20 +112,6 @@ func genTestCandidates() []*types.Candidate {
 			[]byte("candidate2addr"),
 			[]byte("operatorPubKey2"),
 			[]byte("rewardPubKey2"),
-			1,
-		),
-		types.NewCandidate(
-			[]byte("candidate3"),
-			[]byte("candidate3addr"),
-			[]byte("operatorPubKey3"),
-			[]byte("rewardPubKey3"),
-			10,
-		),
-		types.NewCandidate(
-			[]byte("candidate4"),
-			[]byte("candidate4addr"),
-			[]byte("operatorPubKey4"),
-			[]byte("rewardPubKey4"),
 			1,
 		),
 	}

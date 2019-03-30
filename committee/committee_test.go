@@ -54,8 +54,8 @@ func TestResultCalculator(t *testing.T) {
 	vote, err := types.NewVote(
 		time.Now(),
 		24*time.Hour,
-		big.NewInt(3), //amount
-		big.NewInt(3), //weighted
+		big.NewInt(4), //amount
+		big.NewInt(5), //weighted
 		[]byte{},
 		[]byte{},
 		true,

@@ -45,8 +45,7 @@ func TestResultCalculator(t *testing.T) {
 	require.NoError(rc.AddCandidates(candidates))
 	require.NoError(rc.AddVotes(votes))
 	result, err := rc.Calculate()
-	fmt.Println(result.TotalVotedStakes())
-	fmt.Println(result.TotalVotes())
+	fmt.Println(result.String())
 	require.NoError(err)
 	delegates := result.Delegates()
 	require.Equal(4, len(delegates))
@@ -129,7 +128,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*types.Vote
 		mintTime.Add(-1*time.Hour),
 		2*time.Hour,
 		big.NewInt(30),
-		big.NewInt(0),
+		big.NewInt(1),
 		[]byte("voter3"),
 		[]byte("candidate3"),
 		false,
@@ -142,7 +141,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*types.Vote
 		mintTime.Add(-10*time.Hour),
 		9*time.Hour,
 		big.NewInt(50),
-		big.NewInt(0),
+		big.NewInt(1),
 		[]byte("voter4"),
 		[]byte("candidate4"),
 		false,
@@ -154,7 +153,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*types.Vote
 		mintTime.Add(-60*time.Hour),
 		100*time.Hour,
 		big.NewInt(20),
-		big.NewInt(0),
+		big.NewInt(1),
 		[]byte("voter4"),
 		[]byte("candidate4"),
 		true,
@@ -167,7 +166,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*types.Vote
 		mintTime.Add(1*time.Hour),
 		21*time.Hour,
 		big.NewInt(45),
-		big.NewInt(0),
+		big.NewInt(1),
 		[]byte("voter7"),
 		[]byte("candidate2"),
 		false,
@@ -179,7 +178,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*types.Vote
 		mintTime.Add(-1*time.Hour),
 		21*time.Hour,
 		big.NewInt(90),
-		big.NewInt(0),
+		big.NewInt(1),
 		[]byte("voter7"),
 		[]byte("candidate2"),
 		false,
@@ -203,7 +202,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*types.Vote
 		mintTime.Add(-10*time.Hour),
 		20*time.Hour,
 		big.NewInt(70),
-		big.NewInt(0),
+		big.NewInt(1),
 		[]byte("voter7"),
 		[]byte("candidate4"),
 		true,

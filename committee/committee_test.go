@@ -96,7 +96,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*types.Vote
 		big.NewInt(9),
 		big.NewInt(11),
 		[]byte("voter2"),
-		[]byte("candidate1"),
+		[]byte("candidate2"),
 		true,
 	)
 	require.NoError(err)

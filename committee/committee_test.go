@@ -87,7 +87,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*types.Vote
 	// votes from voter1
 	// (10 + 1) * 100 = 300
 	vote, err := types.NewVote(
-		mintTime.Add(-2*time.Hour),
+		mintTime.Add(-3*time.Hour),
 		10*time.Hour,
 		big.NewInt(100),
 		big.NewInt(11),
@@ -97,7 +97,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*types.Vote
 	)
 	require.NoError(err)
 	votes = append(votes, vote)
-	// (3 + 1) * 9 = 300
+	// (1 + 1) * 9 = 18?
 	vote, err = types.NewVote(
 		mintTime.Add(-2*time.Hour),
 		3*time.Hour,

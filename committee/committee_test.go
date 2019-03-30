@@ -38,7 +38,7 @@ func TestResultCalculator(t *testing.T) {
 	cfg.CacheSize = 100
 	commp, err := NewCommittee(nil, cfg)
 	require.NoError(err)
-	rc, err := commp.(*committee).calculator(7368630)
+	rc, err := commp.(*committee).calculator(0)
 
 	require.NoError(err)
 	require.NotNil(rc)

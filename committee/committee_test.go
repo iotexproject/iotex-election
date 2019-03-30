@@ -54,7 +54,7 @@ func TestResultCalculator(t *testing.T) {
 	fmt.Println(result.String())
 	require.NoError(err)
 
-	votesBy := result.VotesByDelegate([]byte("candidate1"))
+	votesBy := result.VotesByDelegate([]byte("voter1"))
 	for _, v := range votesBy {
 		fmt.Println(v)
 	}

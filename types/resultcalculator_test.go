@@ -7,7 +7,6 @@
 package types
 
 import (
-	"fmt"
 	"math"
 	"math/big"
 	"sort"
@@ -45,7 +44,6 @@ func TestListItem(t *testing.T) {
 		il[i] = item
 	}
 	sort.Stable(il)
-	fmt.Println(il)
 	for i, item := range sortedItems {
 		require.Equal(il[i].Key, item.Key)
 		require.Equal(il[i].Value, item.Value)

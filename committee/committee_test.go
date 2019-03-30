@@ -39,13 +39,9 @@ func TestResultCalculator(t *testing.T) {
 	cfg.CacheSize = 100
 	commp, err := NewCommittee(nil, cfg)
 	require.NoError(err)
-	rc, err := commp.(*committee).calculator(10)
-	//rc := types.NewResultCalculator(
-	//	mintTime,
-	//	mockVoteFilter(8),
-	//	mockCalcWeight,
-	//	mockCandidateFilter(0, 0),
-	//)
+
+	hei := mockCalcWeight(votes[0], mintTime)
+	rc, err := commp.(*committee).calculator(hei.Uint64())
 	require.NoError(err)
 	require.NotNil(rc)
 	require.NoError(rc.AddCandidates(candidates))
@@ -53,6 +49,13 @@ func TestResultCalculator(t *testing.T) {
 	result, err := rc.Calculate()
 	require.NoError(err)
 	fmt.Println(result.String())
+
+	//rc := types.NewResultCalculator(
+	//	mintTime,
+	//	mockVoteFilter(8),
+	//	mockCalcWeight,
+	//	mockCandidateFilter(0, 0),
+	//)
 
 	votesBy := result.VotesByDelegate([]byte("voter1"))
 	for _, v := range votesBy {

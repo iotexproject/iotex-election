@@ -50,26 +50,27 @@ func TestResultCalculator(t *testing.T) {
 		[]byte("rewardPubKey2"),
 		2,
 	)
+	startTime := time.Now()
 	candidates := []*types.Candidate{candidate1, candidate2}
 	vote1, err := types.NewVote(
-		time.Now(),
-		0,
+		startTime,
+		24*7*time.Hour,
 		big.NewInt(4),        //amount
 		big.NewInt(5),        //weighted
 		[]byte("vote1"),      //voter
 		[]byte("candidate1"), //candidate
-		true,
+		false,
 	)
 	require.NoError(err)
 	require.NotNil(vote1)
 	vote2, err := types.NewVote(
-		time.Now(),
-		0,
+		startTime,
+		24*7*time.Hour,
 		big.NewInt(4), //amount
 		big.NewInt(5), //weighted
 		[]byte("vote2"),
 		[]byte("condidate2"),
-		true,
+		false,
 	)
 	require.NoError(err)
 	require.NotNil(vote2)

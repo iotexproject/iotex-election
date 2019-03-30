@@ -44,7 +44,7 @@ func TestResultCalculator(t *testing.T) {
 		mintTime,
 		mockVoteFilter(8),
 		mockCalcWeight,
-		mockCandidateFilter(10, 1000),
+		mockCandidateFilter(10, 0),
 	)
 	//require.NoError(err)
 	require.NotNil(rc)

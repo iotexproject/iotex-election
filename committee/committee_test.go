@@ -54,10 +54,10 @@ func TestResultCalculator(t *testing.T) {
 	vote1, err := types.NewVote(
 		time.Now(),
 		24*time.Hour,
-		big.NewInt(4), //amount
-		big.NewInt(5), //weighted
-		[]byte("vote1"),
-		[]byte("candidate1"),
+		big.NewInt(4),        //amount
+		big.NewInt(5),        //weighted
+		[]byte("vote1"),      //voter
+		[]byte("candidate1"), //candidate
 		false,
 	)
 	require.NoError(err)
@@ -81,4 +81,6 @@ func TestResultCalculator(t *testing.T) {
 	sorted, err := rc.Calculate()
 	require.NoError(err)
 	fmt.Println(sorted.String())
+	fmt.Println(sorted.Delegates())
+	fmt.Println(sorted.VotesByDelegate([]byte("vote2")))
 }

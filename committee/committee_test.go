@@ -53,13 +53,19 @@ func TestResultCalculator(t *testing.T) {
 	result, err := rc.Calculate()
 	fmt.Println(result.String())
 	require.NoError(err)
-	delegates := result.Delegates()
-	require.Equal(4, len(delegates))
-	for _, delegate := range delegates {
-		fmt.Println(string(delegate.Name()))
-		fmt.Println(string(delegate.Address()))
-		fmt.Println(delegate.Score().Text(10))
+
+	votesBy := result.VotesByDelegate([]byte("candidate1"))
+	for _, v := range votesBy {
+		fmt.Println(v)
 	}
+	//delegates := result.Delegates()
+	//require.Equal(4, len(delegates))
+	//
+	//for _, delegate := range delegates {
+	//	fmt.Println(string(delegate.Name()))
+	//	fmt.Println(string(delegate.Address()))
+	//	fmt.Println(delegate.Score().Text(10))
+	//}
 	//expectedVotes := [][]*big.Int{
 	//	[]*big.Int{big.NewInt(1960), big.NewInt(660), big.NewInt(1135)},
 	//	[]*big.Int{big.NewInt(700), big.NewInt(900), big.NewInt(451)},

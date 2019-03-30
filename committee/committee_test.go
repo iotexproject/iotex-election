@@ -25,28 +25,28 @@ func TestResultCalculator(t *testing.T) {
 	candidates := genTestCandidates()
 	votes := genTestVotes(mintTime, require)
 
-	//var cfg Config
-	//cfg.NumOfRetries = 8
-	//cfg.BeaconChainAPIs = []string{"https://mainnet.infura.io/v3/b355cae6fafc4302b106b937ee6c15af"}
-	//cfg.BeaconChainHeightInterval = 100
-	//cfg.BeaconChainStartHeight = 7368630
-	//cfg.RegisterContractAddress = "0x95724986563028deb58f15c5fac19fa09304f32d"
-	//cfg.StakingContractAddress = "0x87c9dbff0016af23f5b1ab9b8e072124ab729193"
-	//cfg.PaginationSize = 100
-	//cfg.VoteThreshold = "0"
-	//cfg.ScoreThreshold = "0"
-	//cfg.SelfStakingThreshold = "0"
-	//cfg.CacheSize = 100
-	//commp, err := NewCommittee(nil, cfg)
-	//require.NoError(err)
-	//rc, err := commp.(*committee).calculator(10)
-	rc := types.NewResultCalculator(
-		mintTime,
-		mockVoteFilter(8),
-		mockCalcWeight,
-		mockCandidateFilter(0, 0),
-	)
-	//require.NoError(err)
+	var cfg Config
+	cfg.NumOfRetries = 8
+	cfg.BeaconChainAPIs = []string{"https://mainnet.infura.io/v3/b355cae6fafc4302b106b937ee6c15af"}
+	cfg.BeaconChainHeightInterval = 100
+	cfg.BeaconChainStartHeight = 7368630
+	cfg.RegisterContractAddress = "0x95724986563028deb58f15c5fac19fa09304f32d"
+	cfg.StakingContractAddress = "0x87c9dbff0016af23f5b1ab9b8e072124ab729193"
+	cfg.PaginationSize = 100
+	cfg.VoteThreshold = "0"
+	cfg.ScoreThreshold = "0"
+	cfg.SelfStakingThreshold = "0"
+	cfg.CacheSize = 100
+	commp, err := NewCommittee(nil, cfg)
+	require.NoError(err)
+	rc, err := commp.(*committee).calculator(10)
+	//rc := types.NewResultCalculator(
+	//	mintTime,
+	//	mockVoteFilter(8),
+	//	mockCalcWeight,
+	//	mockCandidateFilter(0, 0),
+	//)
+	require.NoError(err)
 	require.NotNil(rc)
 	require.NoError(rc.AddCandidates(candidates))
 	require.NoError(rc.AddVotes(votes))

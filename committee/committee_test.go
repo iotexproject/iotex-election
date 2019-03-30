@@ -29,7 +29,7 @@ func TestResultCalculator(t *testing.T) {
 	cfg.NumOfRetries = 8
 	cfg.BeaconChainAPIs = []string{"https://mainnet.infura.io/v3/b355cae6fafc4302b106b937ee6c15af"}
 	cfg.BeaconChainHeightInterval = 100
-	cfg.BeaconChainStartHeight = 7368630
+	cfg.BeaconChainStartHeight = 1
 	cfg.RegisterContractAddress = "0x95724986563028deb58f15c5fac19fa09304f32d"
 	cfg.StakingContractAddress = "0x87c9dbff0016af23f5b1ab9b8e072124ab729193"
 	cfg.PaginationSize = 100

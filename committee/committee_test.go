@@ -51,7 +51,7 @@ func TestResultCalculator(t *testing.T) {
 		2,
 	)
 	candidates := []*types.Candidate{candidate1, candidate2}
-	vote, err := types.NewVote(
+	vote1, err := types.NewVote(
 		time.Now(),
 		24*time.Hour,
 		big.NewInt(4), //amount
@@ -61,9 +61,20 @@ func TestResultCalculator(t *testing.T) {
 		true,
 	)
 	require.NoError(err)
-	require.NotNil(vote)
+	require.NotNil(vote1)
+	vote2, err := types.NewVote(
+		time.Now(),
+		24*time.Hour,
+		big.NewInt(4), //amount
+		big.NewInt(5), //weighted
+		[]byte{},
+		[]byte{},
+		true,
+	)
+	require.NoError(err)
+	require.NotNil(vote2)
 
-	votes := []*types.Vote{vote}
+	votes := []*types.Vote{vote1, vote2}
 	require.NoError(rc.AddCandidates(candidates))
 	require.NoError(rc.AddVotes(votes))
 	require.NoError(err)

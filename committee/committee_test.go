@@ -8,6 +8,7 @@ package committee
 
 import (
 	"fmt"
+	"math"
 	"math/big"
 	"testing"
 	"time"
@@ -24,28 +25,32 @@ func TestResultCalculator(t *testing.T) {
 	candidates := genTestCandidates()
 	votes := genTestVotes(mintTime, require)
 
-	var cfg Config
-	cfg.NumOfRetries = 8
-	cfg.BeaconChainAPIs = []string{"https://mainnet.infura.io/v3/b355cae6fafc4302b106b937ee6c15af"}
-	cfg.BeaconChainHeightInterval = 100
-	cfg.BeaconChainStartHeight = 7368630
-	cfg.RegisterContractAddress = "0x95724986563028deb58f15c5fac19fa09304f32d"
-	cfg.StakingContractAddress = "0x87c9dbff0016af23f5b1ab9b8e072124ab729193"
-	cfg.PaginationSize = 100
-	cfg.VoteThreshold = "0"
-	cfg.ScoreThreshold = "0"
-	cfg.SelfStakingThreshold = "0"
-	cfg.CacheSize = 100
-	commp, err := NewCommittee(nil, cfg)
-	require.NoError(err)
-	rc, err := commp.(*committee).calculator(10)
-	result, err := rc.Calculate()
-	fmt.Println(result.String())
-	require.NoError(err)
+	//var cfg Config
+	//cfg.NumOfRetries = 8
+	//cfg.BeaconChainAPIs = []string{"https://mainnet.infura.io/v3/b355cae6fafc4302b106b937ee6c15af"}
+	//cfg.BeaconChainHeightInterval = 100
+	//cfg.BeaconChainStartHeight = 7368630
+	//cfg.RegisterContractAddress = "0x95724986563028deb58f15c5fac19fa09304f32d"
+	//cfg.StakingContractAddress = "0x87c9dbff0016af23f5b1ab9b8e072124ab729193"
+	//cfg.PaginationSize = 100
+	//cfg.VoteThreshold = "0"
+	//cfg.ScoreThreshold = "0"
+	//cfg.SelfStakingThreshold = "0"
+	//cfg.CacheSize = 100
+	//commp, err := NewCommittee(nil, cfg)
+	//require.NoError(err)
+	//rc, err := commp.(*committee).calculator(10)
+	rc := types.NewResultCalculator(
+		mintTime,
+		mockVoteFilter(10),
+		mockCalcWeight,
+		mockCandidateFilter(2000, 1000),
+	)
+	//require.NoError(err)
 	require.NotNil(rc)
 	require.NoError(rc.AddCandidates(candidates))
 	require.NoError(rc.AddVotes(votes))
-	result, err = rc.Calculate()
+	result, err := rc.Calculate()
 	fmt.Println(result.String())
 	require.NoError(err)
 	delegates := result.Delegates()
@@ -114,5 +119,34 @@ func genTestCandidates() []*types.Candidate {
 			[]byte("rewardPubKey2"),
 			1,
 		),
+	}
+}
+func mockCalcWeight(v *types.Vote, t time.Time) *big.Int {
+	if t.Before(v.StartTime()) {
+		return big.NewInt(0)
+	}
+	remainingTime := v.RemainingTime(t).Seconds()
+	weight := 1.0
+	if remainingTime > 0 {
+		weight += math.Ceil(remainingTime / time.Hour.Seconds())
+	}
+	amount := new(big.Float).SetInt(v.amount)
+	weightedAmount, _ := amount.Mul(amount, big.NewFloat(weight)).Int(nil)
+	return weightedAmount
+}
+
+func mockCandidateFilter(
+	ScoreThreshold int64,
+	SelfStakingTokenThreshold int64,
+) types.CandidateFilterFunc {
+	return func(c *types.Candidate) bool {
+		return c.Score().Cmp(big.NewInt(ScoreThreshold)) < 0 ||
+			c.SelfStakingTokens().Cmp(big.NewInt(SelfStakingTokenThreshold)) < 0
+	}
+}
+
+func mockVoteFilter(VoteThreshold int64) types.VoteFilterFunc {
+	return func(v *types.Vote) bool {
+		return v.Amount().Cmp(big.NewInt(VoteThreshold)) < 0
 	}
 }

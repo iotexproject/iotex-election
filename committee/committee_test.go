@@ -130,7 +130,7 @@ func mockCalcWeight(v *types.Vote, t time.Time) *big.Int {
 	if remainingTime > 0 {
 		weight += math.Ceil(remainingTime / time.Hour.Seconds())
 	}
-	amount := new(big.Float).SetInt(v.amount)
+	amount := new(big.Float).SetInt(v.Amount())
 	weightedAmount, _ := amount.Mul(amount, big.NewFloat(weight)).Int(nil)
 	return weightedAmount
 }

@@ -36,17 +36,24 @@ func TestResultCalculator(t *testing.T) {
 	rc, err := commp.(*committee).calculator(10)
 	require.NoError(err)
 	require.NotNil(rc)
-	candidate := types.NewCandidate(
+	candidate1 := types.NewCandidate(
 		[]byte("candidate1"),
 		[]byte("voter1"),
 		[]byte("operatorPubKey1"),
 		[]byte("rewardPubKey1"),
 		1,
 	)
-	candidates := []*types.Candidate{candidate}
+	candidate2 := types.NewCandidate(
+		[]byte("candidate1"),
+		[]byte("voter1"),
+		[]byte("operatorPubKey1"),
+		[]byte("rewardPubKey1"),
+		1,
+	)
+	candidates := []*types.Candidate{candidate1, candidate2}
 	vote, err := types.NewVote(
 		time.Now(),
-		24*7*time.Hour,
+		-24*7*time.Hour,
 		big.NewInt(3), //amount
 		big.NewInt(3), //weighted
 		[]byte{},

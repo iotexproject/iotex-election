@@ -17,6 +17,7 @@ type arg struct {
 	height uint64
 	time   time.Time
 }
+
 var(
 	args = []arg{
 		{
@@ -71,6 +72,7 @@ var(
 		time.Unix(int64(1546272061), 0),
 	}
 )
+
 func TestNewHeightManager(t *testing.T) {
 	require := require.New(t)
 	require.NotNil(newHeightManager())
@@ -79,15 +81,15 @@ func TestNewHeightManager(t *testing.T) {
 func TestAdd(t *testing.T) {
 	require := require.New(t)
 	hm := newHeightManager()
-	for _,arg:=range args{
+	for _, arg := range args {
 		require.NoError(hm.add(arg.height, arg.time))
 	}
 	// test args cannot add
-	for _,arg:=range invalidArgs{
+	for _, arg := range invalidArgs {
 		require.Error(hm.add(arg.height,arg.time))
 	}
 	// check for if p1.height > p2.height, then p1.time > p2.time
-	for i:=1;i<5;i++{
+	for i := 1; i < 5; i++ {
 		require.True(hm.heights[i]-hm.heights[i-1]>0)
 		require.True(hm.times[i].After(hm.times[i-1]))
 	}
@@ -98,15 +100,15 @@ func TestAdd(t *testing.T) {
 func TestValidate(t *testing.T) {
 	require := require.New(t)
 	hm := newHeightManager()
-	for _,arg:=range args{
+	for _, arg := range args {
 		require.NoError(hm.add(arg.height,arg.time))
 	}
 	// height and time both valid
-	for _,arg:=range validArgs{
+	for _, arg := range validArgs {
 		require.NoError(hm.validate(arg.height,arg.time))
 	}
 	// 4 different invalid combinations
-	for _,arg:=range invalidArgs{
+	for _, arg := range invalidArgs {
 		require.Error(hm.validate(arg.height,arg.time))
 	}
 }
@@ -115,33 +117,26 @@ func TestNearestHeightBefore(t *testing.T) {
 	require := require.New(t)
 	hm := newHeightManager()
 
-	var hei uint64
 	// check len(m.heights)==0
-	hei=hm.nearestHeightBefore(time.Unix(int64(1546271000), 0))
-	require.Equal(uint64(0),hei)
-	for _,arg:=range args{
+	require.Equal(uint64(0), hm.nearestHeightBefore(time.Unix(int64(1546271000), 0)))
+	for _, arg := range args {
 		require.NoError(hm.add(arg.height,arg.time))
 	}
 	// check m.times[0].After(ts)
-	ts:=time.Unix(int64(1546271000), 0)
-	hei=hm.nearestHeightBefore(ts)
-	require.Equal(uint64(0),hei)
+	require.Equal(uint64(0), hm.nearestHeightBefore(time.Unix(int64(1546271000), 0)))
 
 	// test every height
-	for i,ti:=range beforeTime{
-		hei=hm.nearestHeightBefore(ti)
-		require.Equal(args[i].height,hei)
+	for i, ti := range beforeTime {
+		require.Equal(args[i].height, hm.nearestHeightBefore(ti))
 	}
 }
 
 func TestLastestHeight(t *testing.T) {
 	require := require.New(t)
 	hm := newHeightManager()
-	var hei uint64
-	for i,arg:=range args{
+	for i, arg := range args {
 		// add and then check lastest height
 		require.NoError(hm.add(arg.height,arg.time))
-		hei=hm.lastestHeight()
-		require.Equal(args[i].height,hei)
+		require.Equal(args[i].height, hm.lastestHeight())
 	}
 }

@@ -49,7 +49,9 @@ func TestResultCalculator(t *testing.T) {
 	delegates := result.Delegates()
 	require.Equal(4, len(delegates))
 	for _, delegate := range delegates {
-		fmt.Println(delegate)
+		fmt.Println(string(delegate.Name()))
+		fmt.Println(string(delegate.Address()))
+		fmt.Println(delegate.Score())
 	}
 	//expectedVotes := [][]*big.Int{
 	//	[]*big.Int{big.NewInt(1960), big.NewInt(660), big.NewInt(1135)},

@@ -88,8 +88,13 @@ func TestResultCalculator(t *testing.T) {
 	for _, candi := range candis {
 		fmt.Println(string(candi.Name()))
 	}
+	fmt.Println("=========================")
 	votesByDelegates := sorted.VotesByDelegate([]byte("candidate1"))
 	for _, votesByDelegate := range votesByDelegates {
-		fmt.Println(votesByDelegate.Candidate())
+		//fmt.Println(votesByDelegate.Candidate())
+		candis2 := votesByDelegate.Candidate()
+		for _, candi := range candis2 {
+			fmt.Println(string(candi.Name()))
+		}
 	}
 }

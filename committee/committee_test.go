@@ -42,9 +42,9 @@ func TestResultCalculator(t *testing.T) {
 	//rc, err := commp.(*committee).calculator(10)
 	rc := types.NewResultCalculator(
 		mintTime,
-		mockVoteFilter(10),
+		mockVoteFilter(1000),
 		mockCalcWeight,
-		mockCandidateFilter(1000, 10),
+		mockCandidateFilter(1000, 1000),
 	)
 	//require.NoError(err)
 	require.NotNil(rc)

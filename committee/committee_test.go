@@ -99,7 +99,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*types.Vote
 	vote, err = types.NewVote(
 		mintTime.Add(-2*time.Hour),
 		3*time.Hour,
-		big.NewInt(90),
+		big.NewInt(10),
 		big.NewInt(1),
 		[]byte("voter2"),
 		[]byte("candidate2"),

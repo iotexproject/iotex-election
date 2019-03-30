@@ -32,13 +32,13 @@ func TestResultCalculator(t *testing.T) {
 	cfg.RegisterContractAddress = "0x95724986563028deb58f15c5fac19fa09304f32d"
 	cfg.StakingContractAddress = "0x87c9dbff0016af23f5b1ab9b8e072124ab729193"
 	cfg.PaginationSize = 100
-	cfg.VoteThreshold = "1"
-	cfg.ScoreThreshold = "1"
-	cfg.SelfStakingThreshold = "1"
+	cfg.VoteThreshold = "0"
+	cfg.ScoreThreshold = "0"
+	cfg.SelfStakingThreshold = "0"
 	cfg.CacheSize = 100
 	commp, err := NewCommittee(nil, cfg)
 	require.NoError(err)
-	rc, err := commp.(*committee).calculator(0)
+	rc, err := commp.(*committee).calculator(10)
 
 	require.NoError(err)
 	require.NotNil(rc)

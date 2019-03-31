@@ -35,21 +35,14 @@ func TestResultCalculator(t *testing.T) {
 	cfg.PaginationSize = 100
 	cfg.VoteThreshold = "0"
 	cfg.ScoreThreshold = "0"
-	cfg.SelfStakingThreshold = "0"
+	cfg.SelfStakingThreshold = "10"
 	cfg.CacheSize = 100
 	commp, err := NewCommittee(nil, cfg)
 	require.NoError(err)
 
 	// get latest block from kovan
 	rc, err := commp.(*committee).calculator(10662182)
-
-	//rc := types.NewResultCalculator(
-	//	mintTime,
-	//	mockVoteFilter(0),
-	//	mockCalcWeight,
-	//	mockCandidateFilter(0, 0),
-	//)
-	//require.NoError(err)
+	require.NoError(err)
 	require.NotNil(rc)
 	require.NoError(rc.AddCandidates(candidates))
 	require.NoError(rc.AddVotes(votes))
@@ -115,6 +108,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*types.Vote
 	return append(votes, vote)
 }
 func genTestCandidates() []*types.Candidate {
+	// 3 types, bigger equal and smaller than SelfStakingThreshold
 	return []*types.Candidate{
 		types.NewCandidate(
 			[]byte("candidate1"),
@@ -129,6 +123,13 @@ func genTestCandidates() []*types.Candidate {
 			[]byte("operatorPubKey2"),
 			[]byte("rewardPubKey2"),
 			10,
+		),
+		types.NewCandidate(
+			[]byte("candidate3"),
+			[]byte("candidate3addr"),
+			[]byte("operatorPubKey3"),
+			[]byte("rewardPubKey3"),
+			1,
 		),
 	}
 }

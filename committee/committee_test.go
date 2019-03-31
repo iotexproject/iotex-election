@@ -8,7 +8,6 @@ package committee
 
 import (
 	"fmt"
-	"math"
 	"math/big"
 	"testing"
 	"time"
@@ -33,9 +32,9 @@ func TestResultCalculator(t *testing.T) {
 	cfg.RegisterContractAddress = "0xb4ca6cf2fe760517a3f92120acbe577311252663"
 	cfg.StakingContractAddress = "0xdedf0c1610d8a75ca896d8c93a0dc39abf7daff4"
 	cfg.PaginationSize = 100
-	cfg.VoteThreshold = "0"
+	cfg.VoteThreshold = "10"
 	cfg.ScoreThreshold = "0"
-	cfg.SelfStakingThreshold = "10"
+	cfg.SelfStakingThreshold = "0" // must be 0,because cannot set candidate's StakingTokens
 	cfg.CacheSize = 100
 	commp, err := NewCommittee(nil, cfg)
 	require.NoError(err)
@@ -80,6 +79,7 @@ func TestResultCalculator(t *testing.T) {
 }
 func genTestVotes(mintTime time.Time, require *require.Assertions) []*types.Vote {
 	votes := []*types.Vote{}
+	// 3 types, bigger equal and smaller than VoteThreshold
 	// votes from voter1
 	// (10 -3+ 1) * 100 = 800
 	vote, err := types.NewVote(
@@ -93,36 +93,46 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*types.Vote
 	)
 	require.NoError(err)
 	votes = append(votes, vote)
-	// (3-2 + 1) * 9 = 18?
+	// (3-2 + 1) * 10 = 20
 	vote, err = types.NewVote(
 		mintTime.Add(-2*time.Hour),
 		3*time.Hour,
-		big.NewInt(900), //amount
+		big.NewInt(10),  //amount
 		big.NewInt(100), //weight
 		[]byte("voter2"),
 		[]byte("candidate2"),
 		true,
 	)
 	require.NoError(err)
-
+	votes = append(votes, vote)
+	// (3-2 + 1) * 5 = 10
+	vote, err = types.NewVote(
+		mintTime.Add(-2*time.Hour),
+		3*time.Hour,
+		big.NewInt(5),   //amount
+		big.NewInt(100), //weight
+		[]byte("voter3"),
+		[]byte("candidate3"),
+		true,
+	)
+	require.NoError(err)
 	return append(votes, vote)
 }
 func genTestCandidates() []*types.Candidate {
-	// 3 types, bigger equal and smaller than SelfStakingThreshold
 	return []*types.Candidate{
 		types.NewCandidate(
 			[]byte("candidate1"),
 			[]byte("candidate1addr"),
 			[]byte("operatorPubKey1"),
 			[]byte("rewardPubKey1"),
-			11,
+			1,
 		),
 		types.NewCandidate(
 			[]byte("candidate2"),
 			[]byte("candidate2addr"),
 			[]byte("operatorPubKey2"),
 			[]byte("rewardPubKey2"),
-			10,
+			1,
 		),
 		types.NewCandidate(
 			[]byte("candidate3"),
@@ -131,34 +141,5 @@ func genTestCandidates() []*types.Candidate {
 			[]byte("rewardPubKey3"),
 			1,
 		),
-	}
-}
-func mockCalcWeight(v *types.Vote, t time.Time) *big.Int {
-	if t.Before(v.StartTime()) {
-		return big.NewInt(0)
-	}
-	remainingTime := v.RemainingTime(t).Seconds()
-	weight := 1.0
-	if remainingTime > 0 {
-		weight += math.Ceil(remainingTime / time.Hour.Seconds())
-	}
-	amount := new(big.Float).SetInt(v.Amount())
-	weightedAmount, _ := amount.Mul(amount, big.NewFloat(weight)).Int(nil)
-	return weightedAmount
-}
-
-func mockCandidateFilter(
-	ScoreThreshold int64,
-	SelfStakingTokenThreshold int64,
-) types.CandidateFilterFunc {
-	return func(c *types.Candidate) bool {
-		return c.Score().Cmp(big.NewInt(ScoreThreshold)) < 0 ||
-			c.SelfStakingTokens().Cmp(big.NewInt(SelfStakingTokenThreshold)) < 0
-	}
-}
-
-func mockVoteFilter(VoteThreshold int64) types.VoteFilterFunc {
-	return func(v *types.Vote) bool {
-		return v.Amount().Cmp(big.NewInt(VoteThreshold)) < 0
 	}
 }

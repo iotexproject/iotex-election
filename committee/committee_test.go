@@ -54,7 +54,7 @@ func TestResultCalculator(t *testing.T) {
 	//	fmt.Println(v)
 	//}
 	delegates := result.Delegates()
-	require.Equal(2, len(delegates))
+	require.Equal(3, len(delegates))
 
 	for _, delegate := range delegates {
 		fmt.Println(string(delegate.Name()))

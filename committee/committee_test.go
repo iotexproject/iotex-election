@@ -45,8 +45,8 @@ func TestVoteFilter(t *testing.T) {
 }
 func TestCandidateFilter(t *testing.T) {
 	require := require.New(t)
-	//testCandidateFilter("0", require)
-	testCandidateFilter("1", require)
+	testCandidateFilter("0", require)
+	//testCandidateFilter("1", require)
 }
 func testCandidateFilter(SelfStakingThreshold string, require *require.Assertions) {
 	now := time.Now()

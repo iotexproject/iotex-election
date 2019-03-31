@@ -9,6 +9,7 @@ package types
 import (
 	"bytes"
 	"encoding/hex"
+	"fmt"
 	"math/big"
 	"sort"
 	"strings"
@@ -132,6 +133,7 @@ func (calculator *ResultCalculator) AddVotes(votes []*Vote) error {
 		}
 		amount := v.Amount()
 		score := calculator.calcScore(v, calculator.mintTime)
+		fmt.Println(score)
 		if candidate, exists := calculator.candidates[nameHex]; exists {
 			if bytes.Equal(v.Voter(), candidate.address) {
 				selfStakingWeight := new(big.Int).SetUint64(candidate.selfStakingWeight)

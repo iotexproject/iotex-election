@@ -252,7 +252,7 @@ func (ec *committee) sync(tipHeight uint64) error {
 	results := map[uint64]*types.ElectionResult{}
 	errs := map[uint64]error{}
 	for nextHeight := ec.nextHeight; nextHeight < ec.currentHeight; nextHeight += ec.interval {
-		if nextHeight >= ec.currentHeight {
+		if nextHeight > ec.currentHeight-10 {
 			break
 		}
 		wg.Add(1)

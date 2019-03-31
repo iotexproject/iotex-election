@@ -53,7 +53,7 @@ func TestResultCalculator(t *testing.T) {
 	score := []*big.Int{big.NewInt(100), big.NewInt(11), big.NewInt(10)}
 	for i, delegate := range delegates {
 		require.Equal(string(candidates[i].Name()), string(delegate.Name()))
-		require.Equal(candidates[i].Address(), string(delegate.Address()))
+		require.Equal(string(candidates[i].Address()), string(delegate.Address()))
 		require.Equal(0, score[i].Cmp(delegate.Score()))
 
 		for j, v := range result.VotesByDelegate(delegate.Name()) {

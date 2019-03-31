@@ -33,7 +33,7 @@ func TestResultCalculator(t *testing.T) {
 	cfg.StakingContractAddress = "0xdedf0c1610d8a75ca896d8c93a0dc39abf7daff4"
 	cfg.PaginationSize = 100
 	cfg.VoteThreshold = "10"
-	cfg.ScoreThreshold = "0"
+	cfg.ScoreThreshold = "10"
 	cfg.SelfStakingThreshold = "0" // must be 0,because cannot set candidate's StakingTokens
 	cfg.CacheSize = 100
 	commp, err := NewCommittee(nil, cfg)

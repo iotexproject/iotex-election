@@ -8,7 +8,6 @@ package committee
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"math/big"
 	"sort"
@@ -356,7 +355,6 @@ func (ec *committee) voteFilter(v *types.Vote) bool {
 	return ec.voteThreshold.Cmp(v.Amount()) > 0
 }
 func (ec *committee) candidateFilter(c *types.Candidate) bool {
-	fmt.Println(ec.selfStakingThreshold.Text(10), ":", c.SelfStakingTokens().Text(10))
 	return ec.selfStakingThreshold.Cmp(c.SelfStakingTokens()) > 0 ||
 		ec.scoreThreshold.Cmp(c.Score()) > 0
 }

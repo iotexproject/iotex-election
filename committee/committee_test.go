@@ -7,7 +7,6 @@
 package committee
 
 import (
-	"fmt"
 	"math/big"
 	"testing"
 	"time"
@@ -46,66 +45,34 @@ func TestVoteFilter(t *testing.T) {
 }
 func TestCandidateFilter(t *testing.T) {
 	require := require.New(t)
-	now := time.Now()
-	mintTime := now.Add(-3 * time.Hour)
-	candidates := genTestCandidates()
-	votes := genTestVotes(mintTime, require)
-
-	c := &committee{selfStakingThreshold: big.NewInt(0), scoreThreshold: big.NewInt(10)}
-	rc := types.NewResultCalculator(time.Now(), c.voteFilter, c.calcWeightedVotes, c.candidateFilter)
-
-	require.NotNil(rc)
-	require.NoError(rc.AddCandidates(candidates))
-	fmt.Println(len(votes))
-	require.NoError(rc.AddVotes(votes))
-	_, err := rc.Calculate()
-	require.NoError(err)
-
-	require.False(c.candidateFilter(candidates[0]))
-	require.True(c.candidateFilter(candidates[1]))
+	c := &committee{selfStakingThreshold: big.NewInt(10), scoreThreshold: big.NewInt(10)}
+	candidate1 := &Candidate{score: big.NewInt(5), selfStakingTokens: big.NewInt(5)}
+	candidate2 := &Candidate{score: big.NewInt(5), selfStakingTokens: big.NewInt(20)}
+	candidate3 := &Candidate{score: big.NewInt(20), selfStakingTokens: big.NewInt(5)}
+	candidate4 := &Candidate{score: big.NewInt(20), selfStakingTokens: big.NewInt(20)}
+	intface := interface{}(candidate1)
+	require.True(c.candidateFilter(intface.(*types.Candidate)))
+	intface = interface{}(candidate2)
+	require.True(c.candidateFilter(intface.(*types.Candidate)))
+	intface = interface{}(candidate3)
+	require.True(c.candidateFilter(intface.(*types.Candidate)))
+	intface = interface{}(candidate4)
+	require.False(c.candidateFilter(intface.(*types.Candidate)))
 }
-func genTestVotes(mintTime time.Time, require *require.Assertions) []*types.Vote {
-	votes := []*types.Vote{}
-	// score 100
-	vote, err := types.NewVote(
-		mintTime.Add(-3*time.Hour),
-		10*time.Hour,
-		big.NewInt(100),
-		big.NewInt(110),
-		[]byte("voter1"),
-		[]byte("candidate1"),
-		true,
-	)
-	require.NoError(err)
-	votes = append(votes, vote)
-	// score 10
-	vote, err = types.NewVote(
-		mintTime.Add(-2*time.Hour),
-		3*time.Hour,
-		big.NewInt(10),  //amount
-		big.NewInt(100), //weight
-		[]byte("voter2"),
-		[]byte("candidate2"),
-		true,
-	)
-	require.NoError(err)
-	return append(votes, vote)
+
+type Candidate struct {
+	name              []byte
+	address           []byte
+	operatorAddress   []byte
+	rewardAddress     []byte
+	score             *big.Int
+	selfStakingTokens *big.Int
+	selfStakingWeight uint64
 }
-func genTestCandidates() []*types.Candidate {
-	return []*types.Candidate{
-		types.NewCandidate(
-			[]byte("candidate1"),
-			[]byte("candidate1addr"),
-			[]byte("operatorPubKey1"),
-			[]byte("rewardPubKey1"),
-			1,
-		),
-		types.NewCandidate(
-			[]byte("candidate2"),
-			[]byte("candidate2addr"),
-			[]byte("operatorPubKey2"),
-			[]byte("rewardPubKey2"),
-			20,
-		),
-	}
+
+func (c *Candidate) SelfStakingTokens() *big.Int {
+	return new(big.Int).Set(c.selfStakingTokens)
+}
+func (c *Candidate) Score() *big.Int {
+	return new(big.Int).Set(c.score)
 }

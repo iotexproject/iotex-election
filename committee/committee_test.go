@@ -68,7 +68,7 @@ func testCandidateFilter(SelfStakingThreshold string, require *require.Assertion
 		require.True(commp.(*committee).candidateFilter(candidates[1]))
 	} else {
 		require.True(commp.(*committee).candidateFilter(candidates[0]))
-		require.False(commp.(*committee).candidateFilter(candidates[1]))
+		require.True(commp.(*committee).candidateFilter(candidates[1]))
 	}
 
 }

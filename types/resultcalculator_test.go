@@ -24,7 +24,7 @@ func TestResultCalculator(t *testing.T) {
 	t.Run("add-candidates", func(t *testing.T) {
 		c := NewCandidate(
 			[]byte("new candidate"),
-			[]byte("new beacon pub key"),
+			[]byte("new gravity pub key"),
 			[]byte("new operator pub key"),
 			[]byte("new reward pub key"),
 			1,

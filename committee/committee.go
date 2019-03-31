@@ -29,15 +29,15 @@ import (
 // Namespace to store the result in db
 const Namespace = "electionNS"
 
-// CalcBeaconChainHeight calculates the corresponding beacon chain height for an epoch
-type CalcBeaconChainHeight func(uint64) (uint64, error)
+// CalcGravityChainHeight calculates the corresponding gravity chain height for an epoch
+type CalcGravityChainHeight func(uint64) (uint64, error)
 
 // Config defines the config of the committee
 type Config struct {
 	NumOfRetries              uint8    `yaml:"numOfRetries"`
-	BeaconChainAPIs           []string `yaml:"beaconChainAPIs"`
-	BeaconChainHeightInterval uint64   `yaml:"beaconChainHeightInterval"`
-	BeaconChainStartHeight    uint64   `yaml:"beaconChainStartHeight"`
+	GravityChainAPIs           []string `yaml:"gravityChainAPIs"`
+	GravityChainHeightInterval uint64   `yaml:"gravityChainHeightInterval"`
+	GravityChainStartHeight    uint64   `yaml:"gravityChainStartHeight"`
 	RegisterContractAddress   string   `yaml:"registerContractAddress"`
 	StakingContractAddress    string   `yaml:"stakingContractAddress"`
 	PaginationSize            uint8    `yaml:"paginationSize"`
@@ -61,7 +61,7 @@ const (
 )
 
 // Committee defines an interface of an election committee
-// It could be considered as a light state db of beacon chain, that
+// It could be considered as a light state db of gravity chain, that
 type Committee interface {
 	// Start starts the committee service
 	Start(context.Context) error
@@ -112,7 +112,7 @@ func NewCommittee(kvstore db.KVStore, cfg Config) (Committee, error) {
 		return nil, errors.New("Invalid staking contract address")
 	}
 	carrier, err := carrier.NewEthereumVoteCarrier(
-		cfg.BeaconChainAPIs,
+		cfg.GravityChainAPIs,
 		common.HexToAddress(cfg.RegisterContractAddress),
 		common.HexToAddress(cfg.StakingContractAddress),
 	)
@@ -152,10 +152,10 @@ func NewCommittee(kvstore db.KVStore, cfg Config) (Committee, error) {
 		scoreThreshold:       scoreThreshold,
 		selfStakingThreshold: selfStakingThreshold,
 		terminate:            make(chan bool),
-		startHeight:          cfg.BeaconChainStartHeight,
-		interval:             cfg.BeaconChainHeightInterval,
+		startHeight:          cfg.GravityChainStartHeight,
+		interval:             cfg.GravityChainHeightInterval,
 		currentHeight:        0,
-		nextHeight:           cfg.BeaconChainStartHeight,
+		nextHeight:           cfg.GravityChainStartHeight,
 	}, nil
 }
 

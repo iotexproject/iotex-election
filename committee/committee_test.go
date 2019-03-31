@@ -60,8 +60,8 @@ func TestCandidateFilter(t *testing.T) {
 	_, err = rc.Calculate()
 	require.NoError(err)
 
-	require.True(c.candidateFilter(candidates[0]))
-	require.True(c.candidateFilter(candidates[1]))
+	require.True(commp.(*committee).candidateFilter(candidates[0]))
+	require.True(commp.(*committee).candidateFilter(candidates[1]))
 }
 func genTestVotes(mintTime time.Time, require *require.Assertions) []*types.Vote {
 	votes := []*types.Vote{}

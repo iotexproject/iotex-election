@@ -27,12 +27,12 @@ func TestResultCalculator(t *testing.T) {
 
 	var cfg Config
 	cfg.NumOfRetries = 8
-	cfg.BeaconChainAPIs = []string{"https://mainnet.infura.io/v3/b355cae6fafc4302b106b937ee6c15af"}
-	cfg.BeaconChainHeightInterval = 1
-	cfg.BeaconChainStartHeight = 1
-	cfg.RegisterContractAddress = "0x95724986563028deb58f15c5fac19fa09304f32d"
-	cfg.StakingContractAddress = "0x87c9dbff0016af23f5b1ab9b8e072124ab729193"
-	cfg.PaginationSize = 1
+	cfg.BeaconChainAPIs = []string{"https://kovan.infura.io"}
+	cfg.BeaconChainHeightInterval = 100
+	cfg.BeaconChainStartHeight = 7368630
+	cfg.RegisterContractAddress = "0xb4ca6cf2fe760517a3f92120acbe577311252663"
+	cfg.StakingContractAddress = "0xdedf0c1610d8a75ca896d8c93a0dc39abf7daff4"
+	cfg.PaginationSize = 100
 	cfg.VoteThreshold = "0"
 	cfg.ScoreThreshold = "0"
 	cfg.SelfStakingThreshold = "0"
@@ -93,7 +93,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*types.Vote
 		mintTime.Add(-3*time.Hour),
 		10*time.Hour,
 		big.NewInt(100),
-		big.NewInt(11),
+		big.NewInt(110),
 		[]byte("voter1"),
 		[]byte("candidate1"),
 		true,
@@ -104,8 +104,8 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*types.Vote
 	vote, err = types.NewVote(
 		mintTime.Add(-2*time.Hour),
 		3*time.Hour,
-		big.NewInt(9), //amount
-		big.NewInt(1), //weight
+		big.NewInt(900), //amount
+		big.NewInt(100), //weight
 		[]byte("voter2"),
 		[]byte("candidate2"),
 		true,

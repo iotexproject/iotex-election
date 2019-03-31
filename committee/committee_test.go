@@ -7,6 +7,7 @@
 package committee
 
 import (
+	"fmt"
 	"math/big"
 	"testing"
 	"time"
@@ -55,6 +56,7 @@ func TestCandidateFilter(t *testing.T) {
 
 	require.NotNil(rc)
 	require.NoError(rc.AddCandidates(candidates))
+	fmt.Println(len(votes))
 	require.NoError(rc.AddVotes(votes))
 	_, err := rc.Calculate()
 	require.NoError(err)
@@ -87,7 +89,6 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*types.Vote
 		true,
 	)
 	require.NoError(err)
-
 	return append(votes, vote)
 }
 func genTestCandidates() []*types.Candidate {

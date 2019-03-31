@@ -46,7 +46,7 @@ func TestVoteFilter(t *testing.T) {
 func TestCandidateFilter(t *testing.T) {
 	require := require.New(t)
 	testCandidateFilter("0", require)
-	//testCandidateFilter("1", require)
+	testCandidateFilter("1", require)
 }
 func testCandidateFilter(SelfStakingThreshold string, require *require.Assertions) {
 	now := time.Now()
@@ -64,9 +64,14 @@ func testCandidateFilter(SelfStakingThreshold string, require *require.Assertion
 	result, err := rc.Calculate()
 	require.NoError(err)
 	cands := result.Delegates()
+
 	if SelfStakingThreshold == "0" {
+		// ec.scoreThreshold>c.Score() false
+		// selfStakingThreshold>c.SelfStakingTokens() false
 		require.False(commp.(*committee).candidateFilter(cands[0]))
 	} else {
+		// ec.scoreThreshold>c.Score() true
+		// selfStakingThreshold>c.SelfStakingTokens() false
 		require.True(commp.(*committee).candidateFilter(cands[0]))
 	}
 

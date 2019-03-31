@@ -56,7 +56,7 @@ func TestResultCalculator(t *testing.T) {
 		require.Equal(string(candidates[i].Address()), string(delegate.Address()))
 		require.Equal(0, expectedScore[i].Cmp(delegate.Score()))
 
-		for j, v := range result.VotesByDelegate(delegate.Name()) {
+		for _, v := range result.VotesByDelegate(delegate.Name()) {
 			fmt.Println(v.Amount(), ":", v.Candidate(), ":", v.Voter(), ":", v.WeightedAmount())
 		}
 	}

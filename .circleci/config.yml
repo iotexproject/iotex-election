@@ -2,20 +2,38 @@
 #
 # Check https://circleci.com/docs/2.0/language-go/ for more details
 version: 2
+
 jobs:
   build_test_docker:
     docker:
       - image: circleci/golang:1.11.6
-      
+    environment:
+      - GOPATH: "~/go"
+
     working_directory: ~/go/src/github.com/iotexproject/iotex-election
     steps:
       - checkout
+      - restore_cache:
+          key: gopkg-{{ .Branch }}-{{ checksum "Gopkg.lock" }}
+          paths:
+              - ~/go/src/github.com/iotexproject/iotex-election/vendor
+      - run:
+          name: "get vendor"
+          command: |
+            export GOPATH=~/go
+            if [ ! -d ~/go/src/github.com/iotexproject/iotex-election/vendor ]; then
+                dep ensure
+                git checkout Gopkg.lock
+            fi
+      - save_cache:
+          key: gopkg-{{ .Branch }}-{{ checksum "Gopkg.lock" }}
+          paths:
+              - ~/go/src/github.com/iotexproject/iotex-election/vendor
       - run: 
           name: go test
           command: |
             export GOPATH=~/go
             go get -v -t -d ./...
-            
             set -e 
             for d in $(go list ./...); do
               go test -short -v -coverprofile=profile.out -covermode=count "$d"
@@ -24,7 +42,8 @@ jobs:
                 rm profile.out
               fi
             done
-          
+      - run: bash <(curl -s https://codecov.io/bash) 
+
 workflows:
   version: 2
   commit:

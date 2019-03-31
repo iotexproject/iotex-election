@@ -40,8 +40,8 @@ func TestResultCalculator(t *testing.T) {
 	commp, err := NewCommittee(nil, cfg)
 	require.NoError(err)
 
-	hei := mockCalcWeight(votes[0], mintTime)
-	rc, err := commp.(*committee).calculator(hei.Uint64())
+	//hei := mockCalcWeight(votes[0], mintTime)
+	rc, err := commp.(*committee).calculator(10634197)
 
 	//rc := types.NewResultCalculator(
 	//	mintTime,

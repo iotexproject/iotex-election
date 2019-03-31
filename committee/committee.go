@@ -8,6 +8,7 @@ package committee
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"math/big"
 	"sort"
@@ -319,6 +320,7 @@ func (ec *committee) calcWeightedVotes(v *types.Vote, now time.Time) *big.Int {
 	if now.Before(v.StartTime()) {
 		return big.NewInt(0)
 	}
+	fmt.Println(now, ":", v.StartTime())
 	remainingTime := v.RemainingTime(now).Seconds()
 	weight := float64(1)
 	if remainingTime > 0 {

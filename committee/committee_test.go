@@ -80,8 +80,9 @@ func TestResultCalculator(t *testing.T) {
 func genTestVotes(mintTime time.Time, require *require.Assertions) []*types.Vote {
 	votes := []*types.Vote{}
 	// 3 types, bigger equal and smaller than VoteThreshold
+	// 3 types, bigger equal and smaller than VoteThreshold
 	// votes from voter1
-	// (10 -3+ 1) * 100 = 800
+	// score 100
 	vote, err := types.NewVote(
 		mintTime.Add(-3*time.Hour),
 		10*time.Hour,
@@ -93,7 +94,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*types.Vote
 	)
 	require.NoError(err)
 	votes = append(votes, vote)
-	// (3-2 + 1) * 10 = 20
+	// score 10
 	vote, err = types.NewVote(
 		mintTime.Add(-2*time.Hour),
 		3*time.Hour,
@@ -105,13 +106,24 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*types.Vote
 	)
 	require.NoError(err)
 	votes = append(votes, vote)
-	// (3-2 + 1) * 5 = 10
+	// score 11
+	vote, err = types.NewVote(
+		mintTime.Add(-2*time.Hour),
+		3*time.Hour,
+		big.NewInt(11),  //amount
+		big.NewInt(100), //weight
+		[]byte("voter3"),
+		[]byte("candidate2"),
+		true,
+	)
+	require.NoError(err)
+	votes = append(votes, vote)
 	vote, err = types.NewVote(
 		mintTime.Add(-2*time.Hour),
 		3*time.Hour,
 		big.NewInt(5),   //amount
 		big.NewInt(100), //weight
-		[]byte("voter3"),
+		[]byte("voter4"),
 		[]byte("candidate3"),
 		true,
 	)
@@ -125,7 +137,7 @@ func genTestCandidates() []*types.Candidate {
 			[]byte("candidate1addr"),
 			[]byte("operatorPubKey1"),
 			[]byte("rewardPubKey1"),
-			2,
+			1,
 		),
 		types.NewCandidate(
 			[]byte("candidate2"),

@@ -41,7 +41,7 @@ func TestResultCalculator(t *testing.T) {
 	require.NoError(err)
 
 	//hei := mockCalcWeight(votes[0], mintTime)
-	rc, err := commp.(*committee).calculator(10634197)
+	rc, err := commp.(*committee).calculator(10662182)
 
 	//rc := types.NewResultCalculator(
 	//	mintTime,

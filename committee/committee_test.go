@@ -87,7 +87,6 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*types.Vote
 		true,
 	)
 	require.NoError(err)
-	votes = append(votes, vote)
 
 	return append(votes, vote)
 }

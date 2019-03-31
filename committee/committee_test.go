@@ -72,7 +72,8 @@ func testCandidateFilter(SelfStakingThreshold string, require *require.Assertion
 	} else {
 		// ec.scoreThreshold>c.Score() true
 		// selfStakingThreshold>c.SelfStakingTokens() false
-		require.True(commp.(*committee).candidateFilter(cands[0]))
+		// len(cands)==0,because candidateFilter is true when call rc.Calculate()
+		require.Equal(0, len(cands))
 	}
 
 }

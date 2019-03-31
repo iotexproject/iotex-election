@@ -16,59 +16,55 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestResultCalculator(t *testing.T) {
+func TestVoteFilter(t *testing.T) {
+	require := require.New(t)
+	c := &committee{voteThreshold: big.NewInt(10)}
+	vote1, err := types.NewVote(
+		time.Now(),
+		time.Hour,
+		big.NewInt(3),
+		big.NewInt(3),
+		[]byte{},
+		[]byte{},
+		true,
+	)
+	require.NoError(err)
+	require.False(c.voteFilter(vote1))
+
+	vote2, err := types.NewVote(
+		time.Now(),
+		time.Hour,
+		big.NewInt(30),
+		big.NewInt(3),
+		[]byte{},
+		[]byte{},
+		true,
+	)
+	require.NoError(err)
+	require.True(c.voteFilter(vote2))
+
+}
+func TestCandidateFilter(t *testing.T) {
 	require := require.New(t)
 	now := time.Now()
 	mintTime := now.Add(-3 * time.Hour)
 	candidates := genTestCandidates()
 	votes := genTestVotes(mintTime, require)
 
-	var cfg Config
-	cfg.NumOfRetries = 8
-	cfg.BeaconChainAPIs = []string{"https://kovan.infura.io"}
-	cfg.BeaconChainHeightInterval = 100
-	cfg.BeaconChainStartHeight = 7368630
-	cfg.RegisterContractAddress = "0xb4ca6cf2fe760517a3f92120acbe577311252663"
-	cfg.StakingContractAddress = "0xdedf0c1610d8a75ca896d8c93a0dc39abf7daff4"
-	cfg.PaginationSize = 100
-	cfg.VoteThreshold = "10"
-	cfg.ScoreThreshold = "10"
-	cfg.SelfStakingThreshold = "0" // must be 0,because cannot set candidate's StakingTokens
-	cfg.CacheSize = 100
-	commp, err := NewCommittee(nil, cfg)
-	require.NoError(err)
+	c := &committee{selfStakingThreshold: big.NewInt(10), scoreThreshold: big.NewInt(10)}
+	rc := types.NewResultCalculator(time.Now(), c.voteFilter, c.calcWeightedVotes, c.candidateFilter)
 
-	// get latest block from kovan
-	rc, err := commp.(*committee).calculator(10662182)
-	require.NoError(err)
 	require.NotNil(rc)
 	require.NoError(rc.AddCandidates(candidates))
 	require.NoError(rc.AddVotes(votes))
-	result, err := rc.Calculate()
+	_, err := rc.Calculate()
 	require.NoError(err)
-	delegates := result.Delegates()
-	require.Equal(3, len(delegates))
 
-	expectedScore := []*big.Int{big.NewInt(100), big.NewInt(11), big.NewInt(10)}
-	expectedVoter := []string{"voter1", "voter3", "voter2"}
-	for i, delegate := range delegates {
-		require.Equal(string(candidates[i].Name()), string(delegate.Name()))
-		require.Equal(string(candidates[i].Address()), string(delegate.Address()))
-		require.Equal(0, expectedScore[i].Cmp(delegate.Score()))
-
-		for _, v := range result.VotesByDelegate(delegate.Name()) {
-			require.Equal(0, expectedScore[i].Cmp(v.Amount()))
-			require.Equal(string(candidates[i].Name()), string(v.Candidate()))
-			require.Equal(0, expectedScore[i].Cmp(v.WeightedAmount()))
-			require.Equal(expectedVoter[i], string(v.Voter()))
-		}
-	}
+	require.False(c.candidateFilter(candidates[0]))
+	require.True(c.candidateFilter(candidates[1]))
 }
 func genTestVotes(mintTime time.Time, require *require.Assertions) []*types.Vote {
 	votes := []*types.Vote{}
-	// 3 types, bigger equal and smaller than VoteThreshold
-	// 3 types, bigger equal and smaller than ScoreThreshold
-	// votes from voter1
 	// score 100
 	vote, err := types.NewVote(
 		mintTime.Add(-3*time.Hour),
@@ -93,28 +89,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*types.Vote
 	)
 	require.NoError(err)
 	votes = append(votes, vote)
-	// score 11
-	vote, err = types.NewVote(
-		mintTime.Add(-2*time.Hour),
-		3*time.Hour,
-		big.NewInt(11),  //amount
-		big.NewInt(100), //weight
-		[]byte("voter3"),
-		[]byte("candidate3"),
-		true,
-	)
-	require.NoError(err)
-	votes = append(votes, vote)
-	vote, err = types.NewVote(
-		mintTime.Add(-2*time.Hour),
-		3*time.Hour,
-		big.NewInt(5),   //amount
-		big.NewInt(100), //weight
-		[]byte("voter4"),
-		[]byte("candidate4"),
-		true,
-	)
-	require.NoError(err)
+
 	return append(votes, vote)
 }
 func genTestCandidates() []*types.Candidate {
@@ -127,25 +102,11 @@ func genTestCandidates() []*types.Candidate {
 			1,
 		),
 		types.NewCandidate(
-			[]byte("candidate3"),
-			[]byte("candidate3addr"),
-			[]byte("operatorPubKey3"),
-			[]byte("rewardPubKey3"),
-			1,
-		),
-		types.NewCandidate(
 			[]byte("candidate2"),
 			[]byte("candidate2addr"),
 			[]byte("operatorPubKey2"),
 			[]byte("rewardPubKey2"),
-			1,
-		),
-		types.NewCandidate(
-			[]byte("candidate4"),
-			[]byte("candidate4addr"),
-			[]byte("operatorPubKey4"),
-			[]byte("rewardPubKey4"),
-			1,
+			20,
 		),
 	}
 }

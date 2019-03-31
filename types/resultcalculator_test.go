@@ -21,16 +21,8 @@ var (
 		{"a", big.NewInt(10), 100},
 		{"b", big.NewInt(20), 100},
 		{"c", big.NewInt(20), 200},
-		{"d", big.NewInt(20), 300},
-		{"e", big.NewInt(40), 400},
-		{"f", big.NewInt(40), 400},
-		{"f", big.NewInt(40), 400},
 	}
 	sortedItems = []item{
-		{"f", big.NewInt(40), 400},
-		{"f", big.NewInt(40), 400},
-		{"e", big.NewInt(40), 400},
-		{"d", big.NewInt(20), 300},
 		{"c", big.NewInt(20), 200},
 		{"b", big.NewInt(20), 100},
 		{"a", big.NewInt(10), 100},

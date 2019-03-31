@@ -8,6 +8,7 @@ package committee
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"math/big"
 	"sort"
@@ -316,6 +317,7 @@ func (ec *committee) resultByHeight(height uint64) (*types.ElectionResult, error
 }
 
 func (ec *committee) calcWeightedVotes(v *types.Vote, now time.Time) *big.Int {
+	fmt.Println(now, ":", v.StartTime())
 	if now.Before(v.StartTime()) {
 		return big.NewInt(0)
 	}

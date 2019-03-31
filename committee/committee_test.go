@@ -57,20 +57,20 @@ func TestResultCalculator(t *testing.T) {
 	require.NoError(err)
 	fmt.Println(result.String())
 
-	votesBy := result.VotesByDelegate([]byte("candidate1"))
-	for _, v := range votesBy {
-		fmt.Println(v)
-	}
-	delegates := result.Delegates()
-	require.Equal(2, len(delegates))
-
-	for _, delegate := range delegates {
-		fmt.Println(string(delegate.Name()))
-		fmt.Println(string(delegate.Address()))
-		fmt.Println(delegate.Score().Text(10))
-		fmt.Println(delegate.SelfStakingTokens().Text(10))
-		fmt.Println(delegate.SelfStakingWeight())
-	}
+	//votesBy := result.VotesByDelegate([]byte("candidate1"))
+	//for _, v := range votesBy {
+	//	fmt.Println(v)
+	//}
+	//delegates := result.Delegates()
+	//require.Equal(2, len(delegates))
+	//
+	//for _, delegate := range delegates {
+	//	fmt.Println(string(delegate.Name()))
+	//	fmt.Println(string(delegate.Address()))
+	//	fmt.Println(delegate.Score().Text(10))
+	//	fmt.Println(delegate.SelfStakingTokens().Text(10))
+	//	fmt.Println(delegate.SelfStakingWeight())
+	//}
 	//expectedVotes := [][]*big.Int{
 	//	[]*big.Int{big.NewInt(1960), big.NewInt(660), big.NewInt(1135)},
 	//	[]*big.Int{big.NewInt(700), big.NewInt(900), big.NewInt(451)},

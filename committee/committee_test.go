@@ -49,8 +49,10 @@ func TestCandidateFilter(t *testing.T) {
 	mintTime := now.Add(-3 * time.Hour)
 	candidates := genTestCandidates()
 	votes := genTestVotes(mintTime, require)
-	c := &committee{selfStakingThreshold: big.NewInt(0), scoreThreshold: big.NewInt(10)}
-	rc, err := c.calculator(10662182)
+	cfg := getCfg("0")
+	commp, err := NewCommittee(nil, cfg)
+	require.NoError(err)
+	rc, err := commp.(*committee).calculator(10662182)
 	require.NoError(err)
 	require.NotNil(rc)
 	require.NoError(rc.AddCandidates(candidates))
@@ -104,4 +106,18 @@ func genTestCandidates() []*types.Candidate {
 			1,
 		),
 	}
+}
+func getCfg(SelfStakingThreshold string) (cfg Config) {
+	cfg.NumOfRetries = 8
+	cfg.BeaconChainAPIs = []string{"https://kovan.infura.io"}
+	cfg.BeaconChainHeightInterval = 100
+	cfg.BeaconChainStartHeight = 7368630
+	cfg.RegisterContractAddress = "0xb4ca6cf2fe760517a3f92120acbe577311252663"
+	cfg.StakingContractAddress = "0xdedf0c1610d8a75ca896d8c93a0dc39abf7daff4"
+	cfg.PaginationSize = 100
+	cfg.VoteThreshold = "10"
+	cfg.ScoreThreshold = "10"
+	cfg.SelfStakingThreshold = SelfStakingThreshold // must be 0,because cannot set candidate's StakingTokens
+	cfg.CacheSize = 100
+	return
 }

@@ -113,7 +113,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*types.Vote
 		big.NewInt(11),  //amount
 		big.NewInt(100), //weight
 		[]byte("voter3"),
-		[]byte("candidate2"),
+		[]byte("candidate3"),
 		true,
 	)
 	require.NoError(err)
@@ -124,7 +124,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*types.Vote
 		big.NewInt(5),   //amount
 		big.NewInt(100), //weight
 		[]byte("voter4"),
-		[]byte("candidate3"),
+		[]byte("candidate4"),
 		true,
 	)
 	require.NoError(err)
@@ -151,6 +151,13 @@ func genTestCandidates() []*types.Candidate {
 			[]byte("candidate3addr"),
 			[]byte("operatorPubKey3"),
 			[]byte("rewardPubKey3"),
+			1,
+		),
+		types.NewCandidate(
+			[]byte("candidate4"),
+			[]byte("candidate4addr"),
+			[]byte("operatorPubKey4"),
+			[]byte("rewardPubKey4"),
 			1,
 		),
 	}

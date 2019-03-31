@@ -357,6 +357,8 @@ func (ec *committee) voteFilter(v *types.Vote) bool {
 	return ec.voteThreshold.Cmp(v.Amount()) > 0
 }
 func (ec *committee) candidateFilter(c *types.Candidate) bool {
+	fmt.Println(ec.selfStakingThreshold)
+	fmt.Println(c.SelfStakingTokens())
 	return ec.selfStakingThreshold.Cmp(c.SelfStakingTokens()) > 0 ||
 		ec.scoreThreshold.Cmp(c.Score()) > 0
 }

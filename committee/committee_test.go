@@ -40,7 +40,7 @@ func TestResultCalculator(t *testing.T) {
 	commp, err := NewCommittee(nil, cfg)
 	require.NoError(err)
 
-	//hei := mockCalcWeight(votes[0], mintTime)
+	// get latest block from kovan
 	rc, err := commp.(*committee).calculator(10662182)
 
 	//rc := types.NewResultCalculator(

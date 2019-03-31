@@ -66,7 +66,7 @@ func testCandidateFilter(SelfStakingThreshold string, require *require.Assertion
 	cands := result.Delegates()
 	if SelfStakingThreshold == "0" {
 		require.False(commp.(*committee).candidateFilter(cands[0]))
-		require.True(commp.(*committee).candidateFilter(cands[1]))
+		require.False(commp.(*committee).candidateFilter(cands[1]))
 	} else {
 		require.True(commp.(*committee).candidateFilter(cands[0]))
 		require.True(commp.(*committee).candidateFilter(cands[1]))
@@ -126,7 +126,7 @@ func getCfg(SelfStakingThreshold string) (cfg Config) {
 	cfg.StakingContractAddress = "0xdedf0c1610d8a75ca896d8c93a0dc39abf7daff4"
 	cfg.PaginationSize = 100
 	cfg.VoteThreshold = "10"
-	cfg.ScoreThreshold = "10"
+	cfg.ScoreThreshold = "9"
 	cfg.SelfStakingThreshold = SelfStakingThreshold // must be 0,because cannot set candidate's StakingTokens
 	cfg.CacheSize = 100
 	return

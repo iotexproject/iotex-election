@@ -66,10 +66,8 @@ func testCandidateFilter(SelfStakingThreshold string, require *require.Assertion
 	cands := result.Delegates()
 	if SelfStakingThreshold == "0" {
 		require.False(commp.(*committee).candidateFilter(cands[0]))
-		require.False(commp.(*committee).candidateFilter(cands[1]))
 	} else {
 		require.True(commp.(*committee).candidateFilter(cands[0]))
-		require.True(commp.(*committee).candidateFilter(cands[1]))
 	}
 
 }

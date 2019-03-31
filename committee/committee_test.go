@@ -53,16 +53,16 @@ func TestResultCalculator(t *testing.T) {
 	//for _, v := range votesBy {
 	//	fmt.Println(v)
 	//}
-	//delegates := result.Delegates()
-	//require.Equal(2, len(delegates))
-	//
-	//for _, delegate := range delegates {
-	//	fmt.Println(string(delegate.Name()))
-	//	fmt.Println(string(delegate.Address()))
-	//	fmt.Println(delegate.Score().Text(10))
-	//	fmt.Println(delegate.SelfStakingTokens().Text(10))
-	//	fmt.Println(delegate.SelfStakingWeight())
-	//}
+	delegates := result.Delegates()
+	require.Equal(2, len(delegates))
+
+	for _, delegate := range delegates {
+		fmt.Println(string(delegate.Name()))
+		fmt.Println(string(delegate.Address()))
+		fmt.Println(delegate.Score().Text(10))
+		fmt.Println(delegate.SelfStakingTokens().Text(10))
+		fmt.Println(delegate.SelfStakingWeight())
+	}
 	//expectedVotes := [][]*big.Int{
 	//	[]*big.Int{big.NewInt(1960), big.NewInt(660), big.NewInt(1135)},
 	//	[]*big.Int{big.NewInt(700), big.NewInt(900), big.NewInt(451)},
@@ -80,7 +80,7 @@ func TestResultCalculator(t *testing.T) {
 func genTestVotes(mintTime time.Time, require *require.Assertions) []*types.Vote {
 	votes := []*types.Vote{}
 	// 3 types, bigger equal and smaller than VoteThreshold
-	// 3 types, bigger equal and smaller than VoteThreshold
+	// 3 types, bigger equal and smaller than ScoreThreshold
 	// votes from voter1
 	// score 100
 	vote, err := types.NewVote(

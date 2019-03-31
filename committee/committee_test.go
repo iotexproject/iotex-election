@@ -63,19 +63,6 @@ func TestResultCalculator(t *testing.T) {
 			require.Equal(expectedVoter[i], string(v.Voter()))
 		}
 	}
-	//expectedVotes := [][]*big.Int{
-	//	[]*big.Int{big.NewInt(1960), big.NewInt(660), big.NewInt(1135)},
-	//	[]*big.Int{big.NewInt(700), big.NewInt(900), big.NewInt(451)},
-	//}
-	//for i, d := range delegates {
-	//	require.NotNil(expectedDelegates[i])
-	//	require.NotNil(expectedVotes[i])
-	//	require.True(expectedDelegates[i].equal(d))
-	//	for j, v := range result.VotesByDelegate(d.Name()) {
-	//		require.NotNil(expectedVotes[i][j])
-	//		require.Equal(0, expectedVotes[i][j].Cmp(v.WeightedAmount()))
-	//	}
-	//}
 }
 func genTestVotes(mintTime time.Time, require *require.Assertions) []*types.Vote {
 	votes := []*types.Vote{}

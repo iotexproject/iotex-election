@@ -29,7 +29,7 @@ func TestVoteFilter(t *testing.T) {
 		true,
 	)
 	require.NoError(err)
-	require.False(c.voteFilter(vote1))
+	require.True(c.voteFilter(vote1))
 
 	vote2, err := types.NewVote(
 		time.Now(),
@@ -41,8 +41,7 @@ func TestVoteFilter(t *testing.T) {
 		true,
 	)
 	require.NoError(err)
-	require.True(c.voteFilter(vote2))
-
+	require.False(c.voteFilter(vote2))
 }
 func TestCandidateFilter(t *testing.T) {
 	require := require.New(t)

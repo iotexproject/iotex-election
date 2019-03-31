@@ -50,7 +50,7 @@ func TestCandidateFilter(t *testing.T) {
 	candidates := genTestCandidates()
 	votes := genTestVotes(mintTime, require)
 
-	c := &committee{selfStakingThreshold: big.NewInt(10), scoreThreshold: big.NewInt(10)}
+	c := &committee{selfStakingThreshold: big.NewInt(0), scoreThreshold: big.NewInt(10)}
 	rc := types.NewResultCalculator(time.Now(), c.voteFilter, c.calcWeightedVotes, c.candidateFilter)
 
 	require.NotNil(rc)

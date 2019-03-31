@@ -50,14 +50,14 @@ func TestResultCalculator(t *testing.T) {
 	delegates := result.Delegates()
 	require.Equal(3, len(delegates))
 
-	score := []*big.Int{big.NewInt(100), big.NewInt(11), big.NewInt(10)}
+	expectedScore := []*big.Int{big.NewInt(100), big.NewInt(11), big.NewInt(10)}
 	for i, delegate := range delegates {
 		require.Equal(string(candidates[i].Name()), string(delegate.Name()))
 		require.Equal(string(candidates[i].Address()), string(delegate.Address()))
-		require.Equal(0, score[i].Cmp(delegate.Score()))
+		require.Equal(0, expectedScore[i].Cmp(delegate.Score()))
 
 		for j, v := range result.VotesByDelegate(delegate.Name()) {
-			fmt.Println(j, ":", v)
+			fmt.Println(v.Amount(), ":", v.Candidate(), ":", v.Voter(), ":", v.WeightedAmount())
 		}
 	}
 	//expectedVotes := [][]*big.Int{

@@ -42,7 +42,6 @@ jobs:
                 rm profile.out
               fi
             done
-
       - run: bash <(curl -s https://codecov.io/bash) 
 
 workflows:

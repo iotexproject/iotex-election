@@ -56,7 +56,7 @@ func testCandidateFilter(SelfStakingThreshold string, require *require.Assertion
 	cfg := getCfg(SelfStakingThreshold)
 	commp, err := NewCommittee(nil, cfg)
 	require.NoError(err)
-	rc, err := commp.(*committee).calculator(10663480) //should be new from kovan
+	rc, err := commp.(*committee).calculator(10663490) //should be latest from kovan
 	require.NoError(err)
 	require.NotNil(rc)
 	require.NoError(rc.AddCandidates(candidates))

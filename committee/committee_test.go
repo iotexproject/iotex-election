@@ -47,21 +47,18 @@ func TestResultCalculator(t *testing.T) {
 	require.NoError(rc.AddVotes(votes))
 	result, err := rc.Calculate()
 	require.NoError(err)
-	fmt.Println(result.String())
-
-	//votesBy := result.VotesByDelegate([]byte("candidate1"))
-	//for _, v := range votesBy {
-	//	fmt.Println(v)
-	//}
 	delegates := result.Delegates()
 	require.Equal(3, len(delegates))
 
-	for _, delegate := range delegates {
-		fmt.Println(string(delegate.Name()))
-		fmt.Println(string(delegate.Address()))
-		fmt.Println(delegate.Score().Text(10))
-		fmt.Println(delegate.SelfStakingTokens().Text(10))
-		fmt.Println(delegate.SelfStakingWeight())
+	score := []*big.Int{big.NewInt(100), big.NewInt(11), big.NewInt(10)}
+	for i, delegate := range delegates {
+		require.Equal(candidates[i].Name(), string(delegate.Name()))
+		require.Equal(candidates[i].Address(), string(delegate.Address()))
+		require.Equal(0, score[i].Cmp(delegate.Score()))
+
+		for j, v := range result.VotesByDelegate(delegate.Name()) {
+			fmt.Println(j, ":", v)
+		}
 	}
 	//expectedVotes := [][]*big.Int{
 	//	[]*big.Int{big.NewInt(1960), big.NewInt(660), big.NewInt(1135)},
@@ -140,17 +137,17 @@ func genTestCandidates() []*types.Candidate {
 			1,
 		),
 		types.NewCandidate(
-			[]byte("candidate2"),
-			[]byte("candidate2addr"),
-			[]byte("operatorPubKey2"),
-			[]byte("rewardPubKey2"),
-			1,
-		),
-		types.NewCandidate(
 			[]byte("candidate3"),
 			[]byte("candidate3addr"),
 			[]byte("operatorPubKey3"),
 			[]byte("rewardPubKey3"),
+			1,
+		),
+		types.NewCandidate(
+			[]byte("candidate2"),
+			[]byte("candidate2addr"),
+			[]byte("operatorPubKey2"),
+			[]byte("rewardPubKey2"),
 			1,
 		),
 		types.NewCandidate(

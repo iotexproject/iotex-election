@@ -317,7 +317,6 @@ func (ec *committee) resultByHeight(height uint64) (*types.ElectionResult, error
 }
 
 func (ec *committee) calcWeightedVotes(v *types.Vote, now time.Time) *big.Int {
-	fmt.Println(now, ":", v.StartTime())
 	if now.Before(v.StartTime()) {
 		return big.NewInt(0)
 	}
@@ -357,8 +356,7 @@ func (ec *committee) voteFilter(v *types.Vote) bool {
 	return ec.voteThreshold.Cmp(v.Amount()) > 0
 }
 func (ec *committee) candidateFilter(c *types.Candidate) bool {
-	fmt.Println(ec.selfStakingThreshold)
-	fmt.Println(c.SelfStakingTokens())
+	fmt.Println(ec.selfStakingThreshold.Text(10), ":", c.SelfStakingTokens().Text(10))
 	return ec.selfStakingThreshold.Cmp(c.SelfStakingTokens()) > 0 ||
 		ec.scoreThreshold.Cmp(c.Score()) > 0
 }

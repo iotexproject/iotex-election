@@ -44,24 +44,33 @@ func TestVoteFilter(t *testing.T) {
 	require.False(c.voteFilter(vote2))
 }
 func TestCandidateFilter(t *testing.T) {
+	testCandidateFilter("0")
+	testCandidateFilter("1")
+}
+func testCandidateFilter(SelfStakingThreshold string) {
 	require := require.New(t)
 	now := time.Now()
 	mintTime := now.Add(-3 * time.Hour)
 	candidates := genTestCandidates()
 	votes := genTestVotes(mintTime, require)
-	cfg := getCfg("0")
+	cfg := getCfg(SelfStakingThreshold)
 	commp, err := NewCommittee(nil, cfg)
 	require.NoError(err)
-	rc, err := commp.(*committee).calculator(10662182)
+	rc, err := commp.(*committee).calculator(10662182) //should be new from kovan
 	require.NoError(err)
 	require.NotNil(rc)
 	require.NoError(rc.AddCandidates(candidates))
 	require.NoError(rc.AddVotes(votes))
 	_, err = rc.Calculate()
 	require.NoError(err)
+	if SelfStakingThreshold == "0" {
+		require.True(commp.(*committee).candidateFilter(candidates[0]))
+		require.True(commp.(*committee).candidateFilter(candidates[1]))
+	} else {
+		require.False(commp.(*committee).candidateFilter(candidates[0]))
+		require.False(commp.(*committee).candidateFilter(candidates[1]))
+	}
 
-	require.True(commp.(*committee).candidateFilter(candidates[0]))
-	require.True(commp.(*committee).candidateFilter(candidates[1]))
 }
 func genTestVotes(mintTime time.Time, require *require.Assertions) []*types.Vote {
 	votes := []*types.Vote{}

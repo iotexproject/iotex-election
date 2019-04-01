@@ -9,12 +9,43 @@ package types
 import (
 	"math"
 	"math/big"
+	"sort"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 )
 
+var (
+	testItems = []item{
+		{"a", big.NewInt(10), 3},
+		{"b", big.NewInt(20), 2},
+		{"c", big.NewInt(30), 1},
+		{"d", big.NewInt(20), 1},
+		{"e", big.NewInt(30), 1},
+	}
+	sortedItems = []item{
+		{"e", big.NewInt(30), 1},
+		{"c", big.NewInt(30), 1},
+		{"b", big.NewInt(20), 2},
+		{"d", big.NewInt(20), 1},
+		{"a", big.NewInt(10), 3},
+	}
+)
+
+func TestListItem(t *testing.T) {
+	require := require.New(t)
+	il := make(itemList, len(testItems))
+	for i, item := range testItems {
+		il[i] = item
+	}
+	sort.Stable(il)
+	for i, item := range sortedItems {
+		require.Equal(il[i].Key, item.Key)
+		require.Equal(il[i].Value, item.Value)
+		require.Equal(il[i].Priority, item.Priority)
+	}
+}
 func TestResultCalculator(t *testing.T) {
 	require := require.New(t)
 	now := time.Now()

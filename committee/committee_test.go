@@ -45,83 +45,55 @@ func TestVoteFilter(t *testing.T) {
 }
 func TestCandidateFilter(t *testing.T) {
 	require := require.New(t)
-	testCandidateFilter("0", require)
-	testCandidateFilter("1", require)
-}
-func testCandidateFilter(SelfStakingThreshold string, require *require.Assertions) {
-	now := time.Now()
-	mintTime := now.Add(-3 * time.Hour)
-	candidates := genTestCandidates()
-	votes := genTestVotes(mintTime, require)
-	cfg := getCfg(SelfStakingThreshold)
+	cfg := getCfg()
 	commp, err := NewCommittee(nil, cfg)
 	require.NoError(err)
-	rc, err := commp.(*committee).calculator(10663490) //should be latest from kovan
-	require.NoError(err)
-	require.NotNil(rc)
-	require.NoError(rc.AddCandidates(candidates))
-	require.NoError(rc.AddVotes(votes))
-	result, err := rc.Calculate()
-	require.NoError(err)
-	cands := result.Delegates()
-
-	if SelfStakingThreshold == "0" {
-		// ec.scoreThreshold>c.Score() false
-		// selfStakingThreshold>c.SelfStakingTokens() false
-		require.False(commp.(*committee).candidateFilter(cands[0]))
-	} else {
-		// ec.scoreThreshold>c.Score() true
-		// selfStakingThreshold>c.SelfStakingTokens() false
-		// len(cands)==0,because candidateFilter is true when call rc.Calculate()
-		require.Equal(0, len(cands))
-	}
-
-}
-func genTestVotes(mintTime time.Time, require *require.Assertions) []*types.Vote {
-	votes := []*types.Vote{}
-	vote, err := types.NewVote(
-		mintTime.Add(-3*time.Hour),
-		10*time.Hour,
-		big.NewInt(100),
-		big.NewInt(110),
-		[]byte("voter1"),
+	// candidate1 selfStaking and score both smaller than committee's threshold
+	candidate1 := types.NewCandidate(
 		[]byte("candidate1"),
-		true,
+		[]byte("candidate1addr"),
+		[]byte("operatorPubKey1"),
+		[]byte("rewardPubKey1"),
+		1,
 	)
-	require.NoError(err)
-	votes = append(votes, vote)
-	// score 10
-	vote, err = types.NewVote(
-		mintTime.Add(-2*time.Hour),
-		3*time.Hour,
-		big.NewInt(10),  //amount
-		big.NewInt(100), //weight
-		[]byte("voter2"),
+	candidate1.SetScore(big.NewInt(9))
+	candidate1.SetSelfStakingTokens(big.NewInt(9))
+	require.True(commp.(*committee).candidateFilter(candidate1))
+	// candidate2 selfStaking is below committee's threshold,score is bigger than committee's threshold
+	candidate2 := types.NewCandidate(
 		[]byte("candidate2"),
-		true,
+		[]byte("candidate2addr"),
+		[]byte("operatorPubKey2"),
+		[]byte("rewardPubKey2"),
+		1,
 	)
-	require.NoError(err)
-	return append(votes, vote)
+	candidate2.SetScore(big.NewInt(11))
+	candidate2.SetSelfStakingTokens(big.NewInt(9))
+	require.True(commp.(*committee).candidateFilter(candidate2))
+	// candidate3 selfStaking is bigger than committee's threshold,score is smaller than committee's threshold
+	candidate3 := types.NewCandidate(
+		[]byte("candidate3"),
+		[]byte("candidate3addr"),
+		[]byte("operatorPubKey3"),
+		[]byte("rewardPubKey3"),
+		1,
+	)
+	candidate3.SetScore(big.NewInt(9))
+	candidate3.SetSelfStakingTokens(big.NewInt(11))
+	require.True(commp.(*committee).candidateFilter(candidate3))
+	// candidate3 selfStaking and score both bigger than committee's threshold
+	candidate4 := types.NewCandidate(
+		[]byte("candidate4"),
+		[]byte("candidate4addr"),
+		[]byte("operatorPubKey4"),
+		[]byte("rewardPubKey4"),
+		1,
+	)
+	candidate4.SetScore(big.NewInt(11))
+	candidate4.SetSelfStakingTokens(big.NewInt(11))
+	require.False(commp.(*committee).candidateFilter(candidate4))
 }
-func genTestCandidates() []*types.Candidate {
-	return []*types.Candidate{
-		types.NewCandidate(
-			[]byte("candidate1"),
-			[]byte("candidate1addr"),
-			[]byte("operatorPubKey1"),
-			[]byte("rewardPubKey1"),
-			1,
-		),
-		types.NewCandidate(
-			[]byte("candidate2"),
-			[]byte("candidate2addr"),
-			[]byte("operatorPubKey2"),
-			[]byte("rewardPubKey2"),
-			1,
-		),
-	}
-}
-func getCfg(SelfStakingThreshold string) (cfg Config) {
+func getCfg() (cfg Config) {
 	cfg.NumOfRetries = 8
 	cfg.BeaconChainAPIs = []string{"https://kovan.infura.io"}
 	cfg.BeaconChainHeightInterval = 100
@@ -130,8 +102,8 @@ func getCfg(SelfStakingThreshold string) (cfg Config) {
 	cfg.StakingContractAddress = "0xdedf0c1610d8a75ca896d8c93a0dc39abf7daff4"
 	cfg.PaginationSize = 100
 	cfg.VoteThreshold = "10"
-	cfg.ScoreThreshold = "11"
-	cfg.SelfStakingThreshold = SelfStakingThreshold // must be 0,because cannot set candidate's StakingTokens
+	cfg.ScoreThreshold = "10"
+	cfg.SelfStakingThreshold = "10"
 	cfg.CacheSize = 100
 	return
 }

@@ -18,14 +18,18 @@ import (
 
 var (
 	testItems = []item{
-		{"a", big.NewInt(10), 100},
-		{"b", big.NewInt(20), 100},
-		{"c", big.NewInt(20), 200},
+		{"a", big.NewInt(10), 3},
+		{"b", big.NewInt(20), 2},
+		{"c", big.NewInt(30), 1},
+		{"d", big.NewInt(20), 1},
+		{"e", big.NewInt(30), 1},
 	}
 	sortedItems = []item{
-		{"c", big.NewInt(20), 200},
-		{"b", big.NewInt(20), 100},
-		{"a", big.NewInt(10), 100},
+		{"e", big.NewInt(30), 1},
+		{"c", big.NewInt(30), 1},
+		{"b", big.NewInt(20), 2},
+		{"d", big.NewInt(20), 1},
+		{"a", big.NewInt(10), 3},
 	}
 )
 

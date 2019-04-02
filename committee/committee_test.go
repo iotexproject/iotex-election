@@ -16,6 +16,24 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestCalcWeightedVotes(t *testing.T) {
+	require := require.New(t)
+	cfg := getCfg()
+	commp, err := NewCommittee(nil, cfg)
+	vote1, err := types.NewVote(
+		time.Now(),
+		time.Hour,
+		big.NewInt(3),
+		big.NewInt(3),
+		[]byte{},
+		[]byte{},
+		true,
+	)
+	require.NoError(err)
+	// now.Before(v.StartTime())
+	ret := commp.(*committee).calcWeightedVotes(vote1, time.Now().Add(-1*time.Hour))
+	require.Equal(0, ret.Cmp(big.NewInt(0)))
+}
 func TestVoteFilter(t *testing.T) {
 	require := require.New(t)
 	c := &committee{voteThreshold: big.NewInt(10)}

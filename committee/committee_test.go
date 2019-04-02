@@ -7,7 +7,6 @@
 package committee
 
 import (
-	"fmt"
 	"math/big"
 	"testing"
 	"time"
@@ -40,7 +39,6 @@ func TestCalcWeightedVotes(t *testing.T) {
 
 	// decay is true,startTime+duration is after now,remainingTime is 24*14-24=13*24 hours,weight is ~1.140,ret is 3422048
 	ret = commp.(*committee).calcWeightedVotes(vote1, startTime.Add(time.Hour*24))
-	fmt.Println(ret)
 	require.Equal(0, ret.Cmp(big.NewInt(3422048)))
 
 	// decay is true,startTime+duration is before now,remainingTime is 0 hours,weight is 1,ret is 3000000
@@ -57,8 +55,11 @@ func TestCalcWeightedVotes(t *testing.T) {
 		false,
 	)
 
-	// decay is false,remainingTime is duration,weight ~1.144，ret is 3434242
-	ret = commp.(*committee).calcWeightedVotes(vote2, time.Now().Add(time.Hour*5))
+	// decay is false,remainingTime is duration,weight ~1.144，ret is 3434242,whatever now is
+	ret = commp.(*committee).calcWeightedVotes(vote2, startTime.Add(time.Hour*24))
+	require.Equal(0, ret.Cmp(big.NewInt(3434242)))
+
+	ret = commp.(*committee).calcWeightedVotes(vote2, startTime.Add(24*15*time.Hour))
 	require.Equal(0, ret.Cmp(big.NewInt(3434242)))
 }
 func TestVoteFilter(t *testing.T) {

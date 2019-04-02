@@ -17,32 +17,47 @@ import (
 )
 
 func TestCalcWeightedVotes(t *testing.T) {
+	//14 days generates a ~15% bonus (100 IOTX = 115 Votes)
 	require := require.New(t)
 	cfg := getCfg()
 	commp, err := NewCommittee(nil, cfg)
 	startTime := time.Now()
-	duration := time.Hour * 3
+	duration := time.Hour * 24 * 14
 	vote1, err := types.NewVote(
 		startTime,
 		duration,
-		big.NewInt(3),
+		big.NewInt(3000000),
 		big.NewInt(3),
 		[]byte{},
 		[]byte{},
 		true,
 	)
 	require.NoError(err)
-	// now.Before(v.StartTime())
+	// now.Before(v.StartTime()),返回0
 	ret := commp.(*committee).calcWeightedVotes(vote1, time.Now().Add(-1*time.Hour))
 	require.Equal(0, ret.Cmp(big.NewInt(0)))
 
-	// decay is true,startTime+duration is after now,remainingTime is 2 hours,weight is 1,ret is 3
+	// decay is true,startTime+duration is after now,remainingTime is 24*14-1=335 hours,weight is ~1.140,ret is 3422048
 	ret = commp.(*committee).calcWeightedVotes(vote1, time.Now().Add(time.Hour))
-	require.Equal(0, ret.Cmp(big.NewInt(3)))
+	require.Equal(0, ret.Cmp(big.NewInt(3422048)))
 
-	// decay is true,startTime+duration is before now,remainingTime is 0 hours,weight is 1,ret is 3
-	ret = commp.(*committee).calcWeightedVotes(vote1, time.Now().Add(time.Hour*5))
-	require.Equal(0, ret.Cmp(big.NewInt(3)))
+	// decay is true,startTime+duration is before now,remainingTime is 0 hours,weight is 1,ret is 3000000
+	ret = commp.(*committee).calcWeightedVotes(vote1, time.Now().Add(24*15*time.Hour))
+	require.Equal(0, ret.Cmp(big.NewInt(3000000)))
+
+	vote2, err := types.NewVote(
+		startTime,
+		duration,
+		big.NewInt(3000000),
+		big.NewInt(3),
+		[]byte{},
+		[]byte{},
+		false,
+	)
+
+	// decay is false,remainingTime is duration,weight ~1.144，ret is 3434242
+	ret = commp.(*committee).calcWeightedVotes(vote2, time.Now().Add(time.Hour*5))
+	require.Equal(0, ret.Cmp(big.NewInt(3434242)))
 }
 func TestVoteFilter(t *testing.T) {
 	require := require.New(t)

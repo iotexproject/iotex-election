@@ -35,11 +35,11 @@ func TestCalcWeightedVotes(t *testing.T) {
 	)
 	require.NoError(err)
 	// now.Before(v.StartTime()),返回0
-	ret := commp.(*committee).calcWeightedVotes(vote1, time.Now().Add(-1*time.Hour))
+	ret := commp.(*committee).calcWeightedVotes(vote1, startTime.Add(-1*time.Hour))
 	require.Equal(0, ret.Cmp(big.NewInt(0)))
 
 	// decay is true,startTime+duration is after now,remainingTime is 24*14-1=335 hours,weight is ~1.140,ret is 3422048
-	ret = commp.(*committee).calcWeightedVotes(vote1, time.Now().Add(time.Hour))
+	ret = commp.(*committee).calcWeightedVotes(vote1, startTime.Add(time.Hour+time.Second))
 	fmt.Println(ret)
 	require.Equal(0, ret.Cmp(big.NewInt(3422048)))
 

@@ -17,7 +17,6 @@ import (
 )
 
 func TestCalcWeightedVotes(t *testing.T) {
-	//14 days generates a ~15% bonus (100 IOTX = 115 Votes)
 	require := require.New(t)
 	cfg := getCfg()
 	commp, err := NewCommittee(nil, cfg)
@@ -33,7 +32,7 @@ func TestCalcWeightedVotes(t *testing.T) {
 		true,
 	)
 	require.NoError(err)
-	// now.Before(v.StartTime()),返回0
+	// now.Before(v.StartTime()),return 0
 	ret := commp.(*committee).calcWeightedVotes(vote1, startTime.Add(-1*time.Hour))
 	require.Equal(0, ret.Cmp(big.NewInt(0)))
 

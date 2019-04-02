@@ -7,6 +7,7 @@
 package committee
 
 import (
+	"fmt"
 	"math/big"
 	"testing"
 	"time"
@@ -39,6 +40,7 @@ func TestCalcWeightedVotes(t *testing.T) {
 
 	// decay is true,startTime+duration is after now,remainingTime is 24*14-1=335 hours,weight is ~1.140,ret is 3422048
 	ret = commp.(*committee).calcWeightedVotes(vote1, time.Now().Add(time.Hour))
+	fmt.Println(ret)
 	require.Equal(0, ret.Cmp(big.NewInt(3422048)))
 
 	// decay is true,startTime+duration is before now,remainingTime is 0 hours,weight is 1,ret is 3000000

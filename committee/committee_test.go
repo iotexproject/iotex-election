@@ -20,9 +20,11 @@ func TestCalcWeightedVotes(t *testing.T) {
 	require := require.New(t)
 	cfg := getCfg()
 	commp, err := NewCommittee(nil, cfg)
+	startTime := time.Now()
+	duration := time.Hour * 3
 	vote1, err := types.NewVote(
-		time.Now(),
-		time.Hour,
+		startTime,
+		duration,
 		big.NewInt(3),
 		big.NewInt(3),
 		[]byte{},
@@ -33,6 +35,11 @@ func TestCalcWeightedVotes(t *testing.T) {
 	// now.Before(v.StartTime())
 	ret := commp.(*committee).calcWeightedVotes(vote1, time.Now().Add(-1*time.Hour))
 	require.Equal(0, ret.Cmp(big.NewInt(0)))
+
+	// decay is true,startTime+duration is after now,remainingTime is 2 hours,weight is 1,ret is 3
+	ret = commp.(*committee).calcWeightedVotes(vote1, time.Now().Add(time.Hour))
+	require.Equal(0, ret.Cmp(big.NewInt(3)))
+
 }
 func TestVoteFilter(t *testing.T) {
 	require := require.New(t)

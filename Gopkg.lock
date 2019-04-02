@@ -7,7 +7,7 @@
   name = "github.com/aristanetworks/goarista"
   packages = ["monotime"]
   pruneopts = "UT"
-  revision = "c1e4b37418775d8f5e0c0c1a68766d321b32d6ca"
+  revision = "a123909ec740ba2ed43a293e3febaf7618aa67d5"
 
 [[projects]]
   branch = "master"
@@ -253,14 +253,6 @@
   version = "v1.9.1"
 
 [[projects]]
-  digest = "1:5f7414cf41466d4b4dd7ec52b2cd3e481e08cfd11e7e24fef730c0e483e88bb1"
-  name = "go.etcd.io/bbolt"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "63597a96ec0ad9e6d43c3fc81e809909e0237461"
-  version = "v1.3.2"
-
-[[projects]]
   branch = "master"
   digest = "1:4987dc6844c200891f789cb807ebb453f402e9c76e4189c6ca23e87f9788a3a2"
   name = "golang.org/x/crypto"
@@ -291,14 +283,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:adfb8e8e1334e23944e536d1b004789ba3ae2b460417a876a5c1b4a5c3658bc1"
+  digest = "1:dc0700ab4c25cd32330795c962b4d52afdd752e3ba8f4e73f194c373c0021e5c"
   name = "golang.org/x/sys"
   packages = [
     "cpu",
     "unix",
   ]
   pruneopts = "UT"
-  revision = "9eb1bfa1ce65ae8a6ff3114b0aaf9a41a6cf3560"
+  revision = "baf5eb976a8cd65845293cd814ea151018552292"
 
 [[projects]]
   digest = "1:a2ab62866c75542dd18d2b069fec854577a20211d7c0ea6ae746072a1dccdd18"
@@ -325,7 +317,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:40229fb45632bffd6a9404c890601cfb7266f829539b69153a13793aa0c05d85"
+  digest = "1:0b3f1964b8617e362189158bc2c682f69552a694aff11534831d01e02daa6205"
   name = "golang.org/x/tools"
   packages = [
     "go/ast/astutil",
@@ -341,7 +333,7 @@
     "internal/semver",
   ]
   pruneopts = "UT"
-  revision = "0ec5c269d481877e08b598fe3cdadce903fffb4a"
+  revision = "202502a5a9245830b5ec7b877e26b67760da8e67"
 
 [[projects]]
   branch = "master"
@@ -349,7 +341,7 @@
   name = "google.golang.org/genproto"
   packages = ["googleapis/rpc/status"]
   pruneopts = "UT"
-  revision = "d831d65fe17df2e52bcc4316d4a9f7a418701f43"
+  revision = "f467c93bbac2133ff463e1f93d18d8f9f3f04451"
 
 [[projects]]
   digest = "1:87d21766dc058648c95ae9f929496931684f576e2fbd7c80e36ab7c07b6896cf"

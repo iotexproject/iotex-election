@@ -14,6 +14,9 @@ committee:
   stakingContractAddress: 0xdedf0c1610d8a75ca896d8c93a0dc39abf7daff4
   paginationSize: 100
   voteThreshold: "100000000000000000000"
-  scoreThreshold: "2000000000000000000000000"
-  selfStakingThreshold: "120000000000000000000000"
+  scoreThreshold: "0"
+  selfStakingThreshold: "0"
   cacheSize: 100
+
+scoreThreshold: "2000000000000000000000000"
+selfStakingThreshold: "120000000000000000000000"

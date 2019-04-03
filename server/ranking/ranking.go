@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math/big"
 	"net"
 	"strconv"
 
@@ -28,9 +29,11 @@ import (
 
 // Config defines the config for server
 type Config struct {
-	DB        db.Config        `yaml:"db"`
-	Port      int              `yaml:"port"`
-	Committee committee.Config `yaml:"committee"`
+	DB                   db.Config        `yaml:"db"`
+	Port                 int              `yaml:"port"`
+	Committee            committee.Config `yaml:"committee"`
+	SelfStakingThreshold string           `yaml:"selfStakingThreshold"`
+	ScoreThreshold       string           `yaml:"scoreThreshold"`
 }
 
 // Server defines the interface of the ranking server implementation
@@ -42,9 +45,11 @@ type Server interface {
 
 // server is used to implement pb.RankingServer.
 type server struct {
-	port              int
-	electionCommittee committee.Committee
-	grpcServer        *grpc.Server
+	port                 int
+	electionCommittee    committee.Committee
+	grpcServer           *grpc.Server
+	selfStakingThreshold *big.Int
+	scoreThreshold       *big.Int
 }
 
 // NewServer returns an implementation of ranking server
@@ -67,7 +72,20 @@ func NewServer(cfg *Config) (Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	s := &server{electionCommittee: c, port: cfg.Port}
+	scoreThreshold, ok := new(big.Int).SetString(cfg.ScoreThreshold, 10)
+	if !ok {
+		return nil, errors.New("Invalid score threshold")
+	}
+	selfStakingThreshold, ok := new(big.Int).SetString(cfg.SelfStakingThreshold, 10)
+	if !ok {
+		return nil, errors.New("Invalid self staking threshold")
+	}
+	s := &server{
+		electionCommittee:    c,
+		port:                 cfg.Port,
+		scoreThreshold:       scoreThreshold,
+		selfStakingThreshold: selfStakingThreshold,
+	}
 	s.grpcServer = grpc.NewServer()
 	pb.RegisterRankingServer(s.grpcServer, s)
 	reflection.Register(s.grpcServer)
@@ -107,10 +125,16 @@ func (s *server) GetMeta(ctx context.Context, empty *empty.Empty) (*pb.ChainMeta
 	if err != nil {
 		return &pb.ChainMeta{}, err
 	}
+	numOfCandidates := uint64(0)
+	for _, d := range result.Delegates() {
+		if d.Score().Cmp(s.scoreThreshold) >= 0 && d.SelfStakingTokens().Cmp(s.selfStakingThreshold) >= 0 {
+			numOfCandidates++
+		}
+	}
 
 	return &pb.ChainMeta{
 		Height:           strconv.FormatUint(height, 10),
-		TotalCandidates:  uint64(len(result.Delegates())),
+		TotalCandidates:  numOfCandidates,
 		TotalVotedStakes: result.TotalVotedStakes().Text(10),
 		TotalVotes:       result.TotalVotes().Text(10),
 	}, nil

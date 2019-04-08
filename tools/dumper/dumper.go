@@ -7,6 +7,7 @@
 package main
 
 import (
+	"context"
 	"encoding/csv"
 	"encoding/hex"
 	"flag"
@@ -16,20 +17,26 @@ import (
 	"strconv"
 
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"google.golang.org/grpc"
 	yaml "gopkg.in/yaml.v2"
 
 	"github.com/iotexproject/iotex-address/address"
+	"github.com/iotexproject/iotex-core/protogen/iotexapi"
 	"github.com/iotexproject/iotex-election/committee"
 )
 
 func main() {
 	var configPath string
+	var epoch uint64
 	var height uint64
+	endpoint := "api.iotex.one:80"
 	flag.StringVar(&configPath, "config", "committee.yaml", "path of server config file")
+	flag.Uint64Var(&epoch, "epoch", 0, "iotex epoch")
 	flag.Uint64Var(&height, "height", 0, "ethereuem height")
 	flag.Parse()
-
 	data, err := ioutil.ReadFile(configPath)
+	zap.L().Fatal("failed to load config file", zap.Error(err))
 	if err != nil {
 		zap.L().Fatal("failed to load config file", zap.Error(err))
 	}
@@ -40,6 +47,21 @@ func main() {
 	committee, err := committee.NewCommittee(nil, config)
 	if err != nil {
 		zap.L().Fatal("failed to create committee", zap.Error(err))
+	}
+	if epoch != 0 {
+		conn, err := grpc.Dial(endpoint, grpc.WithInsecure())
+		if err != nil {
+			zap.L().Fatal("failed to connect endpoint", zap.Error(err))
+		}
+		defer conn.Close()
+		cli := iotexapi.NewAPIServiceClient(conn)
+		request := iotexapi.GetEpochMetaRequest{EpochNumber: epoch}
+		ctx := context.Background()
+		response, err := cli.GetEpochMeta(ctx, &request)
+		if err != nil {
+			zap.L().Fatal("failed to get epoch meta", zap.Error(err))
+		}
+		height = response.EpochData.GravityChainStartHeight
 	}
 	result, err := committee.FetchResultByHeight(height)
 	if err != nil {
@@ -75,4 +97,15 @@ func main() {
 		}
 	}
 	writer.Flush()
+}
+
+func init() {
+	zapCfg := zap.NewDevelopmentConfig()
+	zapCfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+	zapCfg.Level.SetLevel(zap.InfoLevel)
+	l, err := zapCfg.Build()
+	if err != nil {
+		log.Panic("Failed to init zap global logger, no zap log will be shown till zap is properly initialized: ", err)
+	}
+	zap.ReplaceGlobals(l)
 }

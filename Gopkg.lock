@@ -83,6 +83,14 @@
   version = "v1.8.0"
 
 [[projects]]
+  digest = "1:b60efdeb75d3c0ceed88783ac2495256aba3491a537d0f31401202579fd62a94"
+  name = "github.com/golang/mock"
+  packages = ["gomock"]
+  pruneopts = "UT"
+  revision = "51421b967af1f557f93a59e0057aaf15ca02e29c"
+  version = "v1.2.0"
+
+[[projects]]
   digest = "1:f2bc519aefa5511928d70d067ae2828cfa60fd3947cc8d166f070a0ce705f782"
   name = "github.com/golang/protobuf"
   packages = [
@@ -124,6 +132,17 @@
   ]
   pruneopts = "UT"
   revision = "6f79c578a9766e0caf7e5fd88613d48f59f00bb4"
+
+[[projects]]
+  digest = "1:c3324acc149505f67f86621784b07ce395d7b1016405c16f07870a0e9cd0c2d4"
+  name = "github.com/iotexproject/iotex-core"
+  packages = [
+    "protogen/iotexapi",
+    "protogen/iotextypes",
+  ]
+  pruneopts = "UT"
+  revision = "e52d39370b184050cb130c2ef8d277861dfabf44"
+  version = "v0.5.0-rc8-hotfix1"
 
 [[projects]]
   branch = "master"
@@ -405,12 +424,14 @@
     "github.com/ethereum/go-ethereum/core/types",
     "github.com/ethereum/go-ethereum/ethclient",
     "github.com/ethereum/go-ethereum/event",
+    "github.com/golang/mock/gomock",
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/ptypes",
     "github.com/golang/protobuf/ptypes/duration",
     "github.com/golang/protobuf/ptypes/empty",
     "github.com/golang/protobuf/ptypes/timestamp",
     "github.com/iotexproject/iotex-address/address",
+    "github.com/iotexproject/iotex-core/protogen/iotexapi",
     "github.com/logrusorgru/aurora",
     "github.com/pkg/errors",
     "github.com/stretchr/testify/require",

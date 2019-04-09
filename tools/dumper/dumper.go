@@ -36,7 +36,6 @@ func main() {
 	flag.Uint64Var(&height, "height", 0, "ethereuem height")
 	flag.Parse()
 	data, err := ioutil.ReadFile(configPath)
-	zap.L().Fatal("failed to load config file", zap.Error(err))
 	if err != nil {
 		zap.L().Fatal("failed to load config file", zap.Error(err))
 	}

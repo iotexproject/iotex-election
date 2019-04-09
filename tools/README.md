@@ -11,7 +11,7 @@ go build .
 
 ## Get Voters' Rewards by Delegate Name 
 ```
-✗ ./multisend --epoch 100 --amount 101 --bp cpc
+✗ ./bookkeeper --epoch 100 --amount 101 --bp cpc
 IOAddr                                   	ETHAddr                                 	Votes                           Reward(IOTX)
 io1z5vv8ljg8umnjxunhfw5upvexj4m9qxv33wwsz	1518c3fe483f37391b93ba5d4e059934abb280cc	25104639072436671032307         0.079036094391728259
 io1r9xhpn9k6alasapkg0h4nzwq6r9s955aqmqc5m	194d70ccb6d77fd8743643ef5989c0d0cb02d29d	57034136288009651405417         0.179558661098579954

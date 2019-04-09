@@ -22,7 +22,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 
 	"github.com/iotexproject/iotex-core/address"
 	"github.com/iotexproject/iotex-core/cli/ioctl/util"
@@ -37,18 +37,225 @@ type Bucket struct {
 	bpname  string
 }
 
-var abiJSON = `[{"constant":false,"inputs":[{"name":"recipients","type":"address[]"},
-{"name":"amounts","type":"uint256[]"},{"name":"payload","type":"string"}],
-"name":"multiSend","outputs":[],"payable":true,"stateMutability":"payable","type":"function"},
-{"anonymous":false,"inputs":[{"indexed":false,"name":"recipient","type":"address"},
-{"indexed":false,"name":"amount","type":"uint256"}],"name":"Transfer","type":"event"},
-{"anonymous":false,"inputs":[{"indexed":false,"name":"refund","type":"uint256"}],
-"name":"Refund","type":"event"},{"anonymous":false,
-"inputs":[{"indexed":false,"name":"payload","type":"string"}],"name":"Payload","type":"event"}]`
-var abiFunc = "multiSend"
+var bpHexMap map[string]string
+var abiJSON string
+var abiFunc string
+
+// Flags
+var configPath string
+var epoch uint64
+var height uint64
+var bp string
+var bpHex string
+var amount string
+var endpoint string
 
 func main() {
-	bpHexMap := map[string]string{
+	buckets := dump()
+	bps := process(buckets)
+	bp0 := getBP(bps)
+	calAndPrint(bp0)
+}
+
+func dump() (buckets []Bucket) {
+	data, err := ioutil.ReadFile(configPath)
+	if err != nil {
+		log.Fatal("failed to load config file")
+	}
+	var config committee.Config
+	if err := yaml.Unmarshal(data, &config); err != nil {
+		log.Fatal("failed to unmarshal config")
+	}
+	committee, err := committee.NewCommittee(nil, config)
+	if err != nil {
+		log.Fatal("failed to create committee")
+	}
+	if epoch != 0 {
+		conn, err := grpc.Dial(endpoint, grpc.WithInsecure())
+		if err != nil {
+			log.Fatal("failed to connect endpoint")
+		}
+		defer conn.Close()
+		cli := iotexapi.NewAPIServiceClient(conn)
+		request := iotexapi.GetEpochMetaRequest{EpochNumber: epoch}
+		ctx := context.Background()
+		response, err := cli.GetEpochMeta(ctx, &request)
+		if err != nil {
+			log.Fatal("failed to get epoch meta")
+		}
+		height = response.EpochData.GravityChainStartHeight
+	}
+	result, err := committee.FetchResultByHeight(height)
+	if err != nil {
+		log.Fatal("failed to fetch result")
+	}
+	for _, delegate := range result.Delegates() {
+		for _, vote := range result.VotesByDelegate(delegate.Name()) {
+			buckets = append(buckets, Bucket{
+				ethAddr: hex.EncodeToString(vote.Voter()),
+				stakes:  vote.WeightedAmount().String(),
+				bpname:  string(vote.Candidate()),
+			})
+		}
+	}
+	return
+}
+
+func process(buckets []Bucket) (bps map[string](map[string]string)) {
+	bps = make(map[string](map[string]string))
+	for _, bucket := range buckets {
+		vs, ok := bps[bucket.bpname]
+		if ok {
+			// Already have this BP
+			_, ook := vs[bucket.ethAddr]
+			if ook {
+				// Already have this eth addr, need to combine the stakes
+				vs[bucket.ethAddr] = addStrs(vs[bucket.ethAddr], bucket.stakes)
+			} else {
+				vs[bucket.ethAddr] = bucket.stakes
+			}
+		} else {
+			vs := make(map[string]string)
+			vs[bucket.ethAddr] = bucket.stakes
+			name := "UNVOTED"
+			if len(bucket.bpname) > 0 {
+				name = bucket.bpname
+			}
+			bps[name] = vs
+		}
+	}
+
+	return bps
+}
+
+func getBP(bps map[string](map[string]string)) map[string]string {
+	var err error
+	var ok bool
+	var bpByte []byte
+	if len(bpHex) == 0 {
+		bpHex, ok = bpHexMap[bp]
+		if !ok {
+			zeroByte := []byte{}
+			for i := 0; i < 12-len(bp); i++ {
+				zeroByte = append(zeroByte, byte(0))
+			}
+			bpByte = append(zeroByte, []byte(bp)...)
+		}
+	}
+	if len(bpHex) != 0 {
+		bpByte, err = hex.DecodeString(bpHex)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+	}
+	bp = string(bpByte)
+	bp0, ok := bps[bp]
+	if !ok {
+		log.Fatal("invalid bp name: " + bp)
+	}
+	return bp0
+}
+
+func calAndPrint(bp0 map[string]string) {
+	// calculate and print
+	totalVotes := big.NewInt(0)
+	var keys []string
+	for k, v := range bp0 {
+		votes, ok := new(big.Int).SetString(v, 10)
+		if !ok {
+			log.Panic("SetString: error")
+		}
+		totalVotes.Add(totalVotes, votes)
+		keys = append(keys, k)
+	}
+	recipients := make([]common.Address, 0)
+	amounts := make([]*big.Int, 0)
+	payload := bp
+	totalAmount, err := util.StringToRau(amount, util.IotxDecimalNum)
+	if err != nil {
+		log.Fatal("invalid amount")
+	}
+	sort.Strings(keys)
+	fmt.Printf("%-41s\t%-40s\t%-32s%s", "IOAddr", "ETHAddr", "Votes", "Reward(IOTX)\n")
+	for _, k := range keys {
+		ioAddr := toIoAddr(k)
+		recipient, err := util.IoAddrToEvmAddr(ioAddr)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+		recipients = append(recipients, recipient)
+		votes, ok := new(big.Int).SetString(bp0[k], 10)
+		if !ok {
+			log.Panic("SetString: error")
+		}
+		amountPerVoter := new(big.Int).Div(new(big.Int).Mul(votes, totalAmount), totalVotes)
+		amounts = append(amounts, amountPerVoter)
+		fmt.Printf("%s\t%s\t%-32s%s\n", toIoAddr(k), k, bp0[k],
+			util.RauToString(amountPerVoter, util.IotxDecimalNum))
+	}
+
+	// generate bytecode and print
+	reader := strings.NewReader(abiJSON)
+	multisendABI, _ := abi.JSON(reader)
+	bytecode, _ := multisendABI.Pack(abiFunc, recipients, amounts, payload)
+	fmt.Println("\nbytecode: " + hex.EncodeToString(bytecode))
+}
+
+func addStrs(a, b string) string {
+	aa := new(big.Int)
+	aaa, ok := aa.SetString(a, 10)
+	if !ok {
+		log.Panic("SetString: error")
+	}
+	bb := new(big.Int)
+	bbb, ok := bb.SetString(b, 10)
+	if !ok {
+		log.Panic("SetString: error")
+	}
+	c := new(big.Int)
+	c.Add(aaa, bbb)
+	return c.String()
+}
+
+func toIoAddr(addr string) string {
+	ethAddr := common.HexToAddress(addr)
+	pkHash := ethAddr.Bytes()
+	ioAddr, _ := address.FromBytes(pkHash)
+	return ioAddr.String()
+}
+
+func init() {
+	flag.StringVar(&configPath, "config", "committee.yaml", "path of server config file")
+	flag.Uint64Var(&epoch, "epoch", 0, "iotex epoch")
+	flag.Uint64Var(&height, "height", 0, "ethereuem height")
+	flag.StringVar(&bp, "bp", "", "bp name")
+	flag.StringVar(&bpHex, "bp-hex", "", "bp hex name")
+	flag.StringVar(&amount, "amount", "", "amount of IOTX")
+	flag.StringVar(&endpoint, "ednpoint", "api.iotex.one:80", "set endpoint")
+	flag.Parse()
+
+	zapCfg := zap.NewDevelopmentConfig()
+	zapCfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+	zapCfg.Level.SetLevel(zap.WarnLevel)
+	l, err := zapCfg.Build()
+	if err != nil {
+		log.Fatal("Failed to init zap global logger, no zap log will be shown till zap is properly initialized: ", err)
+	}
+	zap.ReplaceGlobals(l)
+
+	abiJSON = `[{"constant":false,"inputs":[{"name":"recipients","type":"address[]"},
+	{"name":"amounts","type":"uint256[]"},{"name":"payload","type":"string"}],
+	"name":"multiSend","outputs":[],"payable":true,"stateMutability":"payable","type":"function"},
+	{"anonymous":false,"inputs":[{"indexed":false,"name":"recipient","type":"address"},
+	{"indexed":false,"name":"amount","type":"uint256"}],"name":"Transfer","type":"event"},
+	{"anonymous":false,"inputs":[{"indexed":false,"name":"refund","type":"uint256"}],
+	"name":"Refund","type":"event"},{"anonymous":false,
+	"inputs":[{"indexed":false,"name":"payload","type":"string"}],"name":"Payload","type":"event"}]`
+	abiFunc = "multiSend"
+	bpHexMap = map[string]string{
 		"iotxplorerio": "696f7478706c6f726572696f",
 		"longz":        "000000000000006c6f6e677a",
 		"iotextrader":  "00696f746578747261646572",
@@ -80,7 +287,6 @@ func main() {
 		"iosg":         "0000000000000000696f7367",
 		"zhcapital":    "0000007a686361706974616c",
 		"meter":        "000000000000006d65746572",
-		"":             "000000000000000000000000",
 		"pubxpayments": "707562787061796d656e7473",
 		"coingecko":    "000000636f696e6765636b6f",
 		"iotexmainnet": "696f7465786d61696e6e6574",
@@ -135,183 +341,4 @@ func main() {
 		"laomao":       "0000000000006c616f6d616f",
 		"wetez":        "00000000000000776574657a",
 	}
-
-	var configPath string
-	var epoch uint64
-	var height uint64
-	var bp string
-	var bpHex string
-	var amount string
-	var endpoint string
-	flag.StringVar(&configPath, "config", "committee.yaml", "path of server config file")
-	flag.Uint64Var(&epoch, "epoch", 0, "iotex epoch")
-	flag.Uint64Var(&height, "height", 0, "ethereuem height")
-	flag.StringVar(&bp, "bp", "", "bp name")
-	flag.StringVar(&bpHex, "bp-hex", "", "bp hex name")
-	flag.StringVar(&amount, "amount", "", "amount of IOTX")
-	flag.StringVar(&endpoint, "ednpoint", "api.iotex.one:80", "set endpoint")
-	flag.Parse()
-
-	data, err := ioutil.ReadFile(configPath)
-	if err != nil {
-		log.Panic("failed to load config file", zap.Error(err))
-	}
-	var config committee.Config
-	if err := yaml.Unmarshal(data, &config); err != nil {
-		log.Panic("failed to unmarshal config", zap.Error(err))
-	}
-	committee, err := committee.NewCommittee(nil, config)
-	if err != nil {
-		log.Panic("failed to create committee", zap.Error(err))
-	}
-	if epoch != 0 {
-		conn, err := grpc.Dial(endpoint, grpc.WithInsecure())
-		if err != nil {
-			log.Panic("failed to connect endpoint", zap.Error(err))
-		}
-		defer conn.Close()
-		cli := iotexapi.NewAPIServiceClient(conn)
-		request := iotexapi.GetEpochMetaRequest{EpochNumber: epoch}
-		ctx := context.Background()
-		response, err := cli.GetEpochMeta(ctx, &request)
-		if err != nil {
-			log.Panic("failed to get epoch meta", zap.Error(err))
-		}
-		height = response.EpochData.GravityChainStartHeight
-	}
-	result, err := committee.FetchResultByHeight(height)
-	if err != nil {
-		log.Panic("failed to fetch result", zap.Uint64("height", height))
-	}
-	var buckets []Bucket
-	for _, delegate := range result.Delegates() {
-		for _, vote := range result.VotesByDelegate(delegate.Name()) {
-			buckets = append(buckets, Bucket{
-				ethAddr: hex.EncodeToString(vote.Voter()),
-				stakes:  vote.WeightedAmount().String(),
-				bpname:  string(vote.Candidate()),
-			})
-		}
-	}
-	bps := process(buckets)
-	var bpByte []byte
-	var ok bool
-	if len(bpHex) == 0 {
-		bpHex, ok = bpHexMap[bp]
-		if !ok {
-			zeroByte := []byte{}
-			for i := 0; i < 12-len(bp); i++ {
-				zeroByte = append(zeroByte, byte(0))
-			}
-			bpByte = append(zeroByte, []byte(bp)...)
-		}
-	}
-	if len(bpHex) != 0 {
-		bpByte, err = hex.DecodeString(bpHex)
-		if err != nil {
-			log.Panic(err.Error())
-		}
-	}
-	bp = string(bpByte)
-	bp1, ok := bps[bp]
-	if !ok {
-		log.Panic("invalid bp name: " + bp)
-	}
-	totalVotes := big.NewInt(0)
-	var keys []string
-	fmt.Printf("%-41s\t%-40s\t%-32s%s", "IOAddr", "ETHAddr", "Votes", "Reward(IOTX)\n")
-	for k, v := range bp1 {
-		votes, _ := new(big.Int).SetString(v, 10)
-		totalVotes.Add(totalVotes, votes)
-		keys = append(keys, k)
-	}
-	recipients := make([]common.Address, 0)
-	amounts := make([]*big.Int, 0)
-	payload := bp
-	totalAmount, err := util.StringToRau(amount, util.IotxDecimalNum)
-	if err != nil {
-		log.Panic("invalid amount")
-	}
-	sort.Strings(keys)
-	for _, k := range keys {
-		ioAddr := toIoAddr(k)
-		recipient, err := util.IoAddrToEvmAddr(ioAddr)
-		if err != nil {
-			log.Panic(err.Error())
-		}
-		if err != nil {
-			log.Panic(err.Error())
-		}
-		recipients = append(recipients, recipient)
-		votes, _ := new(big.Int).SetString(bp1[k], 10)
-		amountPerVoter := new(big.Int).Div(new(big.Int).Mul(votes, totalAmount), totalVotes)
-		amounts = append(amounts, amountPerVoter)
-		fmt.Printf("%s\t%s\t%-32s%s\n", toIoAddr(k), k, bp1[k],
-			util.RauToString(amountPerVoter, util.IotxDecimalNum))
-	}
-	reader := strings.NewReader(abiJSON)
-	multisendABI, _ := abi.JSON(reader)
-	bytecode, _ := multisendABI.Pack(abiFunc, recipients, amounts, payload)
-	fmt.Println("\nbytecode: " + hex.EncodeToString(bytecode))
-}
-
-func init() {
-	zapCfg := zap.NewDevelopmentConfig()
-	zapCfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
-	zapCfg.Level.SetLevel(zap.WarnLevel)
-	l, err := zapCfg.Build()
-	if err != nil {
-		log.Panic("Failed to init zap global logger, no zap log will be shown till zap is properly initialized: ", err)
-	}
-	zap.ReplaceGlobals(l)
-}
-
-func process(buckets []Bucket) (bps map[string](map[string]string)) {
-	bps = make(map[string](map[string]string))
-	for _, bucket := range buckets {
-		vs, ok := bps[bucket.bpname]
-		if ok {
-			// Already have this BP
-			_, ook := vs[bucket.ethAddr]
-			if ook {
-				// Already have this eth addr, need to combine the stakes
-				vs[bucket.ethAddr] = addStrs(vs[bucket.ethAddr], bucket.stakes)
-			} else {
-				vs[bucket.ethAddr] = bucket.stakes
-			}
-		} else {
-			vs := make(map[string]string)
-			vs[bucket.ethAddr] = bucket.stakes
-			name := "UNVOTED"
-			if len(bucket.bpname) > 0 {
-				name = bucket.bpname
-			}
-			bps[name] = vs
-		}
-	}
-
-	return bps
-}
-
-func addStrs(a, b string) string {
-	aa := new(big.Int)
-	aaa, ok := aa.SetString(a, 10)
-	if !ok {
-		panic("SetString: error")
-	}
-	bb := new(big.Int)
-	bbb, ok := bb.SetString(b, 10)
-	if !ok {
-		panic("SetString: error")
-	}
-	c := new(big.Int)
-	c.Add(aaa, bbb)
-	return c.String()
-}
-
-func toIoAddr(addr string) string {
-	ethAddr := common.HexToAddress(addr)
-	pkHash := ethAddr.Bytes()
-	ioAddr, _ := address.FromBytes(pkHash)
-	return ioAddr.String()
 }

@@ -4,7 +4,7 @@ This sub-repo is for tools related to election, staking and voting.
 # Bookkeeper
 Bookkeeper = Dumper + Processor and handles bookkeeping.
 
-Bookkeeper can handle up to 100 voters.
+Bookkeeper can handle up to 300 voters.
 
 ## Build
 ```

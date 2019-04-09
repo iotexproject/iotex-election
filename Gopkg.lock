@@ -123,6 +123,14 @@
   version = "v1.1.1"
 
 [[projects]]
+  digest = "1:870d441fe217b8e689d7949fef6e43efbc787e50f200cb1e70dbca9204a1d6be"
+  name = "github.com/inconshreveable/mousetrap"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75"
+  version = "v1.0"
+
+[[projects]]
   branch = "master"
   digest = "1:36b33bdfeab512dc87e88eed34156b0e5cacf3b24cb3a29d9c90f8cb8462b2eb"
   name = "github.com/iotexproject/iotex-address"
@@ -134,9 +142,17 @@
   revision = "6f79c578a9766e0caf7e5fd88613d48f59f00bb4"
 
 [[projects]]
-  digest = "1:c3324acc149505f67f86621784b07ce395d7b1016405c16f07870a0e9cd0c2d4"
+  digest = "1:f8d13e702fcc373d8a29105788c2bdc4114a042609522326f73d81334f74e578"
   name = "github.com/iotexproject/iotex-core"
   packages = [
+    "address",
+    "address/bech32",
+    "cli/ioctl/cmd/config",
+    "cli/ioctl/util",
+    "cli/ioctl/validator",
+    "pkg/hash",
+    "pkg/log",
+    "pkg/unit",
     "protogen/iotexapi",
     "protogen/iotextypes",
   ]
@@ -191,6 +207,22 @@
   pruneopts = "UT"
   revision = "9a47f48565a795472d43519dd49aac781f3034fb"
   version = "v1.6.0"
+
+[[projects]]
+  digest = "1:645cabccbb4fa8aab25a956cbcbdf6a6845ca736b2c64e197ca7cbb9d210b939"
+  name = "github.com/spf13/cobra"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "ef82de70bb3f60c65fb8eebacbb2d122ef517385"
+  version = "v0.0.3"
+
+[[projects]]
+  digest = "1:c1b1102241e7f645bc8e0c22ae352e8f0dc6484b6cb4d132fa9f24174e0119e2"
+  name = "github.com/spf13/pflag"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "298182f68c66c05229eb03ac171abe6e309ee79a"
+  version = "v1.0.3"
 
 [[projects]]
   digest = "1:5da8ce674952566deae4dbc23d07c85caafc6cfa815b0b3e03e41979cedb8750"
@@ -431,6 +463,8 @@
     "github.com/golang/protobuf/ptypes/empty",
     "github.com/golang/protobuf/ptypes/timestamp",
     "github.com/iotexproject/iotex-address/address",
+    "github.com/iotexproject/iotex-core/address",
+    "github.com/iotexproject/iotex-core/cli/ioctl/util",
     "github.com/iotexproject/iotex-core/protogen/iotexapi",
     "github.com/logrusorgru/aurora",
     "github.com/pkg/errors",

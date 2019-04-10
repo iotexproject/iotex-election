@@ -315,7 +315,7 @@ func toIoAddr(addr string) string {
 
 func init() {
 	// print disclaim
-	disclaim := Red("This Bookkeeper is a REFERENCE IMPLEMENTATION of rewrad distribution tool provided by IOTEX FOUNDATION. IOTEX FOUNDATION disclaims all responsibility for any damages or losses (including, without limitation, financial loss, damages for loss in business projects, loss of profits or other consequential losses) arising in contract, tort or otherwise from the use of or inability to use the Bookkeeper, or from any action or decision taken as a result of using this Bookkeeper.")
+	disclaim := Red("This Bookkeeper is a REFERENCE IMPLEMENTATION of reward distribution tool provided by IOTEX FOUNDATION. IOTEX FOUNDATION disclaims all responsibility for any damages or losses (including, without limitation, financial loss, damages for loss in business projects, loss of profits or other consequential losses) arising in contract, tort or otherwise from the use of or inability to use the Bookkeeper, or from any action or decision taken as a result of using this Bookkeeper.")
 	fmt.Printf("\n%s\n%s\n", Bold(Red("Attention")), disclaim)
 	flag.StringVar(&configPath, "config", "committee.yaml", "path of server config file")
 	flag.Uint64Var(&epoch, "epoch", 0, "iotex epoch")

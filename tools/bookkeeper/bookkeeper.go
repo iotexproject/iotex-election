@@ -15,15 +15,18 @@ import (
 	"log"
 	"math/big"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/golang/protobuf/proto"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
 	"gopkg.in/yaml.v2"
 
+	"github.com/iotexproject/iotex-core/action/protocol/rewarding/rewardingpb"
 	"github.com/iotexproject/iotex-core/address"
 	"github.com/iotexproject/iotex-core/cli/ioctl/util"
 	"github.com/iotexproject/iotex-core/protogen/iotexapi"
@@ -38,23 +41,23 @@ type Bucket struct {
 }
 
 var bpHexMap map[string]string
+var bpAddrMap map[string]string
 var abiJSON string
 var abiFunc string
 
 // Flags
 var configPath string
 var epoch uint64
-var height uint64
 var bp string
-var bpHex string
-var amount string
 var endpoint string
+var percentage uint64
 
 func main() {
+	epochReward := epochReward()
 	buckets := dump()
 	bps := process(buckets)
 	bp0 := getBP(bps)
-	calAndPrint(bp0)
+	calAndPrint(bp0, epochReward)
 }
 
 func dump() (buckets []Bucket) {
@@ -70,6 +73,7 @@ func dump() (buckets []Bucket) {
 	if err != nil {
 		log.Fatal("failed to create committee")
 	}
+	var height uint64
 	if epoch != 0 {
 		conn, err := grpc.Dial(endpoint, grpc.WithInsecure())
 		if err != nil {
@@ -129,35 +133,97 @@ func process(buckets []Bucket) (bps map[string](map[string]string)) {
 }
 
 func getBP(bps map[string](map[string]string)) map[string]string {
-	var err error
-	var ok bool
+	var bpHex string
 	var bpByte []byte
-	if len(bpHex) == 0 {
-		bpHex, ok = bpHexMap[bp]
-		if !ok {
-			zeroByte := []byte{}
-			for i := 0; i < 12-len(bp); i++ {
-				zeroByte = append(zeroByte, byte(0))
-			}
-			bpByte = append(zeroByte, []byte(bp)...)
+	bpHex, ok := bpHexMap[bp]
+	if !ok {
+		zeroByte := []byte{}
+		for i := 0; i < 12-len(bp); i++ {
+			zeroByte = append(zeroByte, byte(0))
 		}
+		bpByte = append(zeroByte, []byte(bp)...)
+		bpHex = string(bpByte)
 	}
-	if len(bpHex) != 0 {
-		bpByte, err = hex.DecodeString(bpHex)
-		if err != nil {
-			log.Fatal(err.Error())
-		}
+	bpByte, err := hex.DecodeString(bpHex)
+	if err != nil {
+		log.Fatal(err.Error())
 	}
-	bp = string(bpByte)
-	bp0, ok := bps[bp]
+	bp0, ok := bps[string(bpByte)]
 	if !ok {
 		log.Fatal("invalid bp name: " + bp)
 	}
 	return bp0
 }
 
-func calAndPrint(bp0 map[string]string) {
-	// calculate and print
+func epochReward() *big.Int {
+	addr, ok := bpAddrMap[bp]
+	if !ok {
+		log.Fatal("failed to get address from " + bp)
+	}
+	lastBlock := epoch * 360
+	conn, err := util.ConnectToEndpoint()
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	defer conn.Close()
+	cli := iotexapi.NewAPIServiceClient(conn)
+	blockRequest := &iotexapi.GetBlockMetasRequest{
+		Lookup: &iotexapi.GetBlockMetasRequest_ByIndex{
+			ByIndex: &iotexapi.GetBlockMetasByIndexRequest{
+				Start: lastBlock,
+				Count: 1,
+			},
+		},
+	}
+	ctx := context.Background()
+	blockMetaResponse, err := cli.GetBlockMetas(ctx, blockRequest)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	actionsRequest := &iotexapi.GetActionsRequest{
+		Lookup: &iotexapi.GetActionsRequest_ByBlk{
+			ByBlk: &iotexapi.GetActionsByBlockRequest{
+				BlkHash: blockMetaResponse.BlkMetas[0].Hash,
+				Start:   uint64(blockMetaResponse.BlkMetas[0].NumActions) - 1,
+				Count:   1,
+			},
+		},
+	}
+	actionsResponse, err := cli.GetActions(ctx, actionsRequest)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	if actionsResponse.ActionInfo[0].Action.Core.GetGrantReward() == nil {
+		log.Fatal("Not grantReward action")
+	}
+	receiptRequest := &iotexapi.GetReceiptByActionRequest{
+		ActionHash: actionsResponse.ActionInfo[0].ActHash,
+	}
+	receiptResponse, err := cli.GetReceiptByAction(ctx, receiptRequest)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	for _, receiptLog := range receiptResponse.ReceiptInfo.Receipt.Logs {
+		var rewardLog rewardingpb.RewardLog
+		if err := proto.Unmarshal(receiptLog.Data, &rewardLog); err != nil {
+			log.Fatal(err.Error())
+		}
+		if rewardLog.Type == rewardingpb.RewardLog_EPOCH_REWARD && rewardLog.Addr == addr {
+			epochReward, ok := new(big.Int).SetString(rewardLog.Amount, 10)
+			if !ok {
+				log.Fatal("SetString: error")
+			}
+			return epochReward
+		}
+	}
+	log.Fatal("failed to get epoch reward from " + bp)
+	return big.NewInt(0)
+}
+
+func calAndPrint(bp0 map[string]string, amount *big.Int) {
+	// calculate
+	payoutAmount := new(big.Int).Div(new(big.Int).Mul(amount, big.NewInt(int64(percentage))), big.NewInt(100))
+	actualPayout := big.NewInt(0)
 	totalVotes := big.NewInt(0)
 	var keys []string
 	for k, v := range bp0 {
@@ -171,12 +237,9 @@ func calAndPrint(bp0 map[string]string) {
 	recipients := make([]common.Address, 0)
 	amounts := make([]*big.Int, 0)
 	payload := bp
-	totalAmount, err := util.StringToRau(amount, util.IotxDecimalNum)
-	if err != nil {
-		log.Fatal("invalid amount")
-	}
 	sort.Strings(keys)
-	fmt.Printf("%-41s\t%-40s\t%-32s%s", "IOAddr", "ETHAddr", "Votes", "Reward(IOTX)\n")
+	var list []string
+	list = append(list, fmt.Sprintf("%-41s\t%-40s\t%-32s%s", "IOAddr", "ETHAddr", "Votes", "Distribution(IOTX)"))
 	for _, k := range keys {
 		ioAddr := toIoAddr(k)
 		recipient, err := util.IoAddrToEvmAddr(ioAddr)
@@ -191,17 +254,33 @@ func calAndPrint(bp0 map[string]string) {
 		if !ok {
 			log.Panic("SetString: error")
 		}
-		amountPerVoter := new(big.Int).Div(new(big.Int).Mul(votes, totalAmount), totalVotes)
+		amountPerVoter := new(big.Int).Div(new(big.Int).Mul(votes, payoutAmount), totalVotes)
+		actualPayout = new(big.Int).Add(actualPayout, amountPerVoter)
 		amounts = append(amounts, amountPerVoter)
-		fmt.Printf("%s\t%s\t%-32s%s\n", toIoAddr(k), k, bp0[k],
-			util.RauToString(amountPerVoter, util.IotxDecimalNum))
+		list = append(list, fmt.Sprintf("%s\t%s\t%-32s%s", toIoAddr(k), k, bp0[k],
+			util.RauToString(amountPerVoter, util.IotxDecimalNum)))
 	}
 
-	// generate bytecode and print
+	// generate bytecode
 	reader := strings.NewReader(abiJSON)
 	multisendABI, _ := abi.JSON(reader)
 	bytecode, _ := multisendABI.Pack(abiFunc, recipients, amounts, payload)
-	fmt.Println("\nbytecode: " + hex.EncodeToString(bytecode))
+
+	// print
+	fmt.Printf("\nBytecode for evoking multisend contract\n")
+	fmt.Println(hex.EncodeToString(bytecode))
+	fmt.Println()
+	fmt.Println(strings.Join(list, "\n"))
+	fmt.Printf("\n%-30s%-30s%-30s%-30s", "Epoch Number", "Epoch Reward(IOTX)", "Percentage %", "Distribution(IOTX)")
+	fmt.Printf("\n%-30d%-30s%-30d%-30s\n", epoch, util.RauToString(amount, util.IotxDecimalNum),
+		percentage, util.RauToString(actualPayout, util.IotxDecimalNum))
+
+	// warning
+	if payoutAmount.Cmp(actualPayout) < 0 {
+		fmt.Printf("\nWarn: actual payout is more than target payout\n")
+		fmt.Printf("target: %s IOTX\nactual: %s IOTX\n",
+			util.RauToString(payoutAmount, util.IotxDecimalNum), util.RauToString(actualPayout, util.IotxDecimalNum))
+	}
 }
 
 func addStrs(a, b string) string {
@@ -230,12 +309,15 @@ func toIoAddr(addr string) string {
 func init() {
 	flag.StringVar(&configPath, "config", "committee.yaml", "path of server config file")
 	flag.Uint64Var(&epoch, "epoch", 0, "iotex epoch")
-	flag.Uint64Var(&height, "height", 0, "ethereuem height")
 	flag.StringVar(&bp, "bp", "", "bp name")
-	flag.StringVar(&bpHex, "bp-hex", "", "bp hex name")
-	flag.StringVar(&amount, "amount", "", "amount of IOTX")
 	flag.StringVar(&endpoint, "ednpoint", "api.iotex.one:80", "set endpoint")
+	flag.Uint64Var(&percentage, "percentage", 0, "distribution percentage of epoch reward")
 	flag.Parse()
+
+	// warning
+	if percentage > 100 {
+		fmt.Println(`Warn: percentage ` + strconv.Itoa(int(percentage)) + `% is larger than 100%`)
+	}
 
 	zapCfg := zap.NewDevelopmentConfig()
 	zapCfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
@@ -255,6 +337,9 @@ func init() {
 	"name":"Refund","type":"event"},{"anonymous":false,
 	"inputs":[{"indexed":false,"name":"payload","type":"string"}],"name":"Payload","type":"event"}]`
 	abiFunc = "multiSend"
+	bpAddrMap = map[string]string{
+		"cpc": "io1qqaswtu7rcevahucpfxc0zxx088pylwtxnkrrl",
+	}
 	bpHexMap = map[string]string{
 		"iotxplorerio": "696f7478706c6f726572696f",
 		"longz":        "000000000000006c6f6e677a",

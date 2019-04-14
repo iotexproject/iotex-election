@@ -15,15 +15,19 @@ import (
 	"log"
 	"math/big"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/golang/protobuf/proto"
+	. "github.com/logrusorgru/aurora"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
 	"gopkg.in/yaml.v2"
 
+	"github.com/iotexproject/iotex-core/action/protocol/rewarding/rewardingpb"
 	"github.com/iotexproject/iotex-core/address"
 	"github.com/iotexproject/iotex-core/cli/ioctl/util"
 	"github.com/iotexproject/iotex-core/protogen/iotexapi"
@@ -37,6 +41,7 @@ type Bucket struct {
 	bpname  string
 }
 
+// Hard code
 var bpHexMap map[string]string
 var abiJSON string
 var abiFunc string
@@ -44,36 +49,107 @@ var abiFunc string
 // Flags
 var configPath string
 var epoch uint64
-var height uint64
 var bp string
-var bpHex string
-var amount string
 var endpoint string
+var distPercentage uint64
+var rewardAddress string
 
 func main() {
+	epochReward := epochReward()
 	buckets := dump()
 	bps := process(buckets)
 	bp0 := getBP(bps)
-	calAndPrint(bp0)
+	calAndPrint(bp0, epochReward)
+}
+
+func epochReward() *big.Int {
+	if rewardAddress == "" {
+		log.Fatalln("empty reward address")
+	}
+	lastBlock := epoch * 24 * 15 // numDelegate: 24, subEpoch: 15
+	conn, err := util.ConnectToEndpoint()
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+	defer conn.Close()
+	cli := iotexapi.NewAPIServiceClient(conn)
+	blockRequest := &iotexapi.GetBlockMetasRequest{
+		Lookup: &iotexapi.GetBlockMetasRequest_ByIndex{
+			ByIndex: &iotexapi.GetBlockMetasByIndexRequest{
+				Start: lastBlock,
+				Count: 1,
+			},
+		},
+	}
+	ctx := context.Background()
+	blockResponse, err := cli.GetBlockMetas(ctx, blockRequest)
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+	if len(blockResponse.BlkMetas) == 0 {
+		log.Fatalln("failed to get last block in epoch", epoch)
+	}
+	actionsRequest := &iotexapi.GetActionsRequest{
+		Lookup: &iotexapi.GetActionsRequest_ByBlk{
+			ByBlk: &iotexapi.GetActionsByBlockRequest{
+				BlkHash: blockResponse.BlkMetas[0].Hash,
+				Start:   uint64(blockResponse.BlkMetas[0].NumActions) - 1,
+				Count:   1,
+			},
+		},
+	}
+	actionsResponse, err := cli.GetActions(ctx, actionsRequest)
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+	if len(actionsResponse.ActionInfo) == 0 {
+		log.Fatalln("failed to get last action in epoch", epoch)
+	}
+	if actionsResponse.ActionInfo[0].Action.Core.GetGrantReward() == nil {
+		log.Fatalln("Not grantReward action")
+	}
+	receiptRequest := &iotexapi.GetReceiptByActionRequest{
+		ActionHash: actionsResponse.ActionInfo[0].ActHash,
+	}
+	receiptResponse, err := cli.GetReceiptByAction(ctx, receiptRequest)
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+	for _, receiptLog := range receiptResponse.ReceiptInfo.Receipt.Logs {
+		var rewardLog rewardingpb.RewardLog
+		if err := proto.Unmarshal(receiptLog.Data, &rewardLog); err != nil {
+			log.Fatalln(err.Error())
+		}
+		if rewardLog.Type == rewardingpb.RewardLog_EPOCH_REWARD && rewardLog.Addr == rewardAddress {
+			epochReward, ok := new(big.Int).SetString(rewardLog.Amount, 10)
+			if !ok {
+				log.Fatalln("SetString: error")
+			}
+			return epochReward
+		}
+	}
+	log.Fatalln(fmt.Sprintf("failed to get epoch reward from %s in epoch %d", rewardAddress, epoch))
+	return big.NewInt(0)
 }
 
 func dump() (buckets []Bucket) {
 	data, err := ioutil.ReadFile(configPath)
 	if err != nil {
-		log.Fatal("failed to load config file")
+		log.Fatalln("failed to load config file")
 	}
 	var config committee.Config
 	if err := yaml.Unmarshal(data, &config); err != nil {
-		log.Fatal("failed to unmarshal config")
+		log.Fatalln("failed to unmarshal config")
 	}
 	committee, err := committee.NewCommittee(nil, config)
 	if err != nil {
-		log.Fatal("failed to create committee")
+		log.Fatalln("failed to create committee")
 	}
+	var height uint64
 	if epoch != 0 {
 		conn, err := grpc.Dial(endpoint, grpc.WithInsecure())
 		if err != nil {
-			log.Fatal("failed to connect endpoint")
+			log.Fatalln("failed to connect endpoint")
 		}
 		defer conn.Close()
 		cli := iotexapi.NewAPIServiceClient(conn)
@@ -81,13 +157,13 @@ func dump() (buckets []Bucket) {
 		ctx := context.Background()
 		response, err := cli.GetEpochMeta(ctx, &request)
 		if err != nil {
-			log.Fatal("failed to get epoch meta")
+			log.Fatalln("failed to get epoch meta")
 		}
 		height = response.EpochData.GravityChainStartHeight
 	}
 	result, err := committee.FetchResultByHeight(height)
 	if err != nil {
-		log.Fatal("failed to fetch result")
+		log.Fatalln("failed to fetch result")
 	}
 	for _, delegate := range result.Delegates() {
 		for _, vote := range result.VotesByDelegate(delegate.Name()) {
@@ -129,35 +205,32 @@ func process(buckets []Bucket) (bps map[string](map[string]string)) {
 }
 
 func getBP(bps map[string](map[string]string)) map[string]string {
-	var err error
-	var ok bool
+	var bpHex string
 	var bpByte []byte
-	if len(bpHex) == 0 {
-		bpHex, ok = bpHexMap[bp]
-		if !ok {
-			zeroByte := []byte{}
-			for i := 0; i < 12-len(bp); i++ {
-				zeroByte = append(zeroByte, byte(0))
-			}
-			bpByte = append(zeroByte, []byte(bp)...)
-		}
-	}
-	if len(bpHex) != 0 {
-		bpByte, err = hex.DecodeString(bpHex)
-		if err != nil {
-			log.Fatal(err.Error())
-		}
-	}
-	bp = string(bpByte)
-	bp0, ok := bps[bp]
+	bpHex, ok := bpHexMap[bp]
 	if !ok {
-		log.Fatal("invalid bp name: " + bp)
+		zeroByte := []byte{}
+		for i := 0; i < 12-len(bp); i++ {
+			zeroByte = append(zeroByte, byte(0))
+		}
+		bpByte = append(zeroByte, []byte(bp)...)
+		bpHex = string(bpByte)
+	}
+	bpByte, err := hex.DecodeString(bpHex)
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+	bp0, ok := bps[string(bpByte)]
+	if !ok {
+		log.Fatalln("invalid bp name: " + bp)
 	}
 	return bp0
 }
 
-func calAndPrint(bp0 map[string]string) {
-	// calculate and print
+func calAndPrint(bp0 map[string]string, amount *big.Int) {
+	// calculate
+	payoutAmount := new(big.Int).Div(new(big.Int).Mul(amount, big.NewInt(int64(distPercentage))), big.NewInt(100))
+	actualPayout := big.NewInt(0)
 	totalVotes := big.NewInt(0)
 	var keys []string
 	for k, v := range bp0 {
@@ -171,37 +244,50 @@ func calAndPrint(bp0 map[string]string) {
 	recipients := make([]common.Address, 0)
 	amounts := make([]*big.Int, 0)
 	payload := bp
-	totalAmount, err := util.StringToRau(amount, util.IotxDecimalNum)
-	if err != nil {
-		log.Fatal("invalid amount")
-	}
 	sort.Strings(keys)
-	fmt.Printf("%-41s\t%-40s\t%-32s%s", "IOAddr", "ETHAddr", "Votes", "Reward(IOTX)\n")
+	var list []string
+	list = append(list, fmt.Sprintf("%-41s\t%-40s\t%-32s%s", "IOAddr", "ETHAddr", "Votes", "Distribution(IOTX)"))
 	for _, k := range keys {
 		ioAddr := toIoAddr(k)
 		recipient, err := util.IoAddrToEvmAddr(ioAddr)
 		if err != nil {
-			log.Fatal(err.Error())
+			log.Fatalln(err.Error())
 		}
 		if err != nil {
-			log.Fatal(err.Error())
+			log.Fatalln(err.Error())
 		}
 		recipients = append(recipients, recipient)
 		votes, ok := new(big.Int).SetString(bp0[k], 10)
 		if !ok {
 			log.Panic("SetString: error")
 		}
-		amountPerVoter := new(big.Int).Div(new(big.Int).Mul(votes, totalAmount), totalVotes)
+		amountPerVoter := new(big.Int).Div(new(big.Int).Mul(votes, payoutAmount), totalVotes)
+		actualPayout = new(big.Int).Add(actualPayout, amountPerVoter)
 		amounts = append(amounts, amountPerVoter)
-		fmt.Printf("%s\t%s\t%-32s%s\n", toIoAddr(k), k, bp0[k],
-			util.RauToString(amountPerVoter, util.IotxDecimalNum))
+		list = append(list, fmt.Sprintf("%s\t%s\t%-32s%s", toIoAddr(k), recipient.String(),
+			util.RauToString(votes, util.IotxDecimalNum), util.RauToString(amountPerVoter, util.IotxDecimalNum)))
 	}
 
-	// generate bytecode and print
+	// generate bytecode
 	reader := strings.NewReader(abiJSON)
 	multisendABI, _ := abi.JSON(reader)
 	bytecode, _ := multisendABI.Pack(abiFunc, recipients, amounts, payload)
-	fmt.Println("\nbytecode: " + hex.EncodeToString(bytecode))
+
+	// print
+	fmt.Printf("\nBytecode for invoking multisend contract\n")
+	fmt.Println(hex.EncodeToString(bytecode))
+	fmt.Println()
+	fmt.Println(strings.Join(list, "\n"))
+	fmt.Printf("\n%-30s%-30s%-30s%-30s", "Epoch Number", "Epoch Reward(IOTX)", "Percentage %", "Distribution(IOTX)")
+	fmt.Printf("\n%-30d%-30s%-30d%-30s\n", epoch, util.RauToString(amount, util.IotxDecimalNum),
+		distPercentage, util.RauToString(actualPayout, util.IotxDecimalNum))
+
+	// warning
+	if payoutAmount.Cmp(actualPayout) < 0 {
+		fmt.Println(Brown(fmt.Sprintf("\nWarning: actual payout is more than target payout")))
+		fmt.Println(Brown(fmt.Sprintf("target: %s IOTX\nactual: %s IOTX\n",
+			util.RauToString(payoutAmount, util.IotxDecimalNum), util.RauToString(actualPayout, util.IotxDecimalNum))))
+	}
 }
 
 func addStrs(a, b string) string {
@@ -228,24 +314,33 @@ func toIoAddr(addr string) string {
 }
 
 func init() {
+	// print disclaim
+	disclaim := Red("This Bookkeeper is a REFERENCE IMPLEMENTATION of reward distribution tool provided by IOTEX FOUNDATION. IOTEX FOUNDATION disclaims all responsibility for any damages or losses (including, without limitation, financial loss, damages for loss in business projects, loss of profits or other consequential losses) arising in contract, tort or otherwise from the use of or inability to use the Bookkeeper, or from any action or decision taken as a result of using this Bookkeeper.")
+	fmt.Printf("\n%s\n%s\n", Bold(Red("Attention")), disclaim)
 	flag.StringVar(&configPath, "config", "committee.yaml", "path of server config file")
 	flag.Uint64Var(&epoch, "epoch", 0, "iotex epoch")
-	flag.Uint64Var(&height, "height", 0, "ethereuem height")
 	flag.StringVar(&bp, "bp", "", "bp name")
-	flag.StringVar(&bpHex, "bp-hex", "", "bp hex name")
-	flag.StringVar(&amount, "amount", "", "amount of IOTX")
 	flag.StringVar(&endpoint, "ednpoint", "api.iotex.one:80", "set endpoint")
+	flag.Uint64Var(&distPercentage, "dist-percentage", 0, "distribution percentage of epoch reward")
+	flag.StringVar(&rewardAddress, "reward-address", "", "choose reward address in certain epoch")
 	flag.Parse()
 
+	// warning
+	if distPercentage > 100 {
+		fmt.Println(Brown("\nWarning: percentage " + strconv.Itoa(int(distPercentage)) + `% is larger than 100%`))
+	}
+
+	// init zap
 	zapCfg := zap.NewDevelopmentConfig()
 	zapCfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	zapCfg.Level.SetLevel(zap.WarnLevel)
 	l, err := zapCfg.Build()
 	if err != nil {
-		log.Fatal("Failed to init zap global logger, no zap log will be shown till zap is properly initialized: ", err)
+		log.Fatalln("Failed to init zap global logger, no zap log will be shown till zap is properly initialized: ", err)
 	}
 	zap.ReplaceGlobals(l)
 
+	// hard code
 	abiJSON = `[{"constant":false,"inputs":[{"name":"recipients","type":"address[]"},
 	{"name":"amounts","type":"uint256[]"},{"name":"payload","type":"string"}],
 	"name":"multiSend","outputs":[],"payable":true,"stateMutability":"payable","type":"function"},

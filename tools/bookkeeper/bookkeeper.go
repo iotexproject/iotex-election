@@ -52,14 +52,25 @@ var epoch uint64
 var bp string
 var endpoint string
 var distPercentage uint64
+var setAmount string
 var rewardAddress string
 
 func main() {
-	epochReward := epochReward()
+	var err error
+	var totalAmount *big.Int
+	if len(setAmount) == 0 {
+		totalAmount = epochReward()
+	} else {
+		totalAmount, err = util.StringToRau(setAmount, util.IotxDecimalNum)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		distPercentage = 100
+	}
 	buckets := dump()
 	bps := process(buckets)
 	bp0 := getBP(bps)
-	calAndPrint(bp0, epochReward)
+	calAndPrint(bp0, totalAmount)
 }
 
 func epochReward() *big.Int {
@@ -278,9 +289,13 @@ func calAndPrint(bp0 map[string]string, amount *big.Int) {
 	fmt.Println(hex.EncodeToString(bytecode))
 	fmt.Println()
 	fmt.Println(strings.Join(list, "\n"))
-	fmt.Printf("\n%-30s%-30s%-30s%-30s", "Epoch Number", "Epoch Reward(IOTX)", "Percentage %", "Distribution(IOTX)")
-	fmt.Printf("\n%-30d%-30s%-30d%-30s\n", epoch, util.RauToString(amount, util.IotxDecimalNum),
-		distPercentage, util.RauToString(actualPayout, util.IotxDecimalNum))
+	if len(setAmount) != 0 {
+		fmt.Println("\nDistribution(IOTX): " + util.RauToString(payoutAmount, util.IotxDecimalNum))
+	} else {
+		fmt.Printf("\n%-30s%-30s%-30s%-30s", "Epoch Number", "Epoch Reward(IOTX)", "Percentage %", "Distribution(IOTX)")
+		fmt.Printf("\n%-30d%-30s%-30d%-30s\n", epoch, util.RauToString(amount, util.IotxDecimalNum),
+			distPercentage, util.RauToString(actualPayout, util.IotxDecimalNum))
+	}
 
 	// warning
 	if payoutAmount.Cmp(actualPayout) < 0 {
@@ -322,6 +337,7 @@ func init() {
 	flag.StringVar(&bp, "bp", "", "bp name")
 	flag.StringVar(&endpoint, "ednpoint", "api.iotex.one:80", "set endpoint")
 	flag.Uint64Var(&distPercentage, "dist-percentage", 0, "distribution percentage of epoch reward")
+	flag.StringVar(&setAmount, "amount", "", "set distribution amount of IOTX ")
 	flag.StringVar(&rewardAddress, "reward-address", "", "choose reward address in certain epoch")
 	flag.Parse()
 

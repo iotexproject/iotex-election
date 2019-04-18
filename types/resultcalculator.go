@@ -68,11 +68,13 @@ type ResultCalculator struct {
 	totalVotedStakes *big.Int
 	calculated       bool
 	mutex            sync.RWMutex
+	skipManified     bool
 }
 
 // NewResultCalculator creates a result calculator
 func NewResultCalculator(
 	mintTime time.Time,
+	skipManified bool,
 	voteFilter VoteFilterFunc, // filter votes before calculating
 	calcScore func(*Vote, time.Time) *big.Int,
 	candidateFilter CandidateFilterFunc, // filter candidates during calculating
@@ -87,6 +89,7 @@ func NewResultCalculator(
 		totalVotedStakes: big.NewInt(0),
 		totalVotes:       big.NewInt(0),
 		calculated:       false,
+		skipManified:     skipManified,
 	}
 }
 
@@ -104,6 +107,9 @@ func (calculator *ResultCalculator) AddCandidates(candidates []*Candidate) error
 		name := calculator.hex(c.Name())
 		if _, exists := calculator.candidates[name]; exists {
 			return errors.Errorf("Duplicate candidate %s", name)
+		}
+		if c.SelfStakingWeight() > uint64(1) && calculator.skipManified {
+			continue
 		}
 		calculator.candidates[name] = c.Clone().reset()
 		calculator.candidateVotes[name] = []*Vote{}

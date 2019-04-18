@@ -46,6 +46,7 @@ type Config struct {
 	SelfStakingThreshold       string   `yaml:"selfStakingThreshold"`
 	CacheSize                  uint32   `yaml:"cacheSize"`
 	NumOfFetchInParallel       uint8    `yaml:"numOfFetchInParallel"`
+	SkipManifiedCandidate      bool     `yaml:"skipManifiedCandidate"`
 }
 
 // STATUS represents the status of committee
@@ -80,15 +81,16 @@ type Committee interface {
 }
 
 type committee struct {
-	db                   db.KVStore
-	carrier              carrier.Carrier
-	retryLimit           uint8
-	paginationSize       uint8
-	fetchInParallel      uint8
-	voteThreshold        *big.Int
-	scoreThreshold       *big.Int
-	selfStakingThreshold *big.Int
-	interval             uint64
+	db                    db.KVStore
+	carrier               carrier.Carrier
+	retryLimit            uint8
+	paginationSize        uint8
+	fetchInParallel       uint8
+	skipManifiedCandidate bool
+	voteThreshold         *big.Int
+	scoreThreshold        *big.Int
+	selfStakingThreshold  *big.Int
+	interval              uint64
 
 	cache         *resultCache
 	heightManager *heightManager
@@ -141,21 +143,22 @@ func NewCommittee(kvstore db.KVStore, cfg Config) (Committee, error) {
 		fetchInParallel = cfg.NumOfFetchInParallel
 	}
 	return &committee{
-		db:                   kvstore,
-		cache:                newResultCache(cfg.CacheSize),
-		heightManager:        newHeightManager(),
-		carrier:              carrier,
-		retryLimit:           cfg.NumOfRetries,
-		paginationSize:       cfg.PaginationSize,
-		fetchInParallel:      fetchInParallel,
-		voteThreshold:        voteThreshold,
-		scoreThreshold:       scoreThreshold,
-		selfStakingThreshold: selfStakingThreshold,
-		terminate:            make(chan bool),
-		startHeight:          cfg.GravityChainStartHeight,
-		interval:             cfg.GravityChainHeightInterval,
-		currentHeight:        0,
-		nextHeight:           cfg.GravityChainStartHeight,
+		db:                    kvstore,
+		cache:                 newResultCache(cfg.CacheSize),
+		heightManager:         newHeightManager(),
+		carrier:               carrier,
+		retryLimit:            cfg.NumOfRetries,
+		paginationSize:        cfg.PaginationSize,
+		fetchInParallel:       fetchInParallel,
+		skipManifiedCandidate: cfg.SkipManifiedCandidate,
+		voteThreshold:         voteThreshold,
+		scoreThreshold:        scoreThreshold,
+		selfStakingThreshold:  selfStakingThreshold,
+		terminate:             make(chan bool),
+		startHeight:           cfg.GravityChainStartHeight,
+		interval:              cfg.GravityChainHeightInterval,
+		currentHeight:         0,
+		nextHeight:            cfg.GravityChainStartHeight,
 	}, nil
 }
 
@@ -402,6 +405,7 @@ func (ec *committee) calculator(height uint64) (*types.ResultCalculator, error) 
 	}
 	return types.NewResultCalculator(
 		mintTime,
+		ec.skipManifiedCandidate,
 		ec.voteFilter,
 		ec.calcWeightedVotes,
 		ec.candidateFilter,

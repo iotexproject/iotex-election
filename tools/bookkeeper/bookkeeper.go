@@ -8,6 +8,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/hex"
 	"flag"
 	"fmt"
@@ -25,10 +26,11 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"gopkg.in/yaml.v2"
 
+	"github.com/iotexproject/iotex-address/address"
 	"github.com/iotexproject/iotex-core/action/protocol/rewarding/rewardingpb"
-	"github.com/iotexproject/iotex-core/address"
 	"github.com/iotexproject/iotex-core/cli/ioctl/util"
 	"github.com/iotexproject/iotex-core/protogen/iotexapi"
 	"github.com/iotexproject/iotex-election/committee"
@@ -48,37 +50,34 @@ var abiFunc string
 
 // Flags
 var configPath string
-var epoch uint64
+var epochStart uint64
+var epochEnd uint64
 var bp string
 var endpoint string
 var distPercentage uint64
-var setAmount string
 var rewardAddress string
+var withFoundationBonus bool
 
 func main() {
-	var err error
-	var totalAmount *big.Int
-	if len(setAmount) == 0 {
-		totalAmount = epochReward()
-	} else {
-		totalAmount, err = util.StringToRau(setAmount, util.IotxDecimalNum)
-		if err != nil {
-			log.Fatalln(err)
+	totalReward := big.NewInt(0)
+	distributions := make(map[string]*big.Int)
+	for i := epochStart; i <= epochEnd; i++ {
+		reward := getReward(i)
+		if reward.Sign() == 0 {
+			continue
 		}
-		distPercentage = 100
+		totalReward.Add(totalReward, reward)
+		buckets := dump(i)
+		bps := process(buckets)
+		bp0 := getBP(bps)
+		calculate(distributions, bp0, reward)
 	}
-	buckets := dump()
-	bps := process(buckets)
-	bp0 := getBP(bps)
-	calAndPrint(bp0, totalAmount)
+	printResult(distributions, totalReward)
 }
 
-func epochReward() *big.Int {
-	if rewardAddress == "" {
-		log.Fatalln("empty reward address")
-	}
+func getReward(epoch uint64) *big.Int {
 	lastBlock := epoch * 24 * 15 // numDelegate: 24, subEpoch: 15
-	conn, err := util.ConnectToEndpoint()
+	conn, err := util.ConnectToEndpoint(false)
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
@@ -126,24 +125,38 @@ func epochReward() *big.Int {
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
+	eReward := big.NewInt(0)
+	fReward := big.NewInt(0)
 	for _, receiptLog := range receiptResponse.ReceiptInfo.Receipt.Logs {
 		var rewardLog rewardingpb.RewardLog
+		var ok bool
 		if err := proto.Unmarshal(receiptLog.Data, &rewardLog); err != nil {
 			log.Fatalln(err.Error())
 		}
-		if rewardLog.Type == rewardingpb.RewardLog_EPOCH_REWARD && rewardLog.Addr == rewardAddress {
-			epochReward, ok := new(big.Int).SetString(rewardLog.Amount, 10)
-			if !ok {
-				log.Fatalln("SetString: error")
+		if rewardLog.Addr == rewardAddress {
+			if rewardLog.Type == rewardingpb.RewardLog_EPOCH_REWARD {
+				eReward, ok = new(big.Int).SetString(rewardLog.Amount, 10)
+				if !ok {
+					log.Fatalln("SetString: error")
+				}
+			} else if rewardLog.Type == rewardingpb.RewardLog_FOUNDATION_BONUS && withFoundationBonus {
+				fReward, ok = new(big.Int).SetString(rewardLog.Amount, 10)
+				if !ok {
+					log.Fatalln("SetString: error")
+				}
 			}
-			return epochReward
 		}
 	}
-	log.Fatalln(fmt.Sprintf("failed to get epoch reward from %s in epoch %d", rewardAddress, epoch))
-	return big.NewInt(0)
+	fmt.Printf("epoch %-10d", epoch)
+	fmt.Printf("epoch reward: %-30s", util.RauToString(eReward, util.IotxDecimalNum))
+	if withFoundationBonus {
+		fmt.Printf("foundation bonus: %-30s", util.RauToString(fReward, util.IotxDecimalNum))
+	}
+	fmt.Println()
+	return new(big.Int).Add(eReward, fReward)
 }
 
-func dump() (buckets []Bucket) {
+func dump(epoch uint64) (buckets []Bucket) {
 	data, err := ioutil.ReadFile(configPath)
 	if err != nil {
 		log.Fatalln("failed to load config file")
@@ -158,7 +171,7 @@ func dump() (buckets []Bucket) {
 	}
 	var height uint64
 	if epoch != 0 {
-		conn, err := grpc.Dial(endpoint, grpc.WithInsecure())
+		conn, err := grpc.Dial(endpoint, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
 		if err != nil {
 			log.Fatalln("failed to connect endpoint")
 		}
@@ -238,10 +251,9 @@ func getBP(bps map[string](map[string]string)) map[string]string {
 	return bp0
 }
 
-func calAndPrint(bp0 map[string]string, amount *big.Int) {
-	// calculate
-	payoutAmount := new(big.Int).Div(new(big.Int).Mul(amount, big.NewInt(int64(distPercentage))), big.NewInt(100))
-	actualPayout := big.NewInt(0)
+func calculate(distributions map[string]*big.Int, bp0 map[string]string, rewardAmount *big.Int) {
+	payoutAmount := new(big.Int).Div(new(big.Int).Mul(rewardAmount,
+		big.NewInt(int64(distPercentage))), big.NewInt(100))
 	totalVotes := big.NewInt(0)
 	var keys []string
 	for k, v := range bp0 {
@@ -252,31 +264,39 @@ func calAndPrint(bp0 map[string]string, amount *big.Int) {
 		totalVotes.Add(totalVotes, votes)
 		keys = append(keys, k)
 	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		votes, ok := new(big.Int).SetString(bp0[k], 10)
+		if !ok {
+			log.Panic("SetString: error")
+		}
+		amount := new(big.Int).Div(new(big.Int).Mul(votes, payoutAmount), totalVotes)
+		if _, ok := distributions[k]; !ok {
+			distributions[k] = amount
+		} else {
+			distributions[k].Add(distributions[k], amount)
+		}
+	}
+}
+
+func printResult(distributions map[string]*big.Int, totalReward *big.Int) {
+	totalPayout := big.NewInt(0)
 	recipients := make([]common.Address, 0)
 	amounts := make([]*big.Int, 0)
 	payload := bp
-	sort.Strings(keys)
 	var list []string
-	list = append(list, fmt.Sprintf("%-41s\t%-40s\t%-32s%s", "IOAddr", "ETHAddr", "Votes", "Distribution(IOTX)"))
-	for _, k := range keys {
+	list = append(list, fmt.Sprintf("%-41s\t%-40s\t%s", "IOAddr", "ETHAddr", "Distribution(IOTX)"))
+	for k, v := range distributions {
 		ioAddr := toIoAddr(k)
 		recipient, err := util.IoAddrToEvmAddr(ioAddr)
 		if err != nil {
 			log.Fatalln(err.Error())
 		}
-		if err != nil {
-			log.Fatalln(err.Error())
-		}
 		recipients = append(recipients, recipient)
-		votes, ok := new(big.Int).SetString(bp0[k], 10)
-		if !ok {
-			log.Panic("SetString: error")
-		}
-		amountPerVoter := new(big.Int).Div(new(big.Int).Mul(votes, payoutAmount), totalVotes)
-		actualPayout = new(big.Int).Add(actualPayout, amountPerVoter)
-		amounts = append(amounts, amountPerVoter)
-		list = append(list, fmt.Sprintf("%s\t%s\t%-32s%s", toIoAddr(k), recipient.String(),
-			util.RauToString(votes, util.IotxDecimalNum), util.RauToString(amountPerVoter, util.IotxDecimalNum)))
+		amounts = append(amounts, v)
+		totalPayout.Add(totalPayout, v)
+		list = append(list, fmt.Sprintf("%s\t%s\t%s", toIoAddr(k), recipient.String(),
+			util.RauToString(v, util.IotxDecimalNum)))
 	}
 
 	// generate bytecode
@@ -289,20 +309,9 @@ func calAndPrint(bp0 map[string]string, amount *big.Int) {
 	fmt.Println(hex.EncodeToString(bytecode))
 	fmt.Println()
 	fmt.Println(strings.Join(list, "\n"))
-	if len(setAmount) != 0 {
-		fmt.Println("\nDistribution(IOTX): " + util.RauToString(payoutAmount, util.IotxDecimalNum))
-	} else {
-		fmt.Printf("\n%-30s%-30s%-30s%-30s", "Epoch Number", "Epoch Reward(IOTX)", "Percentage %", "Distribution(IOTX)")
-		fmt.Printf("\n%-30d%-30s%-30d%-30s\n", epoch, util.RauToString(amount, util.IotxDecimalNum),
-			distPercentage, util.RauToString(actualPayout, util.IotxDecimalNum))
-	}
-
-	// warning
-	if payoutAmount.Cmp(actualPayout) < 0 {
-		fmt.Println(Brown(fmt.Sprintf("\nWarning: actual payout is more than target payout")))
-		fmt.Println(Brown(fmt.Sprintf("target: %s IOTX\nactual: %s IOTX\n",
-			util.RauToString(payoutAmount, util.IotxDecimalNum), util.RauToString(actualPayout, util.IotxDecimalNum))))
-	}
+	fmt.Printf("\n%-15s%-30s%-30s%s", "Epoches", "Total Reward(IOTX)", "Percentage %", "Total Distribution(IOTX)")
+	fmt.Printf("\n%-15d%-30s%-30d%s\n", epochEnd-epochStart+1, util.RauToString(totalReward, util.IotxDecimalNum),
+		distPercentage, util.RauToString(totalPayout, util.IotxDecimalNum))
 }
 
 func addStrs(a, b string) string {
@@ -332,19 +341,34 @@ func init() {
 	// print disclaim
 	disclaim := Red("This Bookkeeper is a REFERENCE IMPLEMENTATION of reward distribution tool provided by IOTEX FOUNDATION. IOTEX FOUNDATION disclaims all responsibility for any damages or losses (including, without limitation, financial loss, damages for loss in business projects, loss of profits or other consequential losses) arising in contract, tort or otherwise from the use of or inability to use the Bookkeeper, or from any action or decision taken as a result of using this Bookkeeper.")
 	fmt.Printf("\n%s\n%s\n", Bold(Red("Attention")), disclaim)
+
+	// flags
 	flag.StringVar(&configPath, "config", "committee.yaml", "path of server config file")
-	flag.Uint64Var(&epoch, "epoch", 0, "iotex epoch")
+	flag.Uint64Var(&epochStart, "start", 0, "iotex epoch start")
+	flag.Uint64Var(&epochEnd, "end", 0, "iotex epoch end (included)")
 	flag.StringVar(&bp, "bp", "", "bp name")
-	flag.StringVar(&endpoint, "ednpoint", "api.iotex.one:80", "set endpoint")
+	flag.StringVar(&endpoint, "endpoint", "api.iotex.one:80", "set endpoint")
 	flag.Uint64Var(&distPercentage, "dist-percentage", 0, "distribution percentage of epoch reward")
-	flag.StringVar(&setAmount, "amount", "", "set distribution amount of IOTX ")
 	flag.StringVar(&rewardAddress, "reward-address", "", "choose reward address in certain epoch")
+	flag.BoolVar(&withFoundationBonus, "with-foundation-bonus", false, "add foundation bonus in distribution ")
 	flag.Parse()
+
+	// check
+	if rewardAddress == "" {
+		log.Fatalln("empty reward address")
+	}
+	if epochStart > epochEnd {
+		log.Fatalln("start epoch is larger than end epoch")
+	}
 
 	// warning
 	if distPercentage > 100 {
 		fmt.Println(Brown("\nWarning: percentage " + strconv.Itoa(int(distPercentage)) + `% is larger than 100%`))
 	}
+	if epochEnd-epochStart >= 24 {
+		fmt.Println(Brown("\nWarning: fetch more than 24 epoches' voters may cost much time"))
+	}
+	fmt.Println()
 
 	// init zap
 	zapCfg := zap.NewDevelopmentConfig()

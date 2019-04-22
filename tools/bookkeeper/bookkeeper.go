@@ -385,7 +385,7 @@ func init() {
 	flag.Uint64Var(&distPercentage, "dist-percentage", 0, "distribution percentage of epoch reward")
 	flag.StringVar(&rewardAddress, "reward-address", "", "choose reward address in certain epoch")
 	flag.BoolVar(&withFoundationBonus, "with-foundation-bonus", false, "add foundation bonus in distribution")
-	flag.BoolVar(&csvFile, "csv", false, "output in csv format")
+	flag.BoolVar(&csvFile, "csv", false, "write in a csv file")
 	flag.Parse()
 
 	// check

@@ -2,7 +2,7 @@
 // This program is free software: you can redistribute it and/or modify it under the terms of the
 // GNU General Public License as published by the Free Software Foundation, either version 3 of
 // the License, or (at your option) any later version.
-// This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+// This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 // without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See
 // the GNU General Public License for more details.
 // You should have received a copy of the GNU General Public License along with this program. If
@@ -13,12 +13,14 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"encoding/csv"
 	"encoding/hex"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"math/big"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -61,6 +63,7 @@ var endpoint string
 var distPercentage uint64
 var rewardAddress string
 var withFoundationBonus bool
+var csvFile bool
 
 func main() {
 	totalReward := big.NewInt(0)
@@ -76,7 +79,11 @@ func main() {
 		bp0 := getBP(bps)
 		calculate(distributions, bp0, reward)
 	}
-	printResult(distributions, totalReward)
+	if csvFile {
+		fileCSV(distributions)
+	} else {
+		printResult(distributions, totalReward)
+	}
 }
 
 func getReward(epoch uint64) *big.Int {
@@ -318,6 +325,29 @@ func printResult(distributions map[string]*big.Int, totalReward *big.Int) {
 		distPercentage, util.RauToString(totalPayout, util.IotxDecimalNum))
 }
 
+func fileCSV(distributions map[string]*big.Int) {
+	file, err := os.Create("distributions.csv")
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+	defer file.Close()
+
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
+
+	for k, v := range distributions {
+		ioAddr := toIoAddr(k)
+		recipient, err := util.IoAddrToEvmAddr(ioAddr)
+		if err != nil {
+			log.Fatalln(err.Error())
+		}
+		err = writer.Write([]string{recipient.String(), v.String()})
+		if err != nil {
+			log.Fatalln(err.Error())
+		}
+	}
+}
+
 func addStrs(a, b string) string {
 	aa := new(big.Int)
 	aaa, ok := aa.SetString(a, 10)
@@ -354,7 +384,8 @@ func init() {
 	flag.StringVar(&endpoint, "endpoint", "api.iotex.one:443", "set endpoint")
 	flag.Uint64Var(&distPercentage, "dist-percentage", 0, "distribution percentage of epoch reward")
 	flag.StringVar(&rewardAddress, "reward-address", "", "choose reward address in certain epoch")
-	flag.BoolVar(&withFoundationBonus, "with-foundation-bonus", false, "add foundation bonus in distribution ")
+	flag.BoolVar(&withFoundationBonus, "with-foundation-bonus", false, "add foundation bonus in distribution")
+	flag.BoolVar(&csvFile, "csv", false, "write to a csv file")
 	flag.Parse()
 
 	// check

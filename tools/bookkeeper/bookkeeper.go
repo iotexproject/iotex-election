@@ -351,7 +351,7 @@ func init() {
 	flag.Uint64Var(&epochStart, "start", 0, "iotex epoch start")
 	flag.Uint64Var(&epochEnd, "end", 0, "iotex epoch end (included)")
 	flag.StringVar(&bp, "bp", "", "bp name")
-	flag.StringVar(&endpoint, "endpoint", "api.iotex.one:80", "set endpoint")
+	flag.StringVar(&endpoint, "endpoint", "api.iotex.one:443", "set endpoint")
 	flag.Uint64Var(&distPercentage, "dist-percentage", 0, "distribution percentage of epoch reward")
 	flag.StringVar(&rewardAddress, "reward-address", "", "choose reward address in certain epoch")
 	flag.BoolVar(&withFoundationBonus, "with-foundation-bonus", false, "add foundation bonus in distribution ")

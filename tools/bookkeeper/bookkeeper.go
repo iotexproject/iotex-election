@@ -395,6 +395,9 @@ func init() {
 	if epochStart > epochEnd {
 		log.Fatalln("start epoch is larger than end epoch")
 	}
+	if epochStart <= 0 {
+		log.Fatalln("please set correct epoch number by '--start' and '--end'")
+	}
 
 	// warning
 	if distPercentage > 100 {

@@ -389,11 +389,24 @@ func init() {
 	flag.Parse()
 
 	// check
-	if rewardAddress == "" {
-		log.Fatalln("empty reward address")
-	}
 	if epochStart > epochEnd {
 		log.Fatalln("start epoch is larger than end epoch")
+	}
+	if epochStart <= 0 {
+		log.Fatalln("please set correct epoch number by using '--start' and '--end'")
+	}
+	if len(bp) == 0 {
+		log.Fatalln("please set bp name by '--bp'")
+	}
+	if len(rewardAddress) == 0 {
+		log.Fatalln("please set reward address by '--reward-address'")
+	}
+	_, err := address.FromString(rewardAddress)
+	if err != nil {
+		log.Fatalln("reward address is not correct")
+	}
+	if distPercentage == 0 {
+		log.Fatalln("please set distribution percentage by '--dist-percentage'")
 	}
 
 	// warning

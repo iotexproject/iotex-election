@@ -378,11 +378,11 @@ func init() {
 
 	// flags
 	flag.StringVar(&configPath, "config", "committee.yaml", "path of server config file")
-	flag.Uint64Var(&epochStart, "start", 0, "iotex epoch start")
-	flag.Uint64Var(&epochEnd, "end", 0, "iotex epoch end (included)")
+	flag.Uint64Var(&epochStart, "start", 0, "start epoch")
+	flag.Uint64Var(&epochEnd, "end", 0, "end epoch (inclusive)")
 	flag.StringVar(&bp, "bp", "", "bp name")
 	flag.StringVar(&endpoint, "endpoint", "api.iotex.one:443", "set endpoint")
-	flag.Uint64Var(&distPercentage, "dist-percentage", 0, "distribution percentage of epoch reward")
+	flag.Uint64Var(&distPercentage, "dist-percentage", 0, "distribution percentage of reward")
 	flag.StringVar(&rewardAddress, "reward-address", "", "choose reward address in certain epoch")
 	flag.BoolVar(&withFoundationBonus, "with-foundation-bonus", false, "add foundation bonus in distribution")
 	flag.BoolVar(&csvFile, "csv", false, "write to a csv file")

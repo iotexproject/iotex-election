@@ -16,7 +16,7 @@ go build
 ```
 
 ## Get Voters' Rewards by Delegate Name
-Usage: `bookkeeper --bp BP_NAME --reward-address REWARD_ADDRESS --start START_EPOCH_NUM --end END_EPOCH_NUM --dist-percentage DIST_PERCENTAGE [--with-foundation-bonus] [--endpoint YOUR_ENDPOINT]`
+Usage: `bookkeeper --bp BP_NAME --reward-address REWARD_ADDRESS --start START_EPOCH_NUM --end END_EPOCH_NUM --dist-percentage DIST_PERCENTAGE [--with-foundation-bonus] [--endpoint YOUR_ENDPOINT] [--csv]`
 
 Epoch Reward only
 ```
@@ -25,6 +25,10 @@ Epoch Reward only
 Epoch Reward + Foundation Bonus
 ```
 ./bookkeeper --bp iotexbp --reward-address io1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx --start 1 --end 10 --dist-percentage 77 --with-foundation-bonus
+```
+File csv
+```
+./bookkeeper --bp iotexbp --reward-address io1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx --start 1 --end 10 --dist-percentage 77 --csv
 ```
 
 ## Send Out Voters' Rewards

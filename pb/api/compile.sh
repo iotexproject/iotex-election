@@ -9,4 +9,4 @@
 # See also
 #  https://github.com/grpc/grpc-go/tree/master/examples
 
-protoc ./ranking.proto --go_out=plugins=grpc:.
+protoc ./api.proto --go_out=plugins=grpc:.

@@ -16,7 +16,7 @@ RUN if [ "$SKIP_DEP" != true ] ; \
 
 RUN rm -rf ./bin/server && \
     rm -rf election.db && \
-    go build -o ./bin/server -v ./server && \
+    go build -o ./bin/server -v . && \
     cp $GOPATH/src/github.com/iotexproject/iotex-election/bin/server /usr/local/bin/iotex-server  && \
     mkdir -p /etc/iotex/ && \
     cp server.yaml /etc/iotex/server.yaml && \

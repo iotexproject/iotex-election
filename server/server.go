@@ -2,18 +2,17 @@
 // This program is free software: you can redistribute it and/or modify it under the terms of the
 // GNU General Public License as published by the Free Software Foundation, either version 3 of
 // the License, or (at your option) any later version.
-// This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+// This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 // without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See
 // the GNU General Public License for more details.
 // You should have received a copy of the GNU General Public License along with this program. If
 // not, see <http://www.gnu.org/licenses/>.
 
-package ranking
+package server
 
 import (
 	"encoding/hex"
 	"errors"
-	"fmt"
 	"log"
 	"math/big"
 	"net"
@@ -28,7 +27,7 @@ import (
 
 	"github.com/iotexproject/iotex-election/committee"
 	"github.com/iotexproject/iotex-election/db"
-	pb "github.com/iotexproject/iotex-election/pb/ranking"
+	"github.com/iotexproject/iotex-election/pb/api"
 )
 
 // Config defines the config for server
@@ -42,12 +41,12 @@ type Config struct {
 
 // Server defines the interface of the ranking server implementation
 type Server interface {
-	pb.RankingServer
+	api.APIServiceServer
 	Start(context.Context) error
 	Stop(context.Context) error
 }
 
-// server is used to implement pb.RankingServer.
+// server implements api.APIServiceServer.
 type server struct {
 	port                 int
 	electionCommittee    committee.Committee
@@ -91,7 +90,7 @@ func NewServer(cfg *Config) (Server, error) {
 		selfStakingThreshold: selfStakingThreshold,
 	}
 	s.grpcServer = grpc.NewServer()
-	pb.RegisterRankingServer(s.grpcServer, s)
+	api.RegisterAPIServiceServer(s.grpcServer, s)
 	reflection.Register(s.grpcServer)
 
 	return s, nil
@@ -123,11 +122,11 @@ func (s *server) Stop(ctx context.Context) error {
 }
 
 // GetMeta returns the meta of the chain
-func (s *server) GetMeta(ctx context.Context, empty *empty.Empty) (*pb.ChainMeta, error) {
+func (s *server) GetMeta(ctx context.Context, empty *empty.Empty) (*api.ChainMeta, error) {
 	height := s.electionCommittee.LatestHeight()
 	result, err := s.electionCommittee.ResultByHeight(height)
 	if err != nil {
-		return &pb.ChainMeta{}, err
+		return &api.ChainMeta{}, err
 	}
 	numOfCandidates := uint64(0)
 	for _, d := range result.Delegates() {
@@ -136,7 +135,7 @@ func (s *server) GetMeta(ctx context.Context, empty *empty.Empty) (*pb.ChainMeta
 		}
 	}
 
-	return &pb.ChainMeta{
+	return &api.ChainMeta{
 		Height:           strconv.FormatUint(height, 10),
 		TotalCandidates:  numOfCandidates,
 		TotalVotedStakes: result.TotalVotedStakes().Text(10),
@@ -144,24 +143,23 @@ func (s *server) GetMeta(ctx context.Context, empty *empty.Empty) (*pb.ChainMeta
 	}, nil
 }
 
-func (s *server) IsHealth(ctx context.Context, empty *empty.Empty) (*pb.HealthCheckResponse, error) {
-	var status pb.HealthCheckResponse_Status
+func (s *server) IsHealth(ctx context.Context, empty *empty.Empty) (*api.HealthCheckResponse, error) {
+	var status api.HealthCheckResponse_Status
 	switch s.electionCommittee.Status() {
 	case committee.STARTING:
-		status = pb.HealthCheckResponse_STARTING
+		status = api.HealthCheckResponse_STARTING
 	case committee.ACTIVE:
-		status = pb.HealthCheckResponse_ACTIVE
+		status = api.HealthCheckResponse_ACTIVE
 	case committee.INACTIVE:
-		status = pb.HealthCheckResponse_INACTIVE
+		status = api.HealthCheckResponse_INACTIVE
 	}
-	fmt.Println("response ", status)
-	return &pb.HealthCheckResponse{
+	return &api.HealthCheckResponse{
 		Status: status,
 	}, nil
 }
 
 // GetCandidates returns a list of candidates sorted by weighted votes
-func (s *server) GetCandidates(ctx context.Context, request *pb.GetCandidatesRequest) (*pb.CandidateResponse, error) {
+func (s *server) GetCandidates(ctx context.Context, request *api.GetCandidatesRequest) (*api.CandidateResponse, error) {
 	height, err := strconv.ParseUint(request.Height, 10, 64)
 	if err != nil {
 		return nil, err
@@ -179,12 +177,12 @@ func (s *server) GetCandidates(ctx context.Context, request *pb.GetCandidatesReq
 	if len(candidates) < int(offset+limit) {
 		limit = uint32(len(candidates)) - offset
 	}
-	response := &pb.CandidateResponse{
-		Candidates: make([]*pb.Candidate, limit),
+	response := &api.CandidateResponse{
+		Candidates: make([]*api.Candidate, limit),
 	}
 	for i := uint32(0); i < limit; i++ {
 		candidate := candidates[offset+i]
-		response.Candidates[i] = &pb.Candidate{
+		response.Candidates[i] = &api.Candidate{
 			Name:               hex.EncodeToString(candidate.Name()),
 			Address:            hex.EncodeToString(candidate.Address()),
 			TotalWeightedVotes: candidate.Score().Text(10),
@@ -195,8 +193,36 @@ func (s *server) GetCandidates(ctx context.Context, request *pb.GetCandidatesReq
 	return response, nil
 }
 
+// GetCandidateByName returns the candidate details
+func (s *server) GetCandidateByName(ctx context.Context, request *api.GetCandidateByNameRequest) (*api.Candidate, error) {
+	height, err := strconv.ParseUint(request.Height, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	result, err := s.electionCommittee.ResultByHeight(height)
+	if err != nil {
+		return nil, err
+	}
+	name, err := hex.DecodeString(request.Name)
+	if err != nil {
+		return nil, err
+	}
+	candidate := result.DelegateByName(name)
+	if candidate == nil {
+		return nil, errors.New("Cannot find candidate details")
+	}
+	return &api.Candidate{
+		Address:            hex.EncodeToString(candidate.Address()),
+		Name:               request.Name,
+		OperatorAddress:    string(candidate.OperatorAddress()),
+		RewardAddress:      string(candidate.RewardAddress()),
+		TotalWeightedVotes: candidate.Score().String(),
+		SelfStakingTokens:  candidate.SelfStakingTokens().String(),
+	}, nil
+}
+
 // GetBucketsByCandidate returns the buckets
-func (s *server) GetBucketsByCandidate(ctx context.Context, request *pb.GetBucketsByCandidateRequest) (*pb.BucketResponse, error) {
+func (s *server) GetBucketsByCandidate(ctx context.Context, request *api.GetBucketsByCandidateRequest) (*api.BucketResponse, error) {
 	height, err := strconv.ParseUint(request.Height, 10, 64)
 	if err != nil {
 		return nil, err
@@ -224,12 +250,12 @@ func (s *server) GetBucketsByCandidate(ctx context.Context, request *pb.GetBucke
 	if int(offset+limit) >= len(votes) {
 		limit = uint32(len(votes)) - offset
 	}
-	response := &pb.BucketResponse{
-		Buckets: make([]*pb.Bucket, limit),
+	response := &api.BucketResponse{
+		Buckets: make([]*api.Bucket, limit),
 	}
 	for i := uint32(0); i < limit; i++ {
 		vote := votes[offset+i]
-		response.Buckets[i] = &pb.Bucket{
+		response.Buckets[i] = &api.Bucket{
 			Voter:             hex.EncodeToString(vote.Voter()),
 			Votes:             vote.Amount().Text(10),
 			WeightedVotes:     vote.WeightedAmount().Text(10),

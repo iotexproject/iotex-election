@@ -7,7 +7,7 @@
   name = "github.com/aristanetworks/goarista"
   packages = ["monotime"]
   pruneopts = "UT"
-  revision = "55bc7be9dd319639e5b8f276d66d76dd006df2d1"
+  revision = "799535f6f364678a88f0498a1f2a6f90d959d05f"
 
 [[projects]]
   branch = "master"
@@ -15,15 +15,7 @@
   name = "github.com/btcsuite/btcd"
   packages = ["btcec"]
   pruneopts = "UT"
-  revision = "9bfb2ca0346b57e246cc96fa31074df521175240"
-
-[[projects]]
-  branch = "master"
-  digest = "1:64c47337097f2e58eb97cc6dd5994b88c142737f2f13a685c90211e72d87ca03"
-  name = "github.com/coopernurse/barrister-go"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "efbfefb2c4a3db0b55f74d1d1a985317a24ff7de"
+  revision = "96897255fd17525dd12426345d279533780bc4e1"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
@@ -123,51 +115,6 @@
   version = "v1.1.1"
 
 [[projects]]
-  digest = "1:870d441fe217b8e689d7949fef6e43efbc787e50f200cb1e70dbca9204a1d6be"
-  name = "github.com/inconshreveable/mousetrap"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75"
-  version = "v1.0"
-
-[[projects]]
-  digest = "1:5b429bd8a45a5eaaa0997a255c94c99884df2e2b6cce61b9f572b5c573f4f22e"
-  name = "github.com/iotexproject/iotex-address"
-  packages = [
-    "address",
-    "address/bech32",
-  ]
-  pruneopts = "UT"
-  revision = "54e969b7c2fc72346d569870bc35c7c628656c16"
-  version = "v0.1.0"
-
-[[projects]]
-  branch = "master"
-  digest = "1:b30f807844ce81a425213c74c860189bb4567ff45425d27e5a29222a00fb0d0b"
-  name = "github.com/iotexproject/iotex-core"
-  packages = [
-    "action/protocol/rewarding/rewardingpb",
-    "cli/ioctl/cmd/config",
-    "cli/ioctl/util",
-    "cli/ioctl/validator",
-    "pkg/hash",
-    "pkg/log",
-    "pkg/unit",
-    "protogen/iotexapi",
-    "protogen/iotextypes",
-  ]
-  pruneopts = "UT"
-  revision = "06cd71a020ecfe8e0f4e975726264cf8180d69dd"
-
-[[projects]]
-  digest = "1:ba852707958e39694e7f64328008287892adf9b1aed0174480e2f50e0c23e521"
-  name = "github.com/logrusorgru/aurora"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "21d75270181e0436fee7bd58b991c212cf309068"
-  version = "v1.1"
-
-[[projects]]
   digest = "1:e5d0bd87abc2781d14e274807a470acd180f0499f8bf5bb18606e9ec22ad9de9"
   name = "github.com/pborman/uuid"
   packages = ["."]
@@ -206,22 +153,6 @@
   pruneopts = "UT"
   revision = "9a47f48565a795472d43519dd49aac781f3034fb"
   version = "v1.6.0"
-
-[[projects]]
-  digest = "1:645cabccbb4fa8aab25a956cbcbdf6a6845ca736b2c64e197ca7cbb9d210b939"
-  name = "github.com/spf13/cobra"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "ef82de70bb3f60c65fb8eebacbb2d122ef517385"
-  version = "v0.0.3"
-
-[[projects]]
-  digest = "1:c1b1102241e7f645bc8e0c22ae352e8f0dc6484b6cb4d132fa9f24174e0119e2"
-  name = "github.com/spf13/pflag"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "298182f68c66c05229eb03ac171abe6e309ee79a"
-  version = "v1.0.3"
 
 [[projects]]
   digest = "1:5da8ce674952566deae4dbc23d07c85caafc6cfa815b0b3e03e41979cedb8750"
@@ -296,7 +227,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:4987dc6844c200891f789cb807ebb453f402e9c76e4189c6ca23e87f9788a3a2"
+  digest = "1:3c4dd74f12d5991edaabea80aabb26e21ba495b991daa7c3fccc18a49aac0314"
   name = "golang.org/x/crypto"
   packages = [
     "blake2b",
@@ -304,11 +235,11 @@
     "scrypt",
   ]
   pruneopts = "UT"
-  revision = "df01cb2cc480549d72034218dd98bf97671450ac"
+  revision = "a29dc8fdc73485234dbef99ebedb95d2eced08de"
 
 [[projects]]
   branch = "master"
-  digest = "1:aaf2d36acc834ff8c51ec087c17add7e94574d400c7836132c668ddc398bdad2"
+  digest = "1:2aff06134fbf7a030db41ca1679055e91a131e503634cbcba4eba50f3ce03d05"
   name = "golang.org/x/net"
   packages = [
     "context",
@@ -321,27 +252,29 @@
     "websocket",
   ]
   pruneopts = "UT"
-  revision = "1da14a5a36f220ea3f03470682b737b1dfd5de22"
+  revision = "4829fb13d2c62012c17688fa7f629f371014946d"
 
 [[projects]]
   branch = "master"
-  digest = "1:c98cce72bee9d1b1d523dd106cbde733c6aab8f2c38510d3626a107e775f57eb"
+  digest = "1:8acf841d7417aa2621a2b923f6262673033d407053ab49a4db9ec34378e1b49b"
   name = "golang.org/x/sys"
   packages = [
     "cpu",
     "unix",
   ]
   pruneopts = "UT"
-  revision = "f0ce4c0180bef7e9c51babed693a6e47fdd8962f"
+  revision = "d89cdac9e8725f2aefce25fcbfef41134c9ad412"
 
 [[projects]]
-  digest = "1:a2ab62866c75542dd18d2b069fec854577a20211d7c0ea6ae746072a1dccdd18"
+  digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"
   name = "golang.org/x/text"
   packages = [
     "collate",
     "collate/build",
     "internal/colltab",
     "internal/gen",
+    "internal/language",
+    "internal/language/compact",
     "internal/tag",
     "internal/triegen",
     "internal/ucd",
@@ -354,12 +287,12 @@
     "unicode/rangetable",
   ]
   pruneopts = "UT"
-  revision = "f21a4dfb5e38f5895301dc265a8def02365cc3d0"
-  version = "v0.3.0"
+  revision = "342b2e1fbaa52c93f31447ad2c6abc048c63e475"
+  version = "v0.3.2"
 
 [[projects]]
   branch = "master"
-  digest = "1:be1ab6d2b333b1d487c01f1328aef9dc76cee4ff4f780775a552d2a1653f0207"
+  digest = "1:93f3f17886abf8d17ff07ece88d6e1974226f5638d216041bd2234ca03ef848c"
   name = "golang.org/x/tools"
   packages = [
     "go/ast/astutil",
@@ -375,7 +308,7 @@
     "internal/semver",
   ]
   pruneopts = "UT"
-  revision = "6732636ccdfd99c4301d1d1ac2307f091331f767"
+  revision = "b9fed7929fc1d5f8c3daa266389c35f3ee124473"
 
 [[projects]]
   branch = "master"
@@ -383,7 +316,7 @@
   name = "google.golang.org/genproto"
   packages = ["googleapis/rpc/status"]
   pruneopts = "UT"
-  revision = "e7d98fc518a78c9f8b5ee77be7b0b317475d89e1"
+  revision = "357c62f0e4bbba7e6cc403ae09edcf3e2b9028fe"
 
 [[projects]]
   digest = "1:305ae1b02020aa7bd0bf7c51eb20cec7fec7d813c8b37e517ac588963fedd43d"
@@ -448,7 +381,6 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/coopernurse/barrister-go",
     "github.com/ethereum/go-ethereum",
     "github.com/ethereum/go-ethereum/accounts/abi",
     "github.com/ethereum/go-ethereum/accounts/abi/bind",
@@ -462,11 +394,6 @@
     "github.com/golang/protobuf/ptypes/duration",
     "github.com/golang/protobuf/ptypes/empty",
     "github.com/golang/protobuf/ptypes/timestamp",
-    "github.com/iotexproject/iotex-address/address",
-    "github.com/iotexproject/iotex-core/action/protocol/rewarding/rewardingpb",
-    "github.com/iotexproject/iotex-core/cli/ioctl/util",
-    "github.com/iotexproject/iotex-core/protogen/iotexapi",
-    "github.com/logrusorgru/aurora",
     "github.com/pkg/errors",
     "github.com/stretchr/testify/require",
     "go.etcd.io/bbolt",
@@ -475,7 +402,6 @@
     "golang.org/x/crypto/blake2b",
     "golang.org/x/net/context",
     "google.golang.org/grpc",
-    "google.golang.org/grpc/credentials",
     "google.golang.org/grpc/reflection",
     "gopkg.in/yaml.v2",
   ]

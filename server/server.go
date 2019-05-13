@@ -28,6 +28,7 @@ import (
 	"github.com/iotexproject/iotex-election/committee"
 	"github.com/iotexproject/iotex-election/db"
 	"github.com/iotexproject/iotex-election/pb/api"
+	"github.com/iotexproject/iotex-election/util"
 )
 
 // Config defines the config for server
@@ -182,9 +183,23 @@ func (s *server) GetCandidates(ctx context.Context, request *api.GetCandidatesRe
 	}
 	for i := uint32(0); i < limit; i++ {
 		candidate := candidates[offset+i]
+		var ra string
+		var oa string
+		if util.IsAllZeros(candidate.RewardAddress()) {
+			ra = ""
+		} else {
+			ra = string(candidate.RewardAddress())
+		}
+		if util.IsAllZeros(candidate.OperatorAddress()) {
+			oa = ""
+		} else {
+			oa = string(candidate.OperatorAddress())
+		}
 		response.Candidates[i] = &api.Candidate{
 			Name:               hex.EncodeToString(candidate.Name()),
 			Address:            hex.EncodeToString(candidate.Address()),
+			RewardAddress:      ra,
+			OperatorAddress:    oa,
 			TotalWeightedVotes: candidate.Score().Text(10),
 			SelfStakingTokens:  candidate.SelfStakingTokens().Text(10),
 		}

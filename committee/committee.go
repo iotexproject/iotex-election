@@ -163,7 +163,6 @@ func NewCommittee(kvstore db.KVStore, cfg Config) (Committee, error) {
 		interval:              cfg.GravityChainHeightInterval,
 		currentHeight:         0,
 		nextHeight:            cfg.GravityChainStartHeight,
-		syncingChan:           make(chan struct{}, 1),
 	}, nil
 }
 func (ec *committee) load(ctx context.Context) (err error) {

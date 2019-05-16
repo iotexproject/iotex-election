@@ -2,7 +2,7 @@
 // This program is free software: you can redistribute it and/or modify it under the terms of the
 // GNU General Public License as published by the Free Software Foundation, either version 3 of
 // the License, or (at your option) any later version.
-// This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+// This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
 // without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See
 // the GNU General Public License for more details.
 // You should have received a copy of the GNU General Public License along with this program. If
@@ -165,41 +165,44 @@ func NewCommittee(kvstore db.KVStore, cfg Config) (Committee, error) {
 		nextHeight:            cfg.GravityChainStartHeight,
 	}, nil
 }
-func (ec *committee) load(ctx context.Context) (err error) {
+
+func (ec *committee) Start(ctx context.Context) (err error) {
 	ec.mutex.Lock()
 	defer ec.mutex.Unlock()
 	if err := ec.db.Start(ctx); err != nil {
 		return errors.Wrap(err, "error when starting db")
 	}
-	startHeight, err := ec.db.Get(db.NextHeightKey)
+	if startHeight, err := ec.db.Get(db.NextHeightKey); err == nil {
+		zap.L().Info("restoring from db")
+		ec.nextHeight = util.BytesToUint64(startHeight)
+		for height := ec.startHeight; height < ec.nextHeight; height += ec.interval {
+			zap.L().Info("loading", zap.Uint64("height", height))
+			data, err := ec.db.Get(ec.dbKey(height))
+			if err != nil {
+				return err
+			}
+			r := &types.ElectionResult{}
+			if err := r.Deserialize(data); err != nil {
+				return err
+			}
+			ec.cache.insert(height, r)
+			if err := ec.heightManager.add(height, r.MintTime()); err != nil {
+				return err
+			}
+		}
+	}
+	zap.L().Info("catching up via network")
+	tipHeight, err := ec.carrier.TipHeight()
 	if err != nil {
-		return
+		return errors.Wrap(err, "failed to get tip height")
 	}
-	zap.L().Info("restoring from db")
-	ec.nextHeight = util.BytesToUint64(startHeight)
-	for height := ec.startHeight; height < ec.nextHeight; height += ec.interval {
-		zap.L().Info("loading", zap.Uint64("height", height))
-		data, err := ec.db.Get(ec.dbKey(height))
-		if err != nil {
-			return err
-		}
-		r := &types.ElectionResult{}
-		if err := r.Deserialize(data); err != nil {
-			return err
-		}
-		ec.cache.insert(height, r)
-		if err := ec.heightManager.add(height, r.MintTime()); err != nil {
-			return err
-		}
+	results, errs := ec.fetchInBatch(tipHeight)
+	if err := ec.storeInBatch(results, errs); err != nil {
+		return errors.Wrap(err, "failed to catch up via network")
 	}
-	return nil
-}
-func (ec *committee) Start(ctx context.Context) (err error) {
-	ec.load(ctx)
 	zap.L().Info("subscribing to new block")
 	heightChan := make(chan uint64)
 	reportChan := make(chan error)
-
 	go func() {
 		for {
 			select {
@@ -241,36 +244,18 @@ func (ec *committee) Status() STATUS {
 }
 
 func (ec *committee) Sync(tipHeight uint64) error {
-	return ec.fetchInBatchSplit(tipHeight)
+	results, errs := ec.fetchInBatch(tipHeight)
+	ec.mutex.Lock()
+	defer ec.mutex.Unlock()
+
+	return ec.storeInBatch(results, errs)
 }
-func (ec *committee) fetchInBatchSplit(tipHeight uint64) error {
-	zap.L().Info("new ethereum block", zap.Uint64("height", tipHeight))
-	fetchStart := ec.nextHeight + ec.interval
-	if tipHeight < fetchStart {
-		return nil
-	}
-	fetchHeight := uint64(ec.fetchInParallel) * ec.interval
-	for ec.currentHeight < tipHeight {
-		if ec.nextHeight+fetchHeight < tipHeight {
-			ec.currentHeight = ec.nextHeight + fetchHeight
-		} else {
-			ec.currentHeight = tipHeight
-		}
-		results, errs := ec.fetchInBatch(ec.currentHeight)
-		ec.mutex.Lock()
-		if err := ec.storeInBatch(results, errs); err != nil {
-			ec.mutex.Unlock()
-			return errors.Wrap(err, "failed to catch up via network")
-		}
-		ec.mutex.Unlock()
-	}
-	return nil
-}
+
 func (ec *committee) fetchInBatch(tipHeight uint64) (
 	map[uint64]*types.ElectionResult,
 	map[uint64]error,
 ) {
-	zap.L().Info("fetch new ethereum block", zap.Uint64("height", tipHeight))
+	zap.L().Info("new ethereum block", zap.Uint64("height", tipHeight))
 	if ec.currentHeight < tipHeight {
 		ec.currentHeight = tipHeight
 	}

@@ -105,7 +105,6 @@ type committee struct {
 	lastUpdateTimestamp int64
 	terminate           chan bool
 	mutex               sync.RWMutex
-	syncingChan         chan struct{}
 }
 
 // NewCommitteeWithKVStoreWithNamespace creates a committee with kvstore with namespace
@@ -209,11 +208,9 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 				ec.terminate <- true
 				return
 			case height := <-heightChan:
-				ec.syncingChan <- struct{}{}
 				if err := ec.Sync(height); err != nil {
 					zap.L().Error("failed to sync", zap.Error(err))
 				}
-				<-ec.syncingChan
 			case err := <-reportChan:
 				zap.L().Error("something goes wrong", zap.Error(err))
 			}

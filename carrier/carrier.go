@@ -96,7 +96,7 @@ func (evc *ethereumCarrier) BlockTimestamp(height uint64) (ts time.Time, err err
 			context.Background(),
 			big.NewInt(0).SetUint64(height),
 		); err == nil {
-			ts = time.Unix(header.Time.Int64(), 0)
+			ts = time.Unix(int64(header.Time), 0)
 			return
 		}
 		var rotated bool

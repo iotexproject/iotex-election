@@ -11,6 +11,7 @@
 package committee
 
 import (
+	"bytes"
 	"context"
 	"math"
 	"math/big"
@@ -470,6 +471,16 @@ func (ec *committee) fetchResultByHeight(height uint64) (*types.ElectionResult, 
 	candidates, err := ec.fetchCandidatesByHeight(height)
 	if err != nil {
 		return nil, err
+	}
+	lenOfCandidates := len(candidates)
+	lenOfAddress := len(candidates[0].OperatorAddress())
+	empty := make([]byte, lenOfAddress)
+	for i := 0; i < lenOfCandidates; i++ {
+		if bytes.Equal(candidates[i].OperatorAddress(), empty) || bytes.Equal(candidates[i].RewardAddress(), empty) {
+			candidates = append(candidates[:i], candidates[i+1:]...)
+			lenOfCandidates--
+			i--
+		}
 	}
 	if err := calculator.AddCandidates(candidates); err != nil {
 		return nil, err

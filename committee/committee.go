@@ -191,15 +191,7 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 			}
 		}
 	}
-	zap.L().Info("catching up via network")
-	tipHeight, err := ec.carrier.TipHeight()
-	if err != nil {
-		return errors.Wrap(err, "failed to get tip height")
-	}
-	results, errs := ec.fetchInBatch(tipHeight)
-	if err := ec.storeInBatch(results, errs); err != nil {
-		return errors.Wrap(err, "failed to catch up via network")
-	}
+
 	zap.L().Info("subscribing to new block")
 	heightChan := make(chan uint64)
 	reportChan := make(chan error)
@@ -210,7 +202,7 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 				ec.terminate <- true
 				return
 			case height := <-heightChan:
-				if err := ec.Sync(height); err != nil {
+				if err := ec.SyncInSplit(height); err != nil {
 					zap.L().Error("failed to sync", zap.Error(err))
 				}
 			case err := <-reportChan:
@@ -241,6 +233,27 @@ func (ec *committee) Status() STATUS {
 	default:
 		return INACTIVE
 	}
+}
+
+func (ec *committee) SyncInSplit(tipHeight uint64) error {
+	zap.L().Info("new ethereum block", zap.Uint64("height", tipHeight))
+	fetchStart := ec.nextHeight + ec.interval
+	if tipHeight < fetchStart {
+		return nil
+	}
+	fetchHeight := uint64(ec.fetchInParallel) * ec.interval
+	for ec.currentHeight < tipHeight {
+		if ec.nextHeight+fetchHeight < tipHeight {
+			ec.currentHeight = ec.nextHeight + fetchHeight
+		} else {
+			ec.currentHeight = tipHeight
+		}
+		err := ec.Sync(ec.currentHeight)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (ec *committee) Sync(tipHeight uint64) error {

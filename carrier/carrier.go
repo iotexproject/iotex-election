@@ -2,7 +2,7 @@
 // This program is free software: you can redistribute it and/or modify it under the terms of the
 // GNU General Public License as published by the Free Software Foundation, either version 3 of
 // the License, or (at your option) any later version.
-// This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+// This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 // without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See
 // the GNU General Public License for more details.
 // You should have received a copy of the GNU General Public License along with this program. If
@@ -12,14 +12,13 @@ package carrier
 
 import (
 	"context"
-	"errors"
 	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/iotexproject/iotex-election/contract"
@@ -42,10 +41,62 @@ type Carrier interface {
 	Close()
 }
 
+// EthClientPool defines a set of ethereum clients with execute interface
+type EthClientPool struct {
+	clientURLs []string
+	client     *ethclient.Client
+}
+
+// NewEthClientPool creates a new pool
+func NewEthClientPool(urls []string) *EthClientPool {
+	return &EthClientPool{
+		clientURLs: urls,
+		client:     nil,
+	}
+}
+
+// Close closes the current client if available
+func (pool *EthClientPool) Close() {
+	if pool.client != nil {
+		pool.client.Close()
+		pool.client = nil
+	}
+}
+
+// Execute executes callback by rotating all client urls
+func (pool *EthClientPool) Execute(callback func(c *ethclient.Client) error) (err error) {
+	if pool.client != nil {
+		if err = callback(pool.client); err == nil {
+			return
+		}
+		pool.client.Close()
+		pool.client = nil
+		zap.L().Error(
+			"failed to use previous client",
+			zap.Error(err),
+		)
+	}
+	var client *ethclient.Client
+	for i := 0; i < len(pool.clientURLs); i++ {
+		if client, err = ethclient.Dial(pool.clientURLs[i]); err != nil {
+			zap.L().Error(
+				"client is not reachable",
+				zap.String("url", pool.clientURLs[i]),
+				zap.Error(err),
+			)
+			continue
+		}
+		if err = callback(client); err == nil {
+			pool.client = client
+			return
+		}
+		client.Close()
+	}
+	return errors.Wrap(err, "failed to execute callback with any client")
+}
+
 type ethereumCarrier struct {
-	client                  *ethclient.Client
-	currentClientURLIndex   int
-	clientURLs              []string
+	ethClientPool           *EthClientPool
 	stakingContractAddress  common.Address
 	registerContractAddress common.Address
 }
@@ -59,52 +110,29 @@ func NewEthereumVoteCarrier(
 	if len(clientURLs) == 0 {
 		return nil, errors.New("client URL list is empty")
 	}
-	var client *ethclient.Client
-	var err error
-	var currentClientURLIndex int
-	for currentClientURLIndex = 0; currentClientURLIndex < len(clientURLs); currentClientURLIndex++ {
-		client, err = ethclient.Dial(clientURLs[currentClientURLIndex])
-		if err == nil {
-			break
-		}
-		zap.L().Error(
-			"client is not reachable",
-			zap.String("url", clientURLs[currentClientURLIndex]),
-			zap.Error(err),
-		)
-	}
-	if err != nil {
-		return nil, err
-	}
 	return &ethereumCarrier{
-		client:                  client,
-		currentClientURLIndex:   currentClientURLIndex,
-		clientURLs:              clientURLs,
+		ethClientPool:           NewEthClientPool(clientURLs),
 		stakingContractAddress:  stakingContractAddress,
 		registerContractAddress: registerContractAddress,
 	}, nil
 }
 
 func (evc *ethereumCarrier) Close() {
-	evc.client.Close()
+	evc.ethClientPool.Close()
 }
 
 func (evc *ethereumCarrier) BlockTimestamp(height uint64) (ts time.Time, err error) {
-	var header *ethtypes.Header
-	for i := 0; i < len(evc.clientURLs); i++ {
-		if header, err = evc.client.HeaderByNumber(
+	err = evc.ethClientPool.Execute(func(client *ethclient.Client) error {
+		header, err := client.HeaderByNumber(
 			context.Background(),
 			big.NewInt(0).SetUint64(height),
-		); err == nil {
+		)
+		if err == nil {
 			ts = time.Unix(header.Time.Int64(), 0)
-			return
 		}
-		var rotated bool
-		if rotated, err = evc.rotateClient(err); !rotated && err != nil {
-			return
-		}
-	}
-	return ts, errors.New("failed to get block timestamp")
+		return err
+	})
+	return
 }
 
 func (evc *ethereumCarrier) SubscribeNewBlock(height chan uint64, report chan error, unsubscribe chan bool) {
@@ -131,25 +159,25 @@ func (evc *ethereumCarrier) TipHeight() (uint64, error) {
 	return evc.tipHeight(0)
 }
 
-func (evc *ethereumCarrier) tipHeight(lastHeight uint64) (uint64, error) {
-	for i := 0; i < len(evc.clientURLs); i++ {
-		header, err := evc.client.HeaderByNumber(context.Background(), nil)
+func (evc *ethereumCarrier) tipHeight(lastHeight uint64) (tip uint64, err error) {
+	if err = evc.ethClientPool.Execute(func(client *ethclient.Client) error {
+		header, err := client.HeaderByNumber(context.Background(), nil)
 		if err == nil {
 			if header.Number.Uint64() > lastHeight {
-				return header.Number.Uint64(), nil
+				tip = header.Number.Uint64()
+				return nil
 			}
-			zap.L().Warn(
-				"current client is out of date",
-				zap.String("url", evc.clientURLs[evc.currentClientURLIndex]),
-				zap.Uint64("clientHeight", header.Number.Uint64()),
-				zap.Uint64("lastHeight", lastHeight),
+			err = errors.Errorf(
+				"client is out of date, client height %d < last height %d",
+				header.Number.Uint64(),
+				lastHeight,
 			)
 		}
-		if rotated, err := evc.rotateClient(err); !rotated && err != nil {
-			return 0, err
-		}
+		return err
+	}); err != nil {
+		err = errors.Wrap(err, "failed to get tip height")
 	}
-	return 0, errors.New("failed to get tip height")
+	return
 }
 
 func (evc *ethereumCarrier) candidates(
@@ -163,26 +191,22 @@ func (evc *ethereumCarrier) candidates(
 	IoRewardAddr   [][32]byte
 	Weights        []*big.Int
 }, err error) {
-	var caller *contract.RegisterCaller
-	for i := 0; i < len(evc.clientURLs); i++ {
-		if caller, err = contract.NewRegisterCaller(evc.registerContractAddress, evc.client); err == nil {
+	if err = evc.ethClientPool.Execute(func(client *ethclient.Client) error {
+		if caller, err := contract.NewRegisterCaller(evc.registerContractAddress, client); err == nil {
 			var count *big.Int
 			if count, err = caller.CandidateCount(opts); err != nil {
-				return
+				return err
 			}
 			if startIndex.Cmp(count) >= 0 {
-				return
+				return nil
 			}
-			if result, err = caller.GetAllCandidates(opts, startIndex, limit); err == nil {
-				return
-			}
+			result, err = caller.GetAllCandidates(opts, startIndex, limit)
 		}
-		var rotated bool
-		if rotated, err = evc.rotateClient(err); !rotated && err != nil {
-			return
-		}
+		return err
+	}); err != nil {
+		err = errors.Wrap(err, "failed to get candidates")
 	}
-	return result, errors.New("failed to get candidates")
+	return
 }
 
 func (evc *ethereumCarrier) Candidates(
@@ -243,36 +267,34 @@ func (evc *ethereumCarrier) buckets(
 	previousIndex *big.Int,
 	limit *big.Int,
 ) (result EthereumBucketsResult, err error) {
-	var caller *contract.StakingCaller
-	for i := 0; i < len(evc.clientURLs); i++ {
-		if caller, err = contract.NewStakingCaller(evc.stakingContractAddress, evc.client); err == nil {
-			var bucket struct {
-				CanName          [12]byte
-				StakedAmount     *big.Int
-				StakeDuration    *big.Int
-				StakeStartTime   *big.Int
-				NonDecay         bool
-				UnstakeStartTime *big.Int
-				BucketOwner      common.Address
-				CreateTime       *big.Int
-				Prev             *big.Int
-				Next             *big.Int
-			}
-			if bucket, err = caller.Buckets(opts, previousIndex); err == nil {
-				if bucket.Next.Cmp(big.NewInt(0)) <= 0 {
-					return
-				}
-				if result, err = caller.GetActiveBuckets(opts, previousIndex, limit); err == nil {
-					return
-				}
-			}
+	if err = evc.ethClientPool.Execute(func(client *ethclient.Client) error {
+		caller, err := contract.NewStakingCaller(evc.stakingContractAddress, client)
+		if err != nil {
+			return err
 		}
-		var rotated bool
-		if rotated, err = evc.rotateClient(err); !rotated && err != nil {
-			return
+		var bucket struct {
+			CanName          [12]byte
+			StakedAmount     *big.Int
+			StakeDuration    *big.Int
+			StakeStartTime   *big.Int
+			NonDecay         bool
+			UnstakeStartTime *big.Int
+			BucketOwner      common.Address
+			CreateTime       *big.Int
+			Prev             *big.Int
+			Next             *big.Int
 		}
+		if bucket, err = caller.Buckets(opts, previousIndex); err == nil {
+			if bucket.Next.Cmp(big.NewInt(0)) <= 0 {
+				return nil
+			}
+			result, err = caller.GetActiveBuckets(opts, previousIndex, limit)
+		}
+		return err
+	}); err != nil {
+		err = errors.Wrap(err, "failed to get votes")
 	}
-	return result, errors.New("failed to get votes")
+	return
 }
 
 func (evc *ethereumCarrier) Votes(
@@ -318,30 +340,6 @@ func (evc *ethereumCarrier) Votes(
 	}
 
 	return previousIndex, votes, nil
-}
-
-func (evc *ethereumCarrier) rotateClient(cause error) (rotated bool, err error) {
-	if cause != nil {
-		switch cause.Error() {
-		case "tls: use of closed connection":
-			zap.L().Error("connection closed", zap.Error(cause))
-		case "EOF":
-			zap.L().Error("connection error", zap.Error(cause))
-		case "no suitable peers available":
-			zap.L().Error("node out of date", zap.Error(cause))
-		default:
-			return false, cause
-		}
-	}
-	evc.currentClientURLIndex = (evc.currentClientURLIndex + 1) % len(evc.clientURLs)
-	zap.L().Info("rotate to new client", zap.String("url", evc.clientURLs[evc.currentClientURLIndex]))
-	var client *ethclient.Client
-	if client, err = ethclient.Dial(evc.clientURLs[evc.currentClientURLIndex]); err != nil {
-		return true, err
-	}
-	evc.client.Close()
-	evc.client = client
-	return true, nil
 }
 
 func decodeAddress(data [][32]byte, num int) ([][]byte, error) {

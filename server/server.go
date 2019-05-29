@@ -14,6 +14,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"log"
+	"math"
 	"math/big"
 	"net"
 	"strconv"
@@ -175,6 +176,10 @@ func (s *server) GetCandidates(ctx context.Context, request *api.GetCandidatesRe
 		return nil, errors.New("offset is larger than candidate length")
 	}
 	limit := request.Limit
+	// If limit is missing, return all candidates with indices starting from the offset
+	if limit == uint32(0) {
+		limit = math.MaxUint32
+	}
 	if len(candidates) < int(offset+limit) {
 		limit = uint32(len(candidates)) - offset
 	}
@@ -262,6 +267,10 @@ func (s *server) GetBucketsByCandidate(ctx context.Context, request *api.GetBuck
 		return nil, errors.New("offset is out of range")
 	}
 	limit := request.Limit
+	// If limit is missing, return all buckets with indices starting from the offset
+	if limit == uint32(0) {
+		limit = math.MaxUint32
+	}
 	if int(offset+limit) >= len(votes) {
 		limit = uint32(len(votes)) - offset
 	}

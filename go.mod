@@ -5,6 +5,7 @@ go 1.12
 require (
 	github.com/aristanetworks/goarista v0.0.0-20190429220743-799535f6f364 // indirect
 	github.com/btcsuite/btcd v0.0.0-20190427004231-96897255fd17 // indirect
+	github.com/cenkalti/backoff v2.1.1+incompatible
 	github.com/cespare/cp v1.1.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/deckarep/golang-set v1.7.1 // indirect

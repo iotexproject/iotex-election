@@ -3,33 +3,46 @@ package votesync
 import (
 	"context"
 	"encoding/hex"
-	"log"
+	"fmt"
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/cenkalti/backoff"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"go.uber.org/zap"
 
+	"github.com/iotexproject/go-pkgs/crypto"
+	"github.com/iotexproject/iotex-antenna-go/account"
+	"github.com/iotexproject/iotex-antenna-go/iotx"
 	"github.com/iotexproject/iotex-election/carrier"
+	"github.com/iotexproject/iotex-election/contract"
 	"github.com/iotexproject/iotex-election/types"
 )
 
 type VoteSync struct {
-	carrier        carrier.Carrier
-	lastHeight     uint64
-	lastTimestamp  time.Time
-	timeInternal   time.Duration
-	paginationSize uint8
-	terminate      chan bool
+	operator           string
+	vpsContractAddress string
+	service            *iotx.Iotx
+	carrier            carrier.Carrier
+	lastHeight         uint64
+	lastTimestamp      time.Time
+	timeInternal       time.Duration
+	paginationSize     uint8
+	terminate          chan bool
 }
 
 type Config struct {
-	GravityChainAPIs         []string      `yaml:"gravityChainAPIs"`
-	GravityChainTimeInterval time.Duration `yaml:"gravityChainTimeInterval"`
-	RegisterContractAddress  string        `yaml:"registerContractAddress"`
-	StakingContractAddress   string        `yaml:"stakingContractAddress"`
-	PaginationSize           uint8         `yaml:"paginationSize"`
+	GravityChainAPIs            []string      `yaml:"gravityChainAPIs"`
+	GravityChainTimeInterval    time.Duration `yaml:"gravityChainTimeInterval"`
+	OperatorPrivateKey          string        `yaml:"operatorPrivateKey"`
+	IoTeXAPI                    string        `yaml:"ioTeXAPI"`
+	IoTeXAPIInSecure            bool          `yaml:"ioTeXAPIInSecure"`
+	RegisterContractAddress     string        `yaml:"registerContractAddress"`
+	StakingContractAddress      string        `yaml:"stakingContractAddress"`
+	PaginationSize              uint8         `yaml:"paginationSize"`
+	VotingSystemContractAddress string        `yaml:"votingSystemContractAddress"`
 }
 
 type WeightedVote struct {
@@ -46,20 +59,59 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	// TODO get lastHeight from iotex contract
-	lastHeight := uint64(7840000)
-	lastTimestamp, err := carrier.BlockTimestamp(lastHeight)
+	service, err := iotx.NewIotx(cfg.IoTeXAPI, cfg.IoTeXAPIInSecure)
+	if err != nil {
+		return nil, err
+	}
+	operatorPrivateKey, err := crypto.HexStringToPrivateKey(cfg.OperatorPrivateKey)
+	if err != nil {
+		return nil, err
+	}
+	operatorAccount, err := account.PrivateKeyToAccount(operatorPrivateKey)
+	if err != nil {
+		return nil, err
+	}
+	if service.Accounts.AddAccount(operatorAccount); err != nil {
+		return nil, err
+	}
+	parsed, err := abi.JSON(strings.NewReader(contract.RotatableVPSABI))
+	if err != nil {
+		return nil, err
+	}
+	response, err := service.ReadContractByMethod(&iotx.ContractRequest{
+		Address:  cfg.VotingSystemContractAddress,
+		From:     operatorAccount.Address(),
+		Abi:      contract.RotatableVPSABI,
+		Method:   "viewID",
+		GasLimit: "400000",
+		GasPrice: "1",
+	})
+	if err != nil {
+		return nil, err
+	}
+	decoded, err := hex.DecodeString(response)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println(response, decoded)
+	lastHeight := new(big.Int)
+	if err := parsed.Unpack(&lastHeight, "viewID", decoded); err != nil {
+		return nil, err
+	}
+	lastTimestamp, err := carrier.BlockTimestamp(lastHeight.Uint64())
 	if err != nil {
 		return nil, err
 	}
 	return &VoteSync{
-		carrier:        carrier,
-		timeInternal:   cfg.GravityChainTimeInterval,
-		paginationSize: cfg.PaginationSize,
-		lastHeight:     lastHeight,
-		lastTimestamp:  lastTimestamp,
-		terminate:      make(chan bool),
+		carrier:            carrier,
+		vpsContractAddress: cfg.VotingSystemContractAddress,
+		operator:           operatorAccount.Address(),
+		service:            service,
+		timeInternal:       cfg.GravityChainTimeInterval,
+		paginationSize:     cfg.PaginationSize,
+		lastHeight:         lastHeight.Uint64(),
+		lastTimestamp:      lastTimestamp,
+		terminate:          make(chan bool),
 	}, nil
 }
 
@@ -79,6 +131,7 @@ func (vc *VoteSync) Start(ctx context.Context) {
 					continue
 				}
 				if t.After(vc.lastTimestamp.Add(vc.timeInternal)) {
+					// TODO: add retry and alert
 					if err := vc.sync(vc.lastHeight, height, t); err != nil {
 						zap.L().Error("failed to sync votes", zap.Error(err))
 					}
@@ -97,14 +150,52 @@ func (vc *VoteSync) Stop(ctx context.Context) {
 	return
 }
 
+func (vc *VoteSync) updateVotingPowers(addrs []common.Address, weights []*big.Int) error {
+	_, err := vc.service.ExecuteContract(&iotx.ContractRequest{
+		Address:  vc.vpsContractAddress,
+		From:     vc.operator,
+		Abi:      contract.RotatableVPSABI,
+		Method:   "updateVotingPowers",
+		GasLimit: "400000",
+		GasPrice: "1",
+	}, addrs, weights)
+	return err
+}
+
 func (vc *VoteSync) sync(prevHeight, currHeight uint64, currTs time.Time) error {
 	ret, err := vc.fetchVotesUpdate(prevHeight, currHeight, currTs)
 	if err != nil {
 		return err
 	}
+	var addrs []common.Address
+	var weights []*big.Int
+	for _, vote := range ret {
+		addrs = append(addrs, common.BytesToAddress(vote.Voter))
+		weights = append(weights, vote.Votes)
+		if len(addrs)%int(vc.paginationSize) == 0 {
+			if err := vc.updateVotingPowers(addrs, weights); err != nil {
+				return err
+			}
+			addrs = []common.Address{}
+			weights = []*big.Int{}
+		}
+	}
+	if len(addrs) > 0 {
+		if err := vc.updateVotingPowers(addrs, weights); err != nil {
+			return err
+		}
+	}
+	if _, err = vc.service.ExecuteContract(&iotx.ContractRequest{
+		Address:  vc.vpsContractAddress,
+		From:     vc.operator,
+		Abi:      contract.RotatableVPSABI,
+		Method:   "rotate",
+		GasLimit: "400000",
+		GasPrice: "1",
+	}, currHeight); err != nil {
+		return err
+	}
 
-	// TODO write results to iotex contract
-	log.Println(ret)
 	vc.lastHeight = currHeight
 	vc.lastTimestamp = currTs
 	return nil

@@ -3,6 +3,7 @@ package votesync
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 	"math/big"
 	"strings"
 	"time"
@@ -173,7 +174,7 @@ func (vc *VoteSync) updateVotingPowers(addrs []common.Address, weights []*big.In
 		Abi:      contract.RotatableVPSABI,
 		Method:   "updateVotingPowers",
 		Amount:   "0",
-		GasLimit: "400000",
+		GasLimit: "5000000",
 		GasPrice: "1",
 	}, addrs, weights)
 	if err != nil {
@@ -185,28 +186,34 @@ func (vc *VoteSync) updateVotingPowers(addrs []common.Address, weights []*big.In
 }
 
 func (vc *VoteSync) sync(prevHeight, currHeight uint64, currTs time.Time) error {
+	zap.L().Info("Start syncing today's votes.", zap.Uint64("viewID", currHeight))
 	ret, err := vc.fetchVotesUpdate(prevHeight, currHeight, currTs)
 	if err != nil {
 		return errors.Wrap(err, "fetch vote error")
 	}
 
-	var addrs []common.Address
-	var weights []*big.Int
+	var (
+		addrs   []common.Address
+		weights []*big.Int
+		reqNum  int
+	)
 	for _, vote := range ret {
 		addrs = append(addrs, common.BytesToAddress(vote.Voter))
 		weights = append(weights, vote.Votes)
 
-		if len(addrs)%int(vc.paginationSize) == 0 {
+		//fmt.Println(common.BytesToAddress(vote.Voter).String(), vote.Votes.String())
+		if len(addrs)%int(vc.paginationSize/2) == 0 {
 			if err := vc.updateVotingPowers(addrs, weights); err != nil {
-				return errors.Wrap(err, "update vote error")
+				return errors.Wrap(err, fmt.Sprintf("update vote error, reqNum:%d", reqNum))
 			}
+			reqNum++
 			addrs = []common.Address{}
 			weights = []*big.Int{}
 		}
 	}
 	if len(addrs) > 0 {
 		if err := vc.updateVotingPowers(addrs, weights); err != nil {
-			return errors.Wrap(err, "update vote error")
+			return errors.Wrap(err, fmt.Sprintf("update vote error, reqNum:%d", reqNum))
 		}
 	}
 	hash, err := vc.service.ExecuteContract(&iotx.ContractRequest{
@@ -215,7 +222,7 @@ func (vc *VoteSync) sync(prevHeight, currHeight uint64, currTs time.Time) error 
 		Abi:      contract.RotatableVPSABI,
 		Method:   "rotate",
 		Amount:   "0",
-		GasLimit: "400000",
+		GasLimit: "4000000",
 		GasPrice: "1",
 	}, new(big.Int).SetUint64(currHeight))
 	if err != nil {

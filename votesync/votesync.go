@@ -171,7 +171,6 @@ func (vc *VoteSync) updateVotingPowers(addrs []common.Address, weights []*big.In
 		Address:  vc.vpsContractAddress,
 		From:     vc.operator,
 		Abi:      contract.RotatableVPSABI,
-		Amount:   "0",
 		Method:   "updateVotingPowers",
 		Amount:   "0",
 		GasLimit: "400000",

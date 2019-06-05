@@ -179,6 +179,7 @@ func (vc *VoteSync) updateVotingPowers(addrs []common.Address, weights []*big.In
 	if err != nil {
 		return err
 	}
+	time.Sleep(20 * time.Second)
 
 	return vc.checkExecutionByHash(hash)
 }
@@ -218,6 +219,7 @@ func (vc *VoteSync) sync(prevHeight, currHeight uint64, currTs time.Time) error 
 	if err != nil {
 		return err
 	}
+	time.Sleep(20 * time.Second)
 	if err := vc.checkExecutionByHash(hash); err != nil {
 		return err
 	}

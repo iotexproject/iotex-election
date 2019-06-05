@@ -188,7 +188,7 @@ func (vc *VoteSync) updateVotingPowers(addrs []common.Address, weights []*big.In
 func (vc *VoteSync) sync(prevHeight, currHeight uint64, currTs time.Time) error {
 	ret, err := vc.fetchVotesUpdate(prevHeight, currHeight, currTs)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "fetch vote error")
 	}
 
 	var addrs []common.Address
@@ -199,7 +199,7 @@ func (vc *VoteSync) sync(prevHeight, currHeight uint64, currTs time.Time) error 
 
 		if len(addrs)%int(vc.paginationSize) == 0 {
 			if err := vc.updateVotingPowers(addrs, weights); err != nil {
-				return err
+				return errors.Wrap(err, "update vote error")
 			}
 			addrs = []common.Address{}
 			weights = []*big.Int{}
@@ -207,7 +207,7 @@ func (vc *VoteSync) sync(prevHeight, currHeight uint64, currTs time.Time) error 
 	}
 	if len(addrs) > 0 {
 		if err := vc.updateVotingPowers(addrs, weights); err != nil {
-			return err
+			return errors.Wrap(err, "update vote error")
 		}
 	}
 	hash, err := vc.service.ExecuteContract(&iotx.ContractRequest{

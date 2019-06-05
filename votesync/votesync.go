@@ -11,6 +11,7 @@ import (
 	"github.com/cenkalti/backoff"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/iotexproject/go-pkgs/crypto"
@@ -19,6 +20,7 @@ import (
 	"github.com/iotexproject/iotex-election/carrier"
 	"github.com/iotexproject/iotex-election/contract"
 	"github.com/iotexproject/iotex-election/types"
+	"github.com/iotexproject/iotex-proto/golang/iotexapi"
 )
 
 type VoteSync struct {
@@ -150,16 +152,35 @@ func (vc *VoteSync) Stop(ctx context.Context) {
 	return
 }
 
+func (vc *VoteSync) checkExecutionByHash(hash string) error {
+	response, err := vc.service.GetReceiptByAction(&iotexapi.GetReceiptByActionRequest{
+		ActionHash: hash,
+	})
+	if err != nil {
+		return err
+	}
+	if response.ReceiptInfo.Receipt.Status != 1 {
+		return errors.Errorf("execution failed: %s", hash)
+	}
+
+	return err
+}
+
 func (vc *VoteSync) updateVotingPowers(addrs []common.Address, weights []*big.Int) error {
-	_, err := vc.service.ExecuteContract(&iotx.ContractRequest{
+	hash, err := vc.service.ExecuteContract(&iotx.ContractRequest{
 		Address:  vc.vpsContractAddress,
 		From:     vc.operator,
 		Abi:      contract.RotatableVPSABI,
+		Amount:   "0",
 		Method:   "updateVotingPowers",
-		GasLimit: "400000",
+		GasLimit: "4000000",
 		GasPrice: "1",
 	}, addrs, weights)
-	return err
+	if err != nil {
+		return err
+	}
+
+	return vc.checkExecutionByHash(hash)
 }
 
 func (vc *VoteSync) sync(prevHeight, currHeight uint64, currTs time.Time) error {
@@ -185,14 +206,19 @@ func (vc *VoteSync) sync(prevHeight, currHeight uint64, currTs time.Time) error 
 			return err
 		}
 	}
-	if _, err = vc.service.ExecuteContract(&iotx.ContractRequest{
+	hash, err := vc.service.ExecuteContract(&iotx.ContractRequest{
 		Address:  vc.vpsContractAddress,
 		From:     vc.operator,
 		Abi:      contract.RotatableVPSABI,
 		Method:   "rotate",
 		GasLimit: "400000",
 		GasPrice: "1",
-	}, currHeight); err != nil {
+		Amount:   "0",
+	}, new(big.Int).SetUint64(currHeight))
+	if err != nil {
+		return err
+	}
+	if err := vc.checkExecutionByHash(hash); err != nil {
 		return err
 	}
 

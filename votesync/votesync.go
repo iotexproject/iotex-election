@@ -95,7 +95,6 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(response, decoded)
 	lastHeight := new(big.Int)
 	if err := parsed.Unpack(&lastHeight, "viewID", decoded); err != nil {
 		return nil, err
@@ -120,6 +119,8 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 func (vc *VoteSync) Start(ctx context.Context) {
 	heightChan := make(chan uint64)
 	errChan := make(chan error)
+
+	zap.L().Info("Start VoteSync.", zap.Uint64("viewID", vc.lastHeight))
 	go func() {
 		for {
 			select {
@@ -171,9 +172,9 @@ func (vc *VoteSync) updateVotingPowers(addrs []common.Address, weights []*big.In
 		Address:  vc.vpsContractAddress,
 		From:     vc.operator,
 		Abi:      contract.RotatableVPSABI,
-		Amount:   "0",
 		Method:   "updateVotingPowers",
-		GasLimit: "4000000",
+		Amount:   "0",
+		GasLimit: "5000000",
 		GasPrice: "1",
 	}, addrs, weights)
 	if err != nil {
@@ -185,26 +186,34 @@ func (vc *VoteSync) updateVotingPowers(addrs []common.Address, weights []*big.In
 }
 
 func (vc *VoteSync) sync(prevHeight, currHeight uint64, currTs time.Time) error {
+	zap.L().Info("Start syncing today's votes.", zap.Uint64("viewID", currHeight))
 	ret, err := vc.fetchVotesUpdate(prevHeight, currHeight, currTs)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "fetch vote error")
 	}
-	var addrs []common.Address
-	var weights []*big.Int
+
+	var (
+		addrs   []common.Address
+		weights []*big.Int
+		reqNum  int
+	)
 	for _, vote := range ret {
 		addrs = append(addrs, common.BytesToAddress(vote.Voter))
 		weights = append(weights, vote.Votes)
-		if len(addrs)%int(vc.paginationSize) == 0 {
+
+		//fmt.Println(common.BytesToAddress(vote.Voter).String(), vote.Votes.String())
+		if len(addrs)%int(vc.paginationSize/2) == 0 {
 			if err := vc.updateVotingPowers(addrs, weights); err != nil {
-				return err
+				return errors.Wrap(err, fmt.Sprintf("update vote error, reqNum:%d", reqNum))
 			}
+			reqNum++
 			addrs = []common.Address{}
 			weights = []*big.Int{}
 		}
 	}
 	if len(addrs) > 0 {
 		if err := vc.updateVotingPowers(addrs, weights); err != nil {
-			return err
+			return errors.Wrap(err, fmt.Sprintf("update vote error, reqNum:%d", reqNum))
 		}
 	}
 	hash, err := vc.service.ExecuteContract(&iotx.ContractRequest{
@@ -212,9 +221,9 @@ func (vc *VoteSync) sync(prevHeight, currHeight uint64, currTs time.Time) error 
 		From:     vc.operator,
 		Abi:      contract.RotatableVPSABI,
 		Method:   "rotate",
-		GasLimit: "400000",
-		GasPrice: "1",
 		Amount:   "0",
+		GasLimit: "4000000",
+		GasPrice: "1",
 	}, new(big.Int).SetUint64(currHeight))
 	if err != nil {
 		return err
@@ -226,6 +235,7 @@ func (vc *VoteSync) sync(prevHeight, currHeight uint64, currTs time.Time) error 
 
 	vc.lastHeight = currHeight
 	vc.lastTimestamp = currTs
+	zap.L().Info("Successfully synced votes.", zap.Uint64("viewID", currHeight))
 	return nil
 }
 

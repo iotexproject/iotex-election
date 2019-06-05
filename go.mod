@@ -19,6 +19,7 @@ require (
 	github.com/iotexproject/go-pkgs v0.1.1-0.20190513193226-f065b9342b78
 	github.com/iotexproject/iotex-antenna-go v0.0.0-20190522194402-4d96cae2af68
 	github.com/iotexproject/iotex-core v0.7.0 // indirect
+	github.com/iotexproject/iotex-proto v0.2.1-0.20190520183050-e748b9589841
 	github.com/ipfs/go-ds-badger v0.0.3 // indirect
 	github.com/ipfs/go-ds-leveldb v0.0.2 // indirect
 	github.com/ipfs/go-ipfs-delay v0.0.1 // indirect

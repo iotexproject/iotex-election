@@ -30,6 +30,7 @@ import (
 	"github.com/iotexproject/iotex-election/db"
 	"github.com/iotexproject/iotex-election/pb/api"
 	"github.com/iotexproject/iotex-election/util"
+	"github.com/iotexproject/iotex-election/votesync"
 )
 
 // Config defines the config for server
@@ -39,6 +40,8 @@ type Config struct {
 	Committee            committee.Config `yaml:"committee"`
 	SelfStakingThreshold string           `yaml:"selfStakingThreshold"`
 	ScoreThreshold       string           `yaml:"scoreThreshold"`
+	EnableVoteSync       bool             `yaml:"enableVoteSync"`
+	VoteSync             votesync.Config  `yaml:"voteSync"`
 }
 
 // Server defines the interface of the ranking server implementation
@@ -55,6 +58,7 @@ type server struct {
 	grpcServer           *grpc.Server
 	selfStakingThreshold *big.Int
 	scoreThreshold       *big.Int
+	voteSync             *votesync.VoteSync
 }
 
 // NewServer returns an implementation of ranking server
@@ -77,6 +81,14 @@ func NewServer(cfg *Config) (Server, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	var vs *votesync.VoteSync
+	if cfg.EnableVoteSync {
+		vs, err = votesync.NewVoteSync(cfg.VoteSync)
+		if err != nil {
+			return nil, err
+		}
+	}
 	scoreThreshold, ok := new(big.Int).SetString(cfg.ScoreThreshold, 10)
 	if !ok {
 		return nil, errors.New("Invalid score threshold")
@@ -90,6 +102,7 @@ func NewServer(cfg *Config) (Server, error) {
 		port:                 cfg.Port,
 		scoreThreshold:       scoreThreshold,
 		selfStakingThreshold: selfStakingThreshold,
+		voteSync:             vs,
 	}
 	s.grpcServer = grpc.NewServer()
 	api.RegisterAPIServiceServer(s.grpcServer, s)
@@ -115,11 +128,17 @@ func (s *server) Start(ctx context.Context) error {
 	if err := s.electionCommittee.Start(ctx); err != nil {
 		return err
 	}
+	if s.voteSync != nil {
+		s.voteSync.Start(ctx)
+	}
 	return nil
 }
 
 func (s *server) Stop(ctx context.Context) error {
 	s.grpcServer.Stop()
+	if s.voteSync != nil {
+		s.voteSync.Stop(ctx)
+	}
 	return s.electionCommittee.Stop(ctx)
 }
 

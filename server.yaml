@@ -18,5 +18,21 @@ committee:
   selfStakingThreshold: "0"
   cacheSize: 100
 
+
+enableVoteSync: false
+voteSync:
+  gravityChainAPIs:
+  - https://mainnet.infura.io/v3/b355cae6fafc4302b106b937ee6c15af
+  gravityChainTimeInterval: 24h
+  operatorPrivateKey: "a000000000000000000000000000000000000000000000000000000000000000"
+  ioTeXAPI: "api.testnet.iotex.one:80"
+  ioTeXAPIInSecure: false
+  votingSystemContractAddress: "io1a7kuksuftrsst8sywdejvxklq6jvj2842vx4pj"
+  registerContractAddress: "0x95724986563028deb58f15c5fac19fa09304f32d"
+  stakingContractAddress: "0x87c9dbff0016af23f5b1ab9b8e072124ab729193"
+  paginationSize: 100
+
+
+
 scoreThreshold: "2000000000000000000000000"
 selfStakingThreshold: "120000000000000000000000"

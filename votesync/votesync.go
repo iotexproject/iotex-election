@@ -3,7 +3,6 @@ package votesync
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
 	"math/big"
 	"strings"
 	"time"
@@ -95,7 +94,6 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(response, decoded)
 	lastHeight := new(big.Int)
 	if err := parsed.Unpack(&lastHeight, "viewID", decoded); err != nil {
 		return nil, err
@@ -120,6 +118,8 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 func (vc *VoteSync) Start(ctx context.Context) {
 	heightChan := make(chan uint64)
 	errChan := make(chan error)
+
+	zap.L().Info("Start VoteSync.", zap.Uint64("viewID", vc.lastHeight))
 	go func() {
 		for {
 			select {
@@ -173,7 +173,8 @@ func (vc *VoteSync) updateVotingPowers(addrs []common.Address, weights []*big.In
 		Abi:      contract.RotatableVPSABI,
 		Amount:   "0",
 		Method:   "updateVotingPowers",
-		GasLimit: "4000000",
+		Amount:   "0",
+		GasLimit: "400000",
 		GasPrice: "1",
 	}, addrs, weights)
 	if err != nil {
@@ -189,11 +190,13 @@ func (vc *VoteSync) sync(prevHeight, currHeight uint64, currTs time.Time) error 
 	if err != nil {
 		return err
 	}
+
 	var addrs []common.Address
 	var weights []*big.Int
 	for _, vote := range ret {
 		addrs = append(addrs, common.BytesToAddress(vote.Voter))
 		weights = append(weights, vote.Votes)
+
 		if len(addrs)%int(vc.paginationSize) == 0 {
 			if err := vc.updateVotingPowers(addrs, weights); err != nil {
 				return err
@@ -212,9 +215,9 @@ func (vc *VoteSync) sync(prevHeight, currHeight uint64, currTs time.Time) error 
 		From:     vc.operator,
 		Abi:      contract.RotatableVPSABI,
 		Method:   "rotate",
+		Amount:   "0",
 		GasLimit: "400000",
 		GasPrice: "1",
-		Amount:   "0",
 	}, new(big.Int).SetUint64(currHeight))
 	if err != nil {
 		return err
@@ -226,6 +229,7 @@ func (vc *VoteSync) sync(prevHeight, currHeight uint64, currTs time.Time) error 
 
 	vc.lastHeight = currHeight
 	vc.lastTimestamp = currTs
+	zap.L().Info("Successfully synced votes.", zap.Uint64("viewID", currHeight))
 	return nil
 }
 

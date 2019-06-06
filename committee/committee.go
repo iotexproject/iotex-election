@@ -2,7 +2,7 @@
 // This program is free software: you can redistribute it and/or modify it under the terms of the
 // GNU General Public License as published by the Free Software Foundation, either version 3 of
 // the License, or (at your option) any later version.
-// This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+// This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 // without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See
 // the GNU General Public License for more details.
 // You should have received a copy of the GNU General Public License along with this program. If
@@ -192,17 +192,27 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 		}
 	}
 
-	zap.L().Info("subscribing to new block")
-	heightChan := make(chan uint64)
+	tip, err := ec.carrier.Tip()
+	if err != nil {
+		return errors.Wrap(err, "failed to get tip height")
+	}
+	tipChan := make(chan *carrier.TipInfo)
 	reportChan := make(chan error)
 	go func() {
+		zap.L().Info("catching up via network")
+		results, errs := ec.fetchInBatch(tip.Height)
+		if err := ec.storeInBatch(results, errs, tip.BlockTime); err != nil {
+			zap.L().Error("failed to catch up via network", zap.Error(err))
+		}
+		zap.L().Info("subscribing to new block")
+		ec.carrier.SubscribeNewBlock(tipChan, reportChan, ec.terminate)
 		for {
 			select {
 			case <-ec.terminate:
 				ec.terminate <- true
 				return
-			case height := <-heightChan:
-				if err := ec.SyncInBatch(height); err != nil {
+			case tip := <-tipChan:
+				if err := ec.Sync(tip.Height, tip.BlockTime); err != nil {
 					zap.L().Error("failed to sync", zap.Error(err))
 				}
 			case err := <-reportChan:
@@ -210,7 +220,6 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 			}
 		}
 	}()
-	ec.carrier.SubscribeNewBlock(heightChan, reportChan, ec.terminate)
 	return nil
 }
 
@@ -235,32 +244,12 @@ func (ec *committee) Status() STATUS {
 	}
 }
 
-func (ec *committee) SyncInBatch(tipHeight uint64) error {
-	zap.L().Info("new ethereum block", zap.Uint64("height", tipHeight))
-	fetchStart := ec.nextHeight + ec.interval
-	if tipHeight < fetchStart {
-		return nil
-	}
-	fetchHeight := uint64(ec.fetchInParallel) * ec.interval
-	sync := func(tipHeight uint64) error {
-		results, errs := ec.fetchInBatch(tipHeight)
-		ec.mutex.Lock()
-		defer ec.mutex.Unlock()
+func (ec *committee) Sync(tipHeight uint64, tipTime time.Time) error {
+	results, errs := ec.fetchInBatch(tipHeight)
+	ec.mutex.Lock()
+	defer ec.mutex.Unlock()
 
-		return ec.storeInBatch(results, errs)
-	}
-	for ec.currentHeight < tipHeight {
-		if ec.nextHeight+fetchHeight < tipHeight {
-			ec.currentHeight = ec.nextHeight + fetchHeight
-		} else {
-			ec.currentHeight = tipHeight
-		}
-		err := sync(ec.currentHeight)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	return ec.storeInBatch(results, errs, tipTime)
 }
 
 func (ec *committee) fetchInBatch(tipHeight uint64) (
@@ -275,10 +264,7 @@ func (ec *committee) fetchInBatch(tipHeight uint64) (
 	limiter := make(chan bool, ec.fetchInParallel)
 	results := map[uint64]*types.ElectionResult{}
 	errs := map[uint64]error{}
-	for nextHeight := ec.nextHeight; nextHeight < ec.currentHeight; nextHeight += ec.interval {
-		if nextHeight > ec.currentHeight-12 {
-			break
-		}
+	for nextHeight := ec.nextHeight; nextHeight <= ec.currentHeight-12; nextHeight += ec.interval {
 		wg.Add(1)
 		go func(height uint64) {
 			defer func() {
@@ -297,6 +283,7 @@ func (ec *committee) fetchInBatch(tipHeight uint64) (
 func (ec *committee) storeInBatch(
 	results map[uint64]*types.ElectionResult,
 	errs map[uint64]error,
+	tipTime time.Time,
 ) error {
 	var heights []uint64
 	for height := range results {
@@ -320,8 +307,8 @@ func (ec *committee) storeInBatch(
 			return errors.Wrapf(err, "failed to store result of height %d", height)
 		}
 		ec.nextHeight = height + ec.interval
-		atomic.StoreInt64(&ec.lastUpdateTimestamp, time.Now().Unix())
 	}
+	atomic.StoreInt64(&ec.lastUpdateTimestamp, tipTime.Unix())
 
 	return nil
 }
@@ -329,12 +316,22 @@ func (ec *committee) storeInBatch(
 func (ec *committee) LatestHeight() uint64 {
 	ec.mutex.RLock()
 	defer ec.mutex.RUnlock()
-	return ec.heightManager.lastestHeight()
+	l := len(ec.heightManager.heights)
+	if l == 0 {
+		return 0
+	}
+	return ec.heightManager.heights[l-1]
 }
 
 func (ec *committee) HeightByTime(ts time.Time) (uint64, error) {
 	ec.mutex.RLock()
 	defer ec.mutex.RUnlock()
+	// Make sure that we already got a block after the timestamp, such that the height
+	// we return here is the last one before ts
+	lastUpdateTimestamp := atomic.LoadInt64(&ec.lastUpdateTimestamp)
+	if !time.Unix(lastUpdateTimestamp, 0).After(ts) {
+		return 0, db.ErrNotExist
+	}
 	height := ec.heightManager.nearestHeightBefore(ts)
 	if height == 0 {
 		return 0, db.ErrNotExist
@@ -464,11 +461,11 @@ func (ec *committee) fetchCandidatesByHeight(height uint64) ([]*types.Candidate,
 
 func (ec *committee) FetchResultByHeight(height uint64) (*types.ElectionResult, error) {
 	if height == 0 {
-		var err error
-		height, err = ec.carrier.TipHeight()
+		tip, err := ec.carrier.Tip()
 		if err != nil {
 			return nil, err
 		}
+		height = tip.Height
 	}
 	return ec.fetchResultByHeight(height)
 }

@@ -25,14 +25,20 @@ import (
 	"github.com/iotexproject/iotex-election/types"
 )
 
+// TipInfo is the info of a tip block
+type TipInfo struct {
+	Height    uint64
+	BlockTime time.Time
+}
+
 // Carrier defines an interfact to fetch votes
 type Carrier interface {
 	// BlockTimestamp returns the timestamp of a block
 	BlockTimestamp(uint64) (time.Time, error)
 	// SubscribeNewBlock callbacks on new block created
-	SubscribeNewBlock(chan uint64, chan error, chan bool)
-	// TipHeight returns the latest height
-	TipHeight() (uint64, error)
+	SubscribeNewBlock(chan *TipInfo, chan error, chan bool)
+	// Tip returns the latest height and its timestamp
+	Tip() (*TipInfo, error)
 	// Candidates returns the candidates on height
 	Candidates(uint64, *big.Int, uint8) (*big.Int, []*types.Candidate, error)
 	// Votes returns the votes on height
@@ -135,7 +141,11 @@ func (evc *ethereumCarrier) BlockTimestamp(height uint64) (ts time.Time, err err
 	return
 }
 
-func (evc *ethereumCarrier) SubscribeNewBlock(height chan uint64, report chan error, unsubscribe chan bool) {
+func (evc *ethereumCarrier) SubscribeNewBlock(
+	tipChan chan *TipInfo,
+	report chan error,
+	unsubscribe chan bool,
+) {
 	ticker := time.NewTicker(60 * time.Second)
 	lastHeight := uint64(0)
 	go func() {
@@ -145,26 +155,29 @@ func (evc *ethereumCarrier) SubscribeNewBlock(height chan uint64, report chan er
 				unsubscribe <- true
 				return
 			case <-ticker.C:
-				if tipHeight, err := evc.tipHeight(lastHeight); err != nil {
+				if tip, err := evc.tip(lastHeight); err != nil {
 					report <- err
 				} else {
-					height <- tipHeight
+					tipChan <- tip
 				}
 			}
 		}
 	}()
 }
 
-func (evc *ethereumCarrier) TipHeight() (uint64, error) {
-	return evc.tipHeight(0)
+func (evc *ethereumCarrier) Tip() (*TipInfo, error) {
+	return evc.tip(0)
 }
 
-func (evc *ethereumCarrier) tipHeight(lastHeight uint64) (tip uint64, err error) {
+func (evc *ethereumCarrier) tip(lastHeight uint64) (tip *TipInfo, err error) {
 	if err = evc.ethClientPool.Execute(func(client *ethclient.Client) error {
 		header, err := client.HeaderByNumber(context.Background(), nil)
 		if err == nil {
 			if header.Number.Uint64() > lastHeight {
-				tip = header.Number.Uint64()
+				tip = &TipInfo{
+					Height:    header.Number.Uint64(),
+					BlockTime: time.Unix(header.Time.Int64(), 0),
+				}
 				return nil
 			}
 			err = errors.Errorf(

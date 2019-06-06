@@ -80,7 +80,7 @@ func readContract(
 	if err != nil {
 		return err
 	}
-	return parsed.Unpack(&retval, method, decoded)
+	return parsed.Unpack(retval, method, decoded)
 }
 
 func NewVoteSync(cfg Config) (*VoteSync, error) {
@@ -154,7 +154,7 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 }
 
 func (vc *VoteSync) Start(ctx context.Context) {
-	heightChan := make(chan uint64)
+	tipChan := make(chan *carrier.TipInfo)
 	errChan := make(chan error)
 
 	zap.L().Info("Start VoteSync.", zap.Uint64("viewID", vc.lastUpdateHeight))
@@ -164,15 +164,10 @@ func (vc *VoteSync) Start(ctx context.Context) {
 			case <-vc.terminate:
 				vc.terminate <- true
 				return
-			case height := <-heightChan:
-				t, err := vc.carrier.BlockTimestamp(height)
-				if err != nil {
-					zap.L().Error("failed to get eth block time stamp", zap.Error(err))
-					continue
-				}
-				if t.After(vc.lastUpdateTimestamp.Add(vc.timeInternal)) {
+			case tip := <-tipChan:
+				if tip.BlockTime.After(vc.lastUpdateTimestamp.Add(vc.timeInternal)) {
 					// TODO: add retry and alert
-					if err := vc.sync(vc.lastViewHeight, height, vc.lastViewTimestamp, t); err != nil {
+					if err := vc.sync(vc.lastViewHeight, tip.Height, vc.lastViewTimestamp, tip.BlockTime); err != nil {
 						zap.L().Error("failed to sync votes", zap.Error(err))
 					}
 				}
@@ -181,7 +176,7 @@ func (vc *VoteSync) Start(ctx context.Context) {
 			}
 		}
 	}()
-	vc.carrier.SubscribeNewBlock(heightChan, errChan, vc.terminate)
+	vc.carrier.SubscribeNewBlock(tipChan, errChan, vc.terminate)
 }
 
 func (vc *VoteSync) Stop(ctx context.Context) {

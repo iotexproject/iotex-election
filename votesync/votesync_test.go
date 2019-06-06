@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/iotexproject/iotex-election/carrier"
 	"github.com/iotexproject/iotex-election/types"
 	"github.com/stretchr/testify/require"
 )
@@ -12,7 +13,7 @@ import (
 var cfg = Config{
 	OperatorPrivateKey:          "a000000000000000000000000000000000000000000000000000000000000000",
 	IoTeXAPI:                    "api.testnet.iotex.one:443",
-	VotingSystemContractAddress: "io1kep76e8z6xlcn6hr97wa7ykjnhfvz5uc3nlt5g",
+	VotingSystemContractAddress: "io1mxlycqanea52zskuquvun83pvvp28jn5kcz8vn",
 	GravityChainAPIs:            []string{"https://mainnet.infura.io/v3/b355cae6fafc4302b106b937ee6c15af"},
 	RegisterContractAddress:     "0x95724986563028deb58f15c5fac19fa09304f32d",
 	StakingContractAddress:      "0x87c9dbff0016af23f5b1ab9b8e072124ab729193",
@@ -57,9 +58,9 @@ func (*mockCarrier) BlockTimestamp(uint64) (time.Time, error) {
 	return time.Unix(1559240700, 0), nil
 }
 
-func (*mockCarrier) SubscribeNewBlock(chan uint64, chan error, chan bool) {}
+func (*mockCarrier) SubscribeNewBlock(chan *carrier.TipInfo, chan error, chan bool) {}
 
-func (*mockCarrier) TipHeight() (uint64, error) { return 0, nil }
+func (*mockCarrier) Tip() (*carrier.TipInfo, error) { return &carrier.TipInfo{}, nil }
 
 func (*mockCarrier) Candidates(uint64, *big.Int, uint8) (*big.Int, []*types.Candidate, error) {
 	return nil, nil, nil

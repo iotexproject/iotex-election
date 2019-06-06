@@ -2,7 +2,7 @@
 // This program is free software: you can redistribute it and/or modify it under the terms of the
 // GNU General Public License as published by the Free Software Foundation, either version 3 of
 // the License, or (at your option) any later version.
-// This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+// This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 // without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See
 // the GNU General Public License for more details.
 // You should have received a copy of the GNU General Public License along with this program. If
@@ -71,12 +71,12 @@ func TestVoteCarrier(t *testing.T) {
 		require.Equal(int64(1548986420), ts.Unix())
 	})
 	t.Run("SubscribeNewBlock", func(t *testing.T) {
-		heightChan := make(chan uint64)
+		tipChan := make(chan *TipInfo)
 		reportChan := make(chan error)
 		unsubscribe := make(chan bool)
-		carrier.SubscribeNewBlock(heightChan, reportChan, unsubscribe)
+		carrier.SubscribeNewBlock(tipChan, reportChan, unsubscribe)
 		select {
-		case <-heightChan:
+		case <-tipChan:
 			break
 		case err := <-reportChan:
 			require.NoError(err)

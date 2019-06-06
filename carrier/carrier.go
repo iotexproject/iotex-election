@@ -71,18 +71,18 @@ func (pool *EthClientPool) Close() {
 
 // Execute executes callback by rotating all client urls
 func (pool *EthClientPool) Execute(callback func(c *ethclient.Client) error) (err error) {
-	if pool.client != nil {
-		if err = callback(pool.client); err == nil {
+	client := pool.client
+	if client != nil {
+		if err = callback(client); err == nil {
 			return
 		}
-		pool.client.Close()
+		client.Close()
 		pool.client = nil
 		zap.L().Error(
 			"failed to use previous client",
 			zap.Error(err),
 		)
 	}
-	var client *ethclient.Client
 	for i := 0; i < len(pool.clientURLs); i++ {
 		if client, err = ethclient.Dial(pool.clientURLs[i]); err != nil {
 			zap.L().Error(

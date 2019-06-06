@@ -208,29 +208,31 @@ func (vc *VoteSync) checkExecutionByHash(hash string) error {
 }
 
 func (vc *VoteSync) updateVotingPowers(addrs []common.Address, weights []*big.Int) error {
-	hash, err := vc.service.ExecuteContract(&iotx.ContractRequest{
-		Address:  vc.vpsContractAddress,
-		From:     vc.operator,
-		Abi:      contract.RotatableVPSABI,
-		Method:   "updateVotingPowers",
-		Amount:   "0",
-		GasLimit: "5000000",
-		GasPrice: "1",
-	}, addrs, weights)
-	if err != nil {
-		return err
-	}
-	time.Sleep(20 * time.Second)
-
-	return vc.checkExecutionByHash(hash)
+	return backoff.Retry(func() error {
+		hash, err := vc.service.ExecuteContract(&iotx.ContractRequest{
+			Address:  vc.vpsContractAddress,
+			From:     vc.operator,
+			Abi:      contract.RotatableVPSABI,
+			Method:   "updateVotingPowers",
+			Amount:   "0",
+			GasLimit: "5000000",
+			GasPrice: "1",
+		}, addrs, weights)
+		if err != nil {
+			return err
+		}
+		time.Sleep(20 * time.Second)
+		return vc.checkExecutionByHash(hash)
+	}, backoff.NewExponentialBackOff())
 }
 
 func (vc *VoteSync) sync(prevHeight, currHeight uint64, prevTs, currTs time.Time) error {
-	zap.L().Info("Start VoteSync.", zap.Uint64("lastViewID", prevHeight), zap.Uint64("nextViewID", currHeight))
+	zap.L().Info("Start VoteSyncing.", zap.Uint64("lastViewID", prevHeight), zap.Uint64("nextViewID", currHeight))
 	ret, err := vc.fetchVotesUpdate(prevHeight, currHeight, prevTs, currTs)
 	if err != nil {
 		return errors.Wrap(err, "fetch vote error")
 	}
+	zap.L().Info("Need to sync.", zap.Int("numVoter", len(ret)))
 
 	var (
 		addrs   []common.Address
@@ -255,21 +257,24 @@ func (vc *VoteSync) sync(prevHeight, currHeight uint64, prevTs, currTs time.Time
 			return errors.Wrap(err, fmt.Sprintf("update vote error, reqNum:%d", reqNum))
 		}
 	}
-	hash, err := vc.service.ExecuteContract(&iotx.ContractRequest{
-		Address:  vc.vpsContractAddress,
-		From:     vc.operator,
-		Abi:      contract.RotatableVPSABI,
-		Method:   "rotate",
-		Amount:   "0",
-		GasLimit: "4000000",
-		GasPrice: "1",
-	}, new(big.Int).SetUint64(currHeight))
+	err = backoff.Retry(func() error {
+		hash, err := vc.service.ExecuteContract(&iotx.ContractRequest{
+			Address:  vc.vpsContractAddress,
+			From:     vc.operator,
+			Abi:      contract.RotatableVPSABI,
+			Method:   "rotate",
+			Amount:   "0",
+			GasLimit: "4000000",
+			GasPrice: "1",
+		}, new(big.Int).SetUint64(currHeight))
+		if err != nil {
+			return err
+		}
+		time.Sleep(20 * time.Second)
+		return vc.checkExecutionByHash(hash)
+	}, backoff.NewExponentialBackOff())
 	if err != nil {
-		return err
-	}
-	time.Sleep(20 * time.Second)
-	if err := vc.checkExecutionByHash(hash); err != nil {
-		return err
+		return errors.Wrap(err, "failed to execute rotate")
 	}
 
 	vc.lastViewHeight = vc.lastUpdateHeight

@@ -11,9 +11,8 @@ import (
 
 var cfg = Config{
 	OperatorPrivateKey:          "a000000000000000000000000000000000000000000000000000000000000000",
-	IoTeXAPI:                    "api.testnet.iotex.one:80",
-	IoTeXAPIInSecure:            false,
-	VotingSystemContractAddress: "io1a7kuksuftrsst8sywdejvxklq6jvj2842vx4pj",
+	IoTeXAPI:                    "api.testnet.iotex.one:443",
+	VotingSystemContractAddress: "io1kep76e8z6xlcn6hr97wa7ykjnhfvz5uc3nlt5g",
 	GravityChainAPIs:            []string{"https://mainnet.infura.io/v3/b355cae6fafc4302b106b937ee6c15af"},
 	RegisterContractAddress:     "0x95724986563028deb58f15c5fac19fa09304f32d",
 	StakingContractAddress:      "0x87c9dbff0016af23f5b1ab9b8e072124ab729193",

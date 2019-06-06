@@ -42,7 +42,6 @@ type Config struct {
 	GravityChainTimeInterval    time.Duration `yaml:"gravityChainTimeInterval"`
 	OperatorPrivateKey          string        `yaml:"operatorPrivateKey"`
 	IoTeXAPI                    string        `yaml:"ioTeXAPI"`
-	IoTeXAPIInSecure            bool          `yaml:"ioTeXAPIInSecure"`
 	RegisterContractAddress     string        `yaml:"registerContractAddress"`
 	StakingContractAddress      string        `yaml:"stakingContractAddress"`
 	PaginationSize              uint8         `yaml:"paginationSize"`
@@ -54,6 +53,36 @@ type WeightedVote struct {
 	Votes *big.Int
 }
 
+func readContract(
+	service *iotx.Iotx,
+	contractABI string,
+	contractAddr string,
+	method string,
+	accountAddr string,
+	retval interface{},
+) error {
+	parsed, err := abi.JSON(strings.NewReader(contractABI))
+	if err != nil {
+		return err
+	}
+	response, err := service.ReadContractByMethod(&iotx.ContractRequest{
+		Address:  contractAddr,
+		From:     accountAddr,
+		Abi:      contractABI,
+		Method:   method,
+		GasLimit: "5000000",
+		GasPrice: "1",
+	})
+	if err != nil {
+		return err
+	}
+	decoded, err := hex.DecodeString(response)
+	if err != nil {
+		return err
+	}
+	return parsed.Unpack(&retval, method, decoded)
+}
+
 func NewVoteSync(cfg Config) (*VoteSync, error) {
 	carrier, err := carrier.NewEthereumVoteCarrier(
 		cfg.GravityChainAPIs,
@@ -63,7 +92,7 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 	if err != nil {
 		return nil, err
 	}
-	service, err := iotx.NewIotx(cfg.IoTeXAPI, cfg.IoTeXAPIInSecure)
+	service, err := iotx.NewIotx(cfg.IoTeXAPI, true)
 	if err != nil {
 		return nil, err
 	}
@@ -78,27 +107,15 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 	if service.Accounts.AddAccount(operatorAccount); err != nil {
 		return nil, err
 	}
-	parsed, err := abi.JSON(strings.NewReader(contract.RotatableVPSABI))
-	if err != nil {
-		return nil, err
-	}
-	response, err := service.ReadContractByMethod(&iotx.ContractRequest{
-		Address:  cfg.VotingSystemContractAddress,
-		From:     operatorAccount.Address(),
-		Abi:      contract.RotatableVPSABI,
-		Method:   "viewID",
-		GasLimit: "400000",
-		GasPrice: "1",
-	})
-	if err != nil {
-		return nil, err
-	}
-	decoded, err := hex.DecodeString(response)
-	if err != nil {
-		return nil, err
-	}
 	lastUpdateHeight := new(big.Int)
-	if err := parsed.Unpack(&lastUpdateHeight, "viewID", decoded); err != nil {
+	if err = readContract(
+		service,
+		contract.RotatableVPSABI,
+		cfg.VotingSystemContractAddress,
+		"viewID",
+		operatorAccount.Address(),
+		&lastUpdateHeight,
+	); err != nil {
 		return nil, err
 	}
 	lastUpdateTimestamp, err := carrier.BlockTimestamp(lastUpdateHeight.Uint64())
@@ -106,8 +123,17 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 		return nil, err
 	}
 
-	// TODO get lastViewHeight
-	lastViewHeight := lastUpdateHeight
+	lastViewHeight := new(big.Int)
+	if err = readContract(
+		service,
+		contract.RotatableVPSABI,
+		cfg.VotingSystemContractAddress,
+		"inactiveViewID",
+		operatorAccount.Address(),
+		&lastViewHeight,
+	); err != nil {
+		return nil, err
+	}
 	lastViewTimestamp, err := carrier.BlockTimestamp(lastViewHeight.Uint64())
 	if err != nil {
 		return nil, err

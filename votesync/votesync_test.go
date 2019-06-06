@@ -37,9 +37,9 @@ func TestFetchVoteUpdate(t *testing.T) {
 	vs.carrier = &mockCarrier{}
 	ts, err := vs.carrier.BlockTimestamp(2)
 	require.NoError(err)
-	re, err := vs.fetchVotesUpdate(1, 2, ts)
+	re, err := vs.fetchVotesUpdate(1, 2, ts, ts)
 	require.NoError(err)
-	require.NotZero(len(re))
+	require.Equal(3, len(re))
 	for _, r := range re {
 		switch string(r.Voter) {
 		case "Voter":
@@ -93,26 +93,24 @@ func (*mockCarrier) Votes(h uint64, pidx *big.Int, count uint8) (*big.Int, []*ty
 		[]byte("Candidate"),
 		true,
 	)
-	if err != nil {
-		return nil, nil, err
-	}
 	v3, err := types.NewVote(
 		startTime,
 		24*7*time.Hour,
 		big.NewInt(3),
 		big.NewInt(3),
-		[]byte("Voter"),
+		[]byte("OldVoter2"),
 		[]byte("Candidate"),
 		true,
 	)
 	if err != nil {
 		return nil, nil, err
 	}
+
 	v4, err := types.NewVote(
 		startTime,
 		24*7*time.Hour,
-		big.NewInt(4),
-		big.NewInt(4),
+		big.NewInt(3),
+		big.NewInt(3),
 		[]byte("Voter"),
 		[]byte("Candidate"),
 		true,
@@ -121,6 +119,18 @@ func (*mockCarrier) Votes(h uint64, pidx *big.Int, count uint8) (*big.Int, []*ty
 		return nil, nil, err
 	}
 	v5, err := types.NewVote(
+		startTime,
+		24*7*time.Hour,
+		big.NewInt(4),
+		big.NewInt(4),
+		[]byte("Voter"),
+		[]byte("Candidate"),
+		true,
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+	v6, err := types.NewVote(
 		startTime,
 		24*7*time.Hour,
 		big.NewInt(3),
@@ -132,13 +142,25 @@ func (*mockCarrier) Votes(h uint64, pidx *big.Int, count uint8) (*big.Int, []*ty
 	if err != nil {
 		return nil, nil, err
 	}
+	v7, err := types.NewVote(
+		startTime,
+		24*7*time.Hour,
+		big.NewInt(3),
+		big.NewInt(3),
+		[]byte("OldVoter2"),
+		[]byte("Candidate"),
+		true,
+	)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	nidx := pidx.Add(pidx, big.NewInt(1))
 	if h == 1 {
-		return nidx, []*types.Vote{v1, v2}, nil
+		return nidx, []*types.Vote{v1, v2, v3}, nil
 	}
 	if h == 2 {
-		return nidx, []*types.Vote{v3, v4, v5}, nil
+		return nidx, []*types.Vote{v4, v5, v6, v7}, nil
 	}
 	return nil, nil, nil
 }

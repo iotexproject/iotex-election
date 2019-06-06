@@ -24,15 +24,17 @@ import (
 )
 
 type VoteSync struct {
-	operator           string
-	vpsContractAddress string
-	service            *iotx.Iotx
-	carrier            carrier.Carrier
-	lastHeight         uint64
-	lastTimestamp      time.Time
-	timeInternal       time.Duration
-	paginationSize     uint8
-	terminate          chan bool
+	operator            string
+	vpsContractAddress  string
+	service             *iotx.Iotx
+	carrier             carrier.Carrier
+	lastViewHeight      uint64
+	lastViewTimestamp   time.Time
+	lastUpdateHeight    uint64
+	lastUpdateTimestamp time.Time
+	timeInternal        time.Duration
+	paginationSize      uint8
+	terminate           chan bool
 }
 
 type Config struct {
@@ -95,24 +97,33 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 	if err != nil {
 		return nil, err
 	}
-	lastHeight := new(big.Int)
-	if err := parsed.Unpack(&lastHeight, "viewID", decoded); err != nil {
+	lastUpdateHeight := new(big.Int)
+	if err := parsed.Unpack(&lastUpdateHeight, "viewID", decoded); err != nil {
 		return nil, err
 	}
-	lastTimestamp, err := carrier.BlockTimestamp(lastHeight.Uint64())
+	lastUpdateTimestamp, err := carrier.BlockTimestamp(lastUpdateHeight.Uint64())
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO get lastViewHeight
+	lastViewHeight := lastUpdateHeight
+	lastViewTimestamp, err := carrier.BlockTimestamp(lastViewHeight.Uint64())
 	if err != nil {
 		return nil, err
 	}
 	return &VoteSync{
-		carrier:            carrier,
-		vpsContractAddress: cfg.VotingSystemContractAddress,
-		operator:           operatorAccount.Address(),
-		service:            service,
-		timeInternal:       cfg.GravityChainTimeInterval,
-		paginationSize:     cfg.PaginationSize,
-		lastHeight:         lastHeight.Uint64(),
-		lastTimestamp:      lastTimestamp,
-		terminate:          make(chan bool),
+		carrier:             carrier,
+		vpsContractAddress:  cfg.VotingSystemContractAddress,
+		operator:            operatorAccount.Address(),
+		service:             service,
+		timeInternal:        cfg.GravityChainTimeInterval,
+		paginationSize:      cfg.PaginationSize,
+		lastViewHeight:      lastViewHeight.Uint64(),
+		lastViewTimestamp:   lastViewTimestamp,
+		lastUpdateHeight:    lastUpdateHeight.Uint64(),
+		lastUpdateTimestamp: lastUpdateTimestamp,
+		terminate:           make(chan bool),
 	}, nil
 }
 
@@ -120,7 +131,7 @@ func (vc *VoteSync) Start(ctx context.Context) {
 	heightChan := make(chan uint64)
 	errChan := make(chan error)
 
-	zap.L().Info("Start VoteSync.", zap.Uint64("viewID", vc.lastHeight))
+	zap.L().Info("Start VoteSync.", zap.Uint64("viewID", vc.lastUpdateHeight))
 	go func() {
 		for {
 			select {
@@ -133,9 +144,9 @@ func (vc *VoteSync) Start(ctx context.Context) {
 					zap.L().Error("failed to get eth block time stamp", zap.Error(err))
 					continue
 				}
-				if t.After(vc.lastTimestamp.Add(vc.timeInternal)) {
+				if t.After(vc.lastUpdateTimestamp.Add(vc.timeInternal)) {
 					// TODO: add retry and alert
-					if err := vc.sync(vc.lastHeight, height, t); err != nil {
+					if err := vc.sync(vc.lastViewHeight, height, vc.lastViewTimestamp, t); err != nil {
 						zap.L().Error("failed to sync votes", zap.Error(err))
 					}
 				}
@@ -185,9 +196,9 @@ func (vc *VoteSync) updateVotingPowers(addrs []common.Address, weights []*big.In
 	return vc.checkExecutionByHash(hash)
 }
 
-func (vc *VoteSync) sync(prevHeight, currHeight uint64, currTs time.Time) error {
+func (vc *VoteSync) sync(prevHeight, currHeight uint64, prevTs, currTs time.Time) error {
 	zap.L().Info("Start syncing today's votes.", zap.Uint64("viewID", currHeight))
-	ret, err := vc.fetchVotesUpdate(prevHeight, currHeight, currTs)
+	ret, err := vc.fetchVotesUpdate(prevHeight, currHeight, prevTs, currTs)
 	if err != nil {
 		return errors.Wrap(err, "fetch vote error")
 	}
@@ -233,13 +244,15 @@ func (vc *VoteSync) sync(prevHeight, currHeight uint64, currTs time.Time) error 
 		return err
 	}
 
-	vc.lastHeight = currHeight
-	vc.lastTimestamp = currTs
+	vc.lastViewHeight = vc.lastUpdateHeight
+	vc.lastViewTimestamp = vc.lastUpdateTimestamp
+	vc.lastUpdateHeight = currHeight
+	vc.lastUpdateTimestamp = currTs
 	zap.L().Info("Successfully synced votes.", zap.Uint64("viewID", currHeight))
 	return nil
 }
 
-func (vc *VoteSync) fetchVotesUpdate(prevHeight, currHeight uint64, currTs time.Time) ([]*WeightedVote, error) {
+func (vc *VoteSync) fetchVotesUpdate(prevHeight, currHeight uint64, prevTs, currTs time.Time) ([]*WeightedVote, error) {
 	prev, err := vc.retryFetchResultByHeight(prevHeight)
 	if err != nil {
 		return nil, err
@@ -249,35 +262,31 @@ func (vc *VoteSync) fetchVotesUpdate(prevHeight, currHeight uint64, currTs time.
 		return nil, err
 	}
 
-	r := make(map[string]*WeightedVote)
-	for _, v := range curr {
-		vs := types.CalcWeightedVotes(v, currTs)
-		wv, ok := r[hex.EncodeToString(v.Voter())]
-		if ok {
-			wv.Votes.Add(wv.Votes, vs)
-			continue
-		}
-		r[hex.EncodeToString(v.Voter())] = &WeightedVote{
-			Voter: v.Voter(),
-			Votes: vs,
-		}
-	}
+	p := calWeightedVotes(prev, prevTs)
+	n := calWeightedVotes(curr, currTs)
 
 	var ret []*WeightedVote
-	for _, v := range r {
-		ret = append(ret, v)
-	}
-
-	m := make(map[string]*types.Vote)
-	for _, v := range prev {
-		m[hex.EncodeToString(v.Voter())] = v
-	}
-	for k, v := range m {
-		if _, ok := r[k]; !ok {
+	// check for all voters in old view
+	// if they don't exist in new view map, append 0 value for them
+	// if they do exisit in new view map, append only if the vote value is different
+	for k, pv := range p {
+		nv, ok := n[k]
+		if !ok {
 			ret = append(ret, &WeightedVote{
-				Voter: v.Voter(),
+				Voter: pv.Voter,
 				Votes: big.NewInt(0),
 			})
+		} else {
+			if nv.Votes.Cmp(pv.Votes) != 0 {
+				ret = append(ret, nv)
+			}
+		}
+	}
+	// check for all new voters in new view
+	// if they don't exist in old view map, append
+	for k, nv := range n {
+		if _, ok := p[k]; !ok {
+			ret = append(ret, nv)
 		}
 	}
 	return ret, nil
@@ -319,4 +328,21 @@ func (vc *VoteSync) fetchVotesByHeight(h uint64) ([]*types.Vote, error) {
 		}
 	}
 	return allVotes, nil
+}
+
+func calWeightedVotes(curr []*types.Vote, currTs time.Time) map[string]*WeightedVote {
+	n := make(map[string]*WeightedVote)
+	for _, v := range curr {
+		vs := types.CalcWeightedVotes(v, currTs)
+		wv, ok := n[hex.EncodeToString(v.Voter())]
+		if ok {
+			wv.Votes.Add(wv.Votes, vs)
+			continue
+		}
+		n[hex.EncodeToString(v.Voter())] = &WeightedVote{
+			Voter: v.Voter(),
+			Votes: vs,
+		}
+	}
+	return n
 }

@@ -80,7 +80,7 @@ func readContract(
 	if err != nil {
 		return err
 	}
-	return parsed.Unpack(&retval, method, decoded)
+	return parsed.Unpack(retval, method, decoded)
 }
 
 func NewVoteSync(cfg Config) (*VoteSync, error) {
@@ -157,7 +157,10 @@ func (vc *VoteSync) Start(ctx context.Context) {
 	heightChan := make(chan uint64)
 	errChan := make(chan error)
 
-	zap.L().Info("Start VoteSync.", zap.Uint64("viewID", vc.lastUpdateHeight))
+	zap.L().Info("Start VoteSync.",
+		zap.Uint64("lastUpdateHeight", vc.lastUpdateHeight),
+		zap.Uint64("lastViewID", vc.lastViewHeight),
+	)
 	go func() {
 		for {
 			select {
@@ -223,7 +226,7 @@ func (vc *VoteSync) updateVotingPowers(addrs []common.Address, weights []*big.In
 }
 
 func (vc *VoteSync) sync(prevHeight, currHeight uint64, prevTs, currTs time.Time) error {
-	zap.L().Info("Start syncing today's votes.", zap.Uint64("viewID", currHeight))
+	zap.L().Info("Start VoteSync.", zap.Uint64("lastViewID", prevHeight), zap.Uint64("nextViewID", currHeight))
 	ret, err := vc.fetchVotesUpdate(prevHeight, currHeight, prevTs, currTs)
 	if err != nil {
 		return errors.Wrap(err, "fetch vote error")
@@ -238,7 +241,6 @@ func (vc *VoteSync) sync(prevHeight, currHeight uint64, prevTs, currTs time.Time
 		addrs = append(addrs, common.BytesToAddress(vote.Voter))
 		weights = append(weights, vote.Votes)
 
-		//fmt.Println(common.BytesToAddress(vote.Voter).String(), vote.Votes.String())
 		if len(addrs)%int(vc.paginationSize/2) == 0 {
 			if err := vc.updateVotingPowers(addrs, weights); err != nil {
 				return errors.Wrap(err, fmt.Sprintf("update vote error, reqNum:%d", reqNum))
@@ -274,11 +276,26 @@ func (vc *VoteSync) sync(prevHeight, currHeight uint64, prevTs, currTs time.Time
 	vc.lastViewTimestamp = vc.lastUpdateTimestamp
 	vc.lastUpdateHeight = currHeight
 	vc.lastUpdateTimestamp = currTs
-	zap.L().Info("Successfully synced votes.", zap.Uint64("viewID", currHeight))
+	zap.L().Info("Successfully synced votes.", zap.Uint64("lastViewID", vc.lastViewHeight), zap.Uint64("viewID", currHeight))
 	return nil
 }
 
 func (vc *VoteSync) fetchVotesUpdate(prevHeight, currHeight uint64, prevTs, currTs time.Time) ([]*WeightedVote, error) {
+	// prevHeight == 0, only run at first 2 time. get all votes from currHeight
+	if prevHeight == 0 {
+		curr, err := vc.retryFetchResultByHeight(currHeight)
+		if err != nil {
+			return nil, err
+		}
+
+		n := calWeightedVotes(curr, currTs)
+		var ret []*WeightedVote
+		for _, nv := range n {
+			ret = append(ret, nv)
+		}
+		return ret, nil
+	}
+
 	prev, err := vc.retryFetchResultByHeight(prevHeight)
 	if err != nil {
 		return nil, err

@@ -18,6 +18,7 @@ var cfg = Config{
 	RegisterContractAddress:  "0x95724986563028deb58f15c5fac19fa09304f32d",
 	StakingContractAddress:   "0x87c9dbff0016af23f5b1ab9b8e072124ab729193",
 	PaginationSize:           100,
+	BrokerPaginationSize:     20,
 	GravityChainTimeInterval: 24 * time.Hour,
 }
 

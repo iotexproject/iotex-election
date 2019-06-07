@@ -37,6 +37,7 @@ type VoteSync struct {
 	lastUpdateTimestamp    time.Time
 	timeInternal           time.Duration
 	paginationSize         uint8
+	brokerPaginationSize   uint8
 	terminate              chan bool
 }
 
@@ -48,6 +49,7 @@ type Config struct {
 	RegisterContractAddress  string        `yaml:"registerContractAddress"`
 	StakingContractAddress   string        `yaml:"stakingContractAddress"`
 	PaginationSize           uint8         `yaml:"paginationSize"`
+	BrokerPaginationSize     uint8         `yaml:"brokerPaginationSize"`
 	VitaContractAddress      string        `yaml:"vitaSystemContractAddress"`
 }
 
@@ -168,7 +170,6 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 		return nil, err
 	}
 
-	// TODO get last broker update height
 	lastBrokerUpdateHeight := new(big.Int)
 	if err = readContract(
 		service,
@@ -176,7 +177,7 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 		vpsContractAddress,
 		"lastDonatePoolClaimViewID",
 		operatorAccount.Address(),
-		&lastViewHeight,
+		&lastBrokerUpdateHeight,
 	); err != nil {
 		return nil, err
 	}
@@ -189,6 +190,7 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 		service:                service,
 		timeInternal:           cfg.GravityChainTimeInterval,
 		paginationSize:         cfg.PaginationSize,
+		brokerPaginationSize:   cfg.BrokerPaginationSize,
 		lastViewHeight:         lastViewHeight.Uint64(),
 		lastViewTimestamp:      lastViewTimestamp,
 		lastUpdateHeight:       lastUpdateHeight.Uint64(),
@@ -253,7 +255,7 @@ func (vc *VoteSync) checkExecutionByHash(hash string) error {
 	return err
 }
 
-func (vc *VoteSync) unpauseBroker() error {
+func (vc *VoteSync) brokerUnpause() error {
 	return backoff.Retry(func() error {
 		hash, err := vc.service.ExecuteContract(&iotx.ContractRequest{
 			Address:  vc.brokerContractAddress,
@@ -272,18 +274,44 @@ func (vc *VoteSync) unpauseBroker() error {
 	}, backoff.NewExponentialBackOff())
 }
 
-func (vc *VoteSync) readBrokerSettleStart() (int, error) {
-	// TODO read start from broker contract
-	// nextBidToSettle
-	return 0, nil
+func (vc *VoteSync) brokerNextBidToSettle() (uint64, error) {
+	nextBidToSettle := new(big.Int)
+	if err := readContract(
+		vc.service,
+		contract.BrokerABI,
+		vc.brokerContractAddress,
+		"nextBidToSettle",
+		vc.operator,
+		&nextBidToSettle,
+	); err != nil {
+		return 0, err
+	}
+	return nextBidToSettle.Uint64(), nil
 }
 
 func (vc *VoteSync) brokerSettle() error {
+	oldStart := uint64(0)
 	for {
-		oldStart := 0
-		// TODO call broker contract settle
-		// settle(count)
-		newStart, err := vc.readBrokerSettleStart()
+		if err := backoff.Retry(func() error {
+			hash, err := vc.service.ExecuteContract(&iotx.ContractRequest{
+				Address:  vc.brokerContractAddress,
+				From:     vc.operator,
+				Abi:      contract.BrokerABI,
+				Method:   "settle",
+				Amount:   "0",
+				GasLimit: "5000000",
+				GasPrice: "1",
+			}, big.NewInt(0).SetUint64(uint64(vc.brokerPaginationSize)))
+			if err != nil {
+				return err
+			}
+			time.Sleep(20 * time.Second)
+			return vc.checkExecutionByHash(hash)
+		}, backoff.NewExponentialBackOff()); err != nil {
+			return err
+		}
+
+		newStart, err := vc.brokerNextBidToSettle()
 		if err != nil {
 			return err
 		}
@@ -300,11 +328,11 @@ func (vc *VoteSync) settle(h uint64) error {
 		return errors.Wrap(err, "broker settle error")
 	}
 	zap.L().Info("Finished broker settle.")
-	if err := vc.unpauseBroker(); err != nil {
-		return errors.Wrap(err, "broker reset error")
+	if err := vc.brokerUnpause(); err != nil {
+		return errors.Wrap(err, "broker unpause error")
 	}
 	vc.lastBrokerUpdateHeight = h
-	zap.L().Info("Finished broker reset.")
+	zap.L().Info("Finished broker unpause.")
 	return nil
 }
 

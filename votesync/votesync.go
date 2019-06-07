@@ -25,6 +25,7 @@ import (
 
 type VoteSync struct {
 	operator               string
+	vitaContractAddress    string
 	vpsContractAddress     string
 	brokerContractAddress  string
 	service                *iotx.Iotx
@@ -40,15 +41,14 @@ type VoteSync struct {
 }
 
 type Config struct {
-	GravityChainAPIs            []string      `yaml:"gravityChainAPIs"`
-	GravityChainTimeInterval    time.Duration `yaml:"gravityChainTimeInterval"`
-	OperatorPrivateKey          string        `yaml:"operatorPrivateKey"`
-	IoTeXAPI                    string        `yaml:"ioTeXAPI"`
-	RegisterContractAddress     string        `yaml:"registerContractAddress"`
-	StakingContractAddress      string        `yaml:"stakingContractAddress"`
-	PaginationSize              uint8         `yaml:"paginationSize"`
-	VotingSystemContractAddress string        `yaml:"votingSystemContractAddress"`
-	VotaBrokerContractAddress   string        `yaml:"votaBrokerContractAddress"`
+	GravityChainAPIs         []string      `yaml:"gravityChainAPIs"`
+	GravityChainTimeInterval time.Duration `yaml:"gravityChainTimeInterval"`
+	OperatorPrivateKey       string        `yaml:"operatorPrivateKey"`
+	IoTeXAPI                 string        `yaml:"ioTeXAPI"`
+	RegisterContractAddress  string        `yaml:"registerContractAddress"`
+	StakingContractAddress   string        `yaml:"stakingContractAddress"`
+	PaginationSize           uint8         `yaml:"paginationSize"`
+	VitaContractAddress      string        `yaml:"vitaSystemContractAddress"`
 }
 
 type WeightedVote struct {
@@ -114,11 +114,33 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 	if service.Accounts.AddAccount(operatorAccount); err != nil {
 		return nil, err
 	}
+	var vpsContractAddress string
+	if err = readContract(
+		service,
+		contract.VitaABI,
+		cfg.VitaContractAddress,
+		"vps",
+		operatorAccount.Address(),
+		&vpsContractAddress,
+	); err != nil {
+		return nil, err
+	}
+	var brokerContractAddress string
+	if err = readContract(
+		service,
+		contract.VitaABI,
+		cfg.VitaContractAddress,
+		"donatePoolAddress",
+		operatorAccount.Address(),
+		&vpsContractAddress,
+	); err != nil {
+		return nil, err
+	}
 	lastUpdateHeight := new(big.Int)
 	if err = readContract(
 		service,
 		contract.RotatableVPSABI,
-		cfg.VotingSystemContractAddress,
+		vpsContractAddress,
 		"viewID",
 		operatorAccount.Address(),
 		&lastUpdateHeight,
@@ -134,7 +156,7 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 	if err = readContract(
 		service,
 		contract.RotatableVPSABI,
-		cfg.VotingSystemContractAddress,
+		vpsContractAddress,
 		"inactiveViewID",
 		operatorAccount.Address(),
 		&lastViewHeight,
@@ -147,11 +169,22 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 	}
 
 	// TODO get last broker update height
-	lastBrokerUpdateHeight := lastViewHeight.Uint64()
+	lastBrokerUpdateHeight := new(big.Int)
+	if err = readContract(
+		service,
+		contract.RotatableVPSABI,
+		vpsContractAddress,
+		"lastDonatePoolClaimViewID",
+		operatorAccount.Address(),
+		&lastViewHeight,
+	); err != nil {
+		return nil, err
+	}
 	return &VoteSync{
 		carrier:                carrier,
-		vpsContractAddress:     cfg.VotingSystemContractAddress,
-		brokerContractAddress:  cfg.VotaBrokerContractAddress,
+		vitaContractAddress:    cfg.VitaContractAddress,
+		vpsContractAddress:     vpsContractAddress,
+		brokerContractAddress:  brokerContractAddress,
 		operator:               operatorAccount.Address(),
 		service:                service,
 		timeInternal:           cfg.GravityChainTimeInterval,
@@ -160,7 +193,7 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 		lastViewTimestamp:      lastViewTimestamp,
 		lastUpdateHeight:       lastUpdateHeight.Uint64(),
 		lastUpdateTimestamp:    lastUpdateTimestamp,
-		lastBrokerUpdateHeight: lastBrokerUpdateHeight,
+		lastBrokerUpdateHeight: lastBrokerUpdateHeight.Uint64(),
 		terminate:              make(chan bool),
 	}, nil
 }
@@ -220,16 +253,13 @@ func (vc *VoteSync) checkExecutionByHash(hash string) error {
 	return err
 }
 
-func (vc *VoteSync) brokerFreezeOrReset(m string) error {
-	// TODO remove next line
-	return nil
+func (vc *VoteSync) unpauseBroker() error {
 	return backoff.Retry(func() error {
 		hash, err := vc.service.ExecuteContract(&iotx.ContractRequest{
-			Address: vc.brokerContractAddress,
-			From:    vc.operator,
-			// TODO
-			//Abi:      contract.RotatableVPSABI,
-			Method:   m,
+			Address:  vc.brokerContractAddress,
+			From:     vc.operator,
+			Abi:      contract.BrokerABI,
+			Method:   "unpause",
 			Amount:   "0",
 			GasLimit: "5000000",
 			GasPrice: "1",
@@ -244,6 +274,7 @@ func (vc *VoteSync) brokerFreezeOrReset(m string) error {
 
 func (vc *VoteSync) readBrokerSettleStart() (int, error) {
 	// TODO read start from broker contract
+	// nextBidToSettle
 	return 0, nil
 }
 
@@ -251,6 +282,7 @@ func (vc *VoteSync) brokerSettle() error {
 	for {
 		oldStart := 0
 		// TODO call broker contract settle
+		// settle(count)
 		newStart, err := vc.readBrokerSettleStart()
 		if err != nil {
 			return err
@@ -263,20 +295,12 @@ func (vc *VoteSync) brokerSettle() error {
 
 func (vc *VoteSync) settle(h uint64) error {
 	zap.L().Info("Start broker settle process.")
-	// freeze broker
-	if err := vc.brokerFreezeOrReset("freeze"); err != nil {
-		return errors.Wrap(err, "broker freeze error")
-	}
-	zap.L().Info("Finished broker freeze.")
-
 	// settle broker
 	if err := vc.brokerSettle(); err != nil {
 		return errors.Wrap(err, "broker settle error")
 	}
 	zap.L().Info("Finished broker settle.")
-
-	// reset broker
-	if err := vc.brokerFreezeOrReset("reset"); err != nil {
+	if err := vc.unpauseBroker(); err != nil {
 		return errors.Wrap(err, "broker reset error")
 	}
 	vc.lastBrokerUpdateHeight = h

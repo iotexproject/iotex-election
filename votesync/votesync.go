@@ -50,7 +50,7 @@ type Config struct {
 	StakingContractAddress   string        `yaml:"stakingContractAddress"`
 	PaginationSize           uint8         `yaml:"paginationSize"`
 	BrokerPaginationSize     uint8         `yaml:"brokerPaginationSize"`
-	VitaContractAddress      string        `yaml:"vitaSystemContractAddress"`
+	VitaContractAddress      string        `yaml:"vitaContractAddress"`
 }
 
 type WeightedVote struct {

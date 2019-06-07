@@ -116,7 +116,7 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 	if service.Accounts.AddAccount(operatorAccount); err != nil {
 		return nil, err
 	}
-	var vpsContractAddress string
+	var vpsContractAddress common.Address
 	if err = readContract(
 		service,
 		contract.VitaABI,
@@ -127,7 +127,7 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 	); err != nil {
 		return nil, err
 	}
-	var brokerContractAddress string
+	var brokerContractAddress common.Address
 	if err = readContract(
 		service,
 		contract.VitaABI,
@@ -142,7 +142,7 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 	if err = readContract(
 		service,
 		contract.RotatableVPSABI,
-		vpsContractAddress,
+		vpsContractAddress.String(),
 		"viewID",
 		operatorAccount.Address(),
 		&lastUpdateHeight,
@@ -158,7 +158,7 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 	if err = readContract(
 		service,
 		contract.RotatableVPSABI,
-		vpsContractAddress,
+		vpsContractAddress.String(),
 		"inactiveViewID",
 		operatorAccount.Address(),
 		&lastViewHeight,
@@ -174,7 +174,7 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 	if err = readContract(
 		service,
 		contract.RotatableVPSABI,
-		vpsContractAddress,
+		vpsContractAddress.String(),
 		"lastDonatePoolClaimViewID",
 		operatorAccount.Address(),
 		&lastBrokerUpdateHeight,
@@ -184,8 +184,8 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 	return &VoteSync{
 		carrier:                carrier,
 		vitaContractAddress:    cfg.VitaContractAddress,
-		vpsContractAddress:     vpsContractAddress,
-		brokerContractAddress:  brokerContractAddress,
+		vpsContractAddress:     vpsContractAddress.String(),
+		brokerContractAddress:  brokerContractAddress.String(),
 		operator:               operatorAccount.Address(),
 		service:                service,
 		timeInternal:           cfg.GravityChainTimeInterval,

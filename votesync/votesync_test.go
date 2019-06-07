@@ -13,7 +13,7 @@ import (
 var cfg = Config{
 	OperatorPrivateKey:       "a000000000000000000000000000000000000000000000000000000000000000",
 	IoTeXAPI:                 "api.testnet.iotex.one:443",
-	VitaContractAddress:      "io1mxlycqanea52zskuquvun83pvvp28jn5kcz8vn", // TODO: this is vps contract, not vita contract
+	VitaContractAddress:      "io1yd2wyrj0z44qjdy4g5ahvr70xupr5arp2n86hu",
 	GravityChainAPIs:         []string{"https://mainnet.infura.io/v3/b355cae6fafc4302b106b937ee6c15af"},
 	RegisterContractAddress:  "0x95724986563028deb58f15c5fac19fa09304f32d",
 	StakingContractAddress:   "0x87c9dbff0016af23f5b1ab9b8e072124ab729193",

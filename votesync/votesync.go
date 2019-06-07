@@ -24,17 +24,18 @@ import (
 )
 
 type VoteSync struct {
-	operator            string
-	vpsContractAddress  string
-	service             *iotx.Iotx
-	carrier             carrier.Carrier
-	lastViewHeight      uint64
-	lastViewTimestamp   time.Time
-	lastUpdateHeight    uint64
-	lastUpdateTimestamp time.Time
-	timeInternal        time.Duration
-	paginationSize      uint8
-	terminate           chan bool
+	operator              string
+	vpsContractAddress    string
+	brokerContractAddress string
+	service               *iotx.Iotx
+	carrier               carrier.Carrier
+	lastViewHeight        uint64
+	lastViewTimestamp     time.Time
+	lastUpdateHeight      uint64
+	lastUpdateTimestamp   time.Time
+	timeInternal          time.Duration
+	paginationSize        uint8
+	terminate             chan bool
 }
 
 type Config struct {
@@ -46,6 +47,7 @@ type Config struct {
 	StakingContractAddress      string        `yaml:"stakingContractAddress"`
 	PaginationSize              uint8         `yaml:"paginationSize"`
 	VotingSystemContractAddress string        `yaml:"votingSystemContractAddress"`
+	VotaBrokerContractAddress   string        `yaml:"votaBrokerContractAddress"`
 }
 
 type WeightedVote struct {
@@ -65,14 +67,18 @@ func readContract(
 	if err != nil {
 		return err
 	}
-	response, err := service.ReadContractByMethod(&iotx.ContractRequest{
-		Address:  contractAddr,
-		From:     accountAddr,
-		Abi:      contractABI,
-		Method:   method,
-		GasLimit: "5000000",
-		GasPrice: "1",
-	})
+	var response string
+	err = backoff.Retry(func() error {
+		response, err = service.ReadContractByMethod(&iotx.ContractRequest{
+			Address:  contractAddr,
+			From:     accountAddr,
+			Abi:      contractABI,
+			Method:   method,
+			GasLimit: "5000000",
+			GasPrice: "1",
+		})
+		return err
+	}, backoff.NewExponentialBackOff())
 	if err != nil {
 		return err
 	}
@@ -139,17 +145,18 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 		return nil, err
 	}
 	return &VoteSync{
-		carrier:             carrier,
-		vpsContractAddress:  cfg.VotingSystemContractAddress,
-		operator:            operatorAccount.Address(),
-		service:             service,
-		timeInternal:        cfg.GravityChainTimeInterval,
-		paginationSize:      cfg.PaginationSize,
-		lastViewHeight:      lastViewHeight.Uint64(),
-		lastViewTimestamp:   lastViewTimestamp,
-		lastUpdateHeight:    lastUpdateHeight.Uint64(),
-		lastUpdateTimestamp: lastUpdateTimestamp,
-		terminate:           make(chan bool),
+		carrier:               carrier,
+		vpsContractAddress:    cfg.VotingSystemContractAddress,
+		brokerContractAddress: cfg.VotaBrokerContractAddress,
+		operator:              operatorAccount.Address(),
+		service:               service,
+		timeInternal:          cfg.GravityChainTimeInterval,
+		paginationSize:        cfg.PaginationSize,
+		lastViewHeight:        lastViewHeight.Uint64(),
+		lastViewTimestamp:     lastViewTimestamp,
+		lastUpdateHeight:      lastUpdateHeight.Uint64(),
+		lastUpdateTimestamp:   lastUpdateTimestamp,
+		terminate:             make(chan bool),
 	}, nil
 }
 
@@ -169,7 +176,10 @@ func (vc *VoteSync) Start(ctx context.Context) {
 				return
 			case tip := <-tipChan:
 				if tip.BlockTime.After(vc.lastUpdateTimestamp.Add(vc.timeInternal)) {
-					// TODO: add retry and alert
+					if err := vc.settle(); err != nil {
+						zap.L().Error("failed to settle broker", zap.Error(err))
+						continue
+					}
 					if err := vc.sync(vc.lastViewHeight, tip.Height, vc.lastViewTimestamp, tip.BlockTime); err != nil {
 						zap.L().Error("failed to sync votes", zap.Error(err))
 					}
@@ -200,6 +210,69 @@ func (vc *VoteSync) checkExecutionByHash(hash string) error {
 	}
 
 	return err
+}
+
+func (vc *VoteSync) brokerFreezeOrReset(m string) error {
+	// TODO remove next line
+	return nil
+	return backoff.Retry(func() error {
+		hash, err := vc.service.ExecuteContract(&iotx.ContractRequest{
+			Address: vc.brokerContractAddress,
+			From:    vc.operator,
+			// TODO
+			//Abi:      contract.RotatableVPSABI,
+			Method:   m,
+			Amount:   "0",
+			GasLimit: "5000000",
+			GasPrice: "1",
+		})
+		if err != nil {
+			return err
+		}
+		time.Sleep(20 * time.Second)
+		return vc.checkExecutionByHash(hash)
+	}, backoff.NewExponentialBackOff())
+}
+
+func (vc *VoteSync) readBrokerSettleStart() (int, error) {
+	// TODO read start from broker contract
+	return 0, nil
+}
+
+func (vc *VoteSync) brokerSettle() error {
+	for {
+		oldStart := 0
+		// TODO call broker contract settle
+		newStart, err := vc.readBrokerSettleStart()
+		if err != nil {
+			return err
+		}
+		if oldStart == newStart {
+			return nil
+		}
+	}
+}
+
+func (vc *VoteSync) settle() error {
+	zap.L().Info("Start broker settle process.")
+	// freeze broker
+	if err := vc.brokerFreezeOrReset("freeze"); err != nil {
+		return errors.Wrap(err, "broker freeze error")
+	}
+	zap.L().Info("Finished broker freeze.")
+
+	// settle broker
+	if err := vc.brokerSettle(); err != nil {
+		return errors.Wrap(err, "broker settle error")
+	}
+	zap.L().Info("Finished broker settle.")
+
+	// reset broker
+	if err := vc.brokerFreezeOrReset("reset"); err != nil {
+		return errors.Wrap(err, "broker reset error")
+	}
+	zap.L().Info("Finished broker reset.")
+	return nil
 }
 
 func (vc *VoteSync) updateVotingPowers(addrs []common.Address, weights []*big.Int) error {

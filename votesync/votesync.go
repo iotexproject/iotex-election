@@ -155,6 +155,10 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 		return nil, err
 	}
 	brokerContractAddress, err := toIoAddress(addr)
+	if err != nil {
+		return nil, err
+	}
+
 	lastUpdateHeight := new(big.Int)
 	if err = readContract(
 		service,
@@ -190,8 +194,8 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 	lastBrokerUpdateHeight := new(big.Int)
 	if err = readContract(
 		service,
-		contract.RotatableVPSABI,
-		vpsContractAddress,
+		contract.VitaABI,
+		cfg.VitaContractAddress,
 		"lastDonatePoolClaimViewID",
 		operatorAccount.Address(),
 		&lastBrokerUpdateHeight,

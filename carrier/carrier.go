@@ -13,6 +13,7 @@ package carrier
 import (
 	"context"
 	"math/big"
+	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -51,6 +52,7 @@ type Carrier interface {
 type EthClientPool struct {
 	clientURLs []string
 	client     *ethclient.Client
+	lock       sync.RWMutex
 }
 
 // NewEthClientPool creates a new pool
@@ -63,24 +65,36 @@ func NewEthClientPool(urls []string) *EthClientPool {
 
 // Close closes the current client if available
 func (pool *EthClientPool) Close() {
-	if pool.client != nil {
-		pool.client.Close()
-		pool.client = nil
+	pool.swapClient(nil)
+}
+
+func (pool *EthClientPool) swapClient(client *ethclient.Client) {
+	pool.lock.Lock()
+	defer pool.lock.Unlock()
+	if pool.client != client {
+		if pool.client != nil {
+			pool.client.Close()
+		}
+		pool.client = client
 	}
+}
+
+func (pool *EthClientPool) execute(callback func(c *ethclient.Client) error, client *ethclient.Client) error {
+	pool.lock.RLock()
+	defer pool.lock.RUnlock()
+	if client != nil {
+		return callback(client)
+	}
+	if pool.client != nil {
+		return callback(pool.client)
+	}
+	return errors.New("no client available")
 }
 
 // Execute executes callback by rotating all client urls
 func (pool *EthClientPool) Execute(callback func(c *ethclient.Client) error) (err error) {
-	if pool.client != nil {
-		if err = callback(pool.client); err == nil {
-			return
-		}
-		pool.client.Close()
-		pool.client = nil
-		zap.L().Error(
-			"failed to use previous client",
-			zap.Error(err),
-		)
+	if err = pool.execute(callback, nil); err == nil {
+		return
 	}
 	var client *ethclient.Client
 	for i := 0; i < len(pool.clientURLs); i++ {
@@ -92,11 +106,10 @@ func (pool *EthClientPool) Execute(callback func(c *ethclient.Client) error) (er
 			)
 			continue
 		}
-		if err = callback(client); err == nil {
-			pool.client = client
+		if err = pool.execute(callback, client); err == nil {
+			pool.swapClient(client)
 			return
 		}
-		client.Close()
 	}
 	return errors.Wrap(err, "failed to execute callback with any client")
 }

@@ -15,6 +15,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/iotexproject/go-pkgs/crypto"
+	"github.com/iotexproject/iotex-address/address"
 	"github.com/iotexproject/iotex-antenna-go/account"
 	"github.com/iotexproject/iotex-antenna-go/iotx"
 	"github.com/iotexproject/iotex-election/carrier"
@@ -92,6 +93,18 @@ func readContract(
 	return parsed.Unpack(retval, method, decoded)
 }
 
+func toIoAddress(addr common.Address) (string, error) {
+	pkhash, err := hex.DecodeString(strings.TrimLeft(addr.String(), "0x"))
+	if err != nil {
+		return "", err
+	}
+	ioaddr, err := address.FromBytes(pkhash)
+	if err != nil {
+		return "", err
+	}
+	return ioaddr.String(), nil
+}
+
 func NewVoteSync(cfg Config) (*VoteSync, error) {
 	carrier, err := carrier.NewEthereumVoteCarrier(
 		cfg.GravityChainAPIs,
@@ -116,33 +129,37 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 	if service.Accounts.AddAccount(operatorAccount); err != nil {
 		return nil, err
 	}
-	var vpsContractAddress common.Address
+	var addr common.Address
 	if err = readContract(
 		service,
 		contract.VitaABI,
 		cfg.VitaContractAddress,
 		"vps",
 		operatorAccount.Address(),
-		&vpsContractAddress,
+		&addr,
 	); err != nil {
 		return nil, err
 	}
-	var brokerContractAddress common.Address
+	vpsContractAddress, err := toIoAddress(addr)
+	if err != nil {
+		return nil, err
+	}
 	if err = readContract(
 		service,
 		contract.VitaABI,
 		cfg.VitaContractAddress,
 		"donatePoolAddress",
 		operatorAccount.Address(),
-		&brokerContractAddress,
+		&addr,
 	); err != nil {
 		return nil, err
 	}
+	brokerContractAddress, err := toIoAddress(addr)
 	lastUpdateHeight := new(big.Int)
 	if err = readContract(
 		service,
 		contract.RotatableVPSABI,
-		vpsContractAddress.String(),
+		vpsContractAddress,
 		"viewID",
 		operatorAccount.Address(),
 		&lastUpdateHeight,
@@ -158,7 +175,7 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 	if err = readContract(
 		service,
 		contract.RotatableVPSABI,
-		vpsContractAddress.String(),
+		vpsContractAddress,
 		"inactiveViewID",
 		operatorAccount.Address(),
 		&lastViewHeight,
@@ -174,7 +191,7 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 	if err = readContract(
 		service,
 		contract.RotatableVPSABI,
-		vpsContractAddress.String(),
+		vpsContractAddress,
 		"lastDonatePoolClaimViewID",
 		operatorAccount.Address(),
 		&lastBrokerUpdateHeight,
@@ -184,8 +201,8 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 	return &VoteSync{
 		carrier:                carrier,
 		vitaContractAddress:    cfg.VitaContractAddress,
-		vpsContractAddress:     vpsContractAddress.String(),
-		brokerContractAddress:  brokerContractAddress.String(),
+		vpsContractAddress:     vpsContractAddress,
+		brokerContractAddress:  brokerContractAddress,
 		operator:               operatorAccount.Address(),
 		service:                service,
 		timeInternal:           cfg.GravityChainTimeInterval,

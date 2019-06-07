@@ -134,7 +134,7 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 		cfg.VitaContractAddress,
 		"donatePoolAddress",
 		operatorAccount.Address(),
-		&vpsContractAddress,
+		&brokerContractAddress,
 	); err != nil {
 		return nil, err
 	}

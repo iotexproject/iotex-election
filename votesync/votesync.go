@@ -24,18 +24,19 @@ import (
 )
 
 type VoteSync struct {
-	operator              string
-	vpsContractAddress    string
-	brokerContractAddress string
-	service               *iotx.Iotx
-	carrier               carrier.Carrier
-	lastViewHeight        uint64
-	lastViewTimestamp     time.Time
-	lastUpdateHeight      uint64
-	lastUpdateTimestamp   time.Time
-	timeInternal          time.Duration
-	paginationSize        uint8
-	terminate             chan bool
+	operator               string
+	vpsContractAddress     string
+	brokerContractAddress  string
+	service                *iotx.Iotx
+	carrier                carrier.Carrier
+	lastViewHeight         uint64
+	lastViewTimestamp      time.Time
+	lastUpdateHeight       uint64
+	lastBrokerUpdateHeight uint64
+	lastUpdateTimestamp    time.Time
+	timeInternal           time.Duration
+	paginationSize         uint8
+	terminate              chan bool
 }
 
 type Config struct {
@@ -144,19 +145,23 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// TODO get last broker update height
+	lastBrokerUpdateHeight := lastViewHeight.Uint64()
 	return &VoteSync{
-		carrier:               carrier,
-		vpsContractAddress:    cfg.VotingSystemContractAddress,
-		brokerContractAddress: cfg.VotaBrokerContractAddress,
-		operator:              operatorAccount.Address(),
-		service:               service,
-		timeInternal:          cfg.GravityChainTimeInterval,
-		paginationSize:        cfg.PaginationSize,
-		lastViewHeight:        lastViewHeight.Uint64(),
-		lastViewTimestamp:     lastViewTimestamp,
-		lastUpdateHeight:      lastUpdateHeight.Uint64(),
-		lastUpdateTimestamp:   lastUpdateTimestamp,
-		terminate:             make(chan bool),
+		carrier:                carrier,
+		vpsContractAddress:     cfg.VotingSystemContractAddress,
+		brokerContractAddress:  cfg.VotaBrokerContractAddress,
+		operator:               operatorAccount.Address(),
+		service:                service,
+		timeInternal:           cfg.GravityChainTimeInterval,
+		paginationSize:         cfg.PaginationSize,
+		lastViewHeight:         lastViewHeight.Uint64(),
+		lastViewTimestamp:      lastViewTimestamp,
+		lastUpdateHeight:       lastUpdateHeight.Uint64(),
+		lastUpdateTimestamp:    lastUpdateTimestamp,
+		lastBrokerUpdateHeight: lastBrokerUpdateHeight,
+		terminate:              make(chan bool),
 	}, nil
 }
 
@@ -176,12 +181,15 @@ func (vc *VoteSync) Start(ctx context.Context) {
 				return
 			case tip := <-tipChan:
 				if tip.BlockTime.After(vc.lastUpdateTimestamp.Add(vc.timeInternal)) {
-					if err := vc.settle(); err != nil {
-						zap.L().Error("failed to settle broker", zap.Error(err))
-						continue
-					}
 					if err := vc.sync(vc.lastViewHeight, tip.Height, vc.lastViewTimestamp, tip.BlockTime); err != nil {
 						zap.L().Error("failed to sync votes", zap.Error(err))
+						continue
+					}
+				}
+
+				if vc.lastUpdateHeight > vc.lastBrokerUpdateHeight {
+					if err := vc.settle(vc.lastUpdateHeight); err != nil {
+						zap.L().Error("failed to settle broker", zap.Error(err))
 					}
 				}
 			case err := <-errChan:
@@ -253,7 +261,7 @@ func (vc *VoteSync) brokerSettle() error {
 	}
 }
 
-func (vc *VoteSync) settle() error {
+func (vc *VoteSync) settle(h uint64) error {
 	zap.L().Info("Start broker settle process.")
 	// freeze broker
 	if err := vc.brokerFreezeOrReset("freeze"); err != nil {
@@ -271,6 +279,7 @@ func (vc *VoteSync) settle() error {
 	if err := vc.brokerFreezeOrReset("reset"); err != nil {
 		return errors.Wrap(err, "broker reset error")
 	}
+	vc.lastBrokerUpdateHeight = h
 	zap.L().Info("Finished broker reset.")
 	return nil
 }

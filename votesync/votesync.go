@@ -227,6 +227,7 @@ func (vc *VoteSync) Start(ctx context.Context) {
 
 	zap.L().Info("Start VoteSync.",
 		zap.Uint64("lastUpdateHeight", vc.lastUpdateHeight),
+		zap.Uint64("lastBrokerUpdateHeight", vc.lastBrokerUpdateHeight),
 		zap.Uint64("lastViewID", vc.lastViewHeight),
 	)
 	go func() {
@@ -276,13 +277,13 @@ func (vc *VoteSync) checkExecutionByHash(hash string) error {
 	return err
 }
 
-func (vc *VoteSync) brokerUnpause() error {
+func (vc *VoteSync) brokerReset() error {
 	return backoff.Retry(func() error {
 		hash, err := vc.service.ExecuteContract(&iotx.ContractRequest{
 			Address:  vc.brokerContractAddress,
 			From:     vc.operator,
 			Abi:      contract.BrokerABI,
-			Method:   "unpause",
+			Method:   "reset",
 			Amount:   "0",
 			GasLimit: "5000000",
 			GasPrice: "1",
@@ -339,21 +340,23 @@ func (vc *VoteSync) brokerSettle() error {
 		if oldStart == newStart {
 			return nil
 		}
+		oldStart = newStart
 	}
 }
 
 func (vc *VoteSync) settle(h uint64) error {
-	zap.L().Info("Start broker settle process.")
+	l := zap.L().With(zap.Uint64("lastBrokerUpdateHeight", vc.lastBrokerUpdateHeight))
+	l.Info("Start broker settle process.")
 	// settle broker
 	if err := vc.brokerSettle(); err != nil {
 		return errors.Wrap(err, "broker settle error")
 	}
-	zap.L().Info("Finished broker settle.")
-	if err := vc.brokerUnpause(); err != nil {
-		return errors.Wrap(err, "broker unpause error")
+	l.Info("Finished broker settle.")
+	if err := vc.brokerReset(); err != nil {
+		return errors.Wrap(err, "broker reset error")
 	}
 	vc.lastBrokerUpdateHeight = h
-	zap.L().Info("Finished broker unpause.")
+	l.Info("Finished broker reset.", zap.Uint64("brokerUpdatedHeight", h))
 	return nil
 }
 

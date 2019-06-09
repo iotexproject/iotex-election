@@ -17,6 +17,7 @@ require (
 	github.com/golang/protobuf v1.3.1
 	github.com/google/pprof v0.0.0-20190515194954-54271f7e092f // indirect
 	github.com/iotexproject/go-pkgs v0.1.1-0.20190513193226-f065b9342b78
+	github.com/iotexproject/iotex-address v0.2.0
 	github.com/iotexproject/iotex-antenna-go v0.0.0-20190522194402-4d96cae2af68
 	github.com/iotexproject/iotex-core v0.7.0 // indirect
 	github.com/iotexproject/iotex-proto v0.2.1-0.20190520183050-e748b9589841

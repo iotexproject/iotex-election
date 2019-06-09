@@ -19,17 +19,18 @@ committee:
   cacheSize: 100
 
 
-enableVoteSync: false
+enableVoteSync: true
 voteSync:
   gravityChainAPIs:
-  - https://mainnet.infura.io/v3/b355cae6fafc4302b106b937ee6c15af
-  gravityChainTimeInterval: 24h
+  - https://mainnet.infura.io/v3/6af04e7e165d47faaa5ef375aaf60792
+  gravityChainTimeInterval: 10m
   operatorPrivateKey: "a000000000000000000000000000000000000000000000000000000000000000"
   ioTeXAPI: "api.testnet.iotex.one:443"
-  votingSystemContractAddress: "io1kep76e8z6xlcn6hr97wa7ykjnhfvz5uc3nlt5g"
+  vitaContractAddress: "io1yd2wyrj0z44qjdy4g5ahvr70xupr5arp2n86hu"
   registerContractAddress: "0x95724986563028deb58f15c5fac19fa09304f32d"
   stakingContractAddress: "0x87c9dbff0016af23f5b1ab9b8e072124ab729193"
   paginationSize: 100
+  brokerPaginationSize: 20
 
 
 

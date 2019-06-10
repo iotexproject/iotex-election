@@ -37,20 +37,6 @@
 		"type": "function"
 	},
 	{
-		"constant": false,
-		"inputs": [
-			{
-				"name": "_newDonatePool",
-				"type": "address"
-			}
-		],
-		"name": "setDonatePoolAddress",
-		"outputs": [],
-		"payable": false,
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
 		"constant": true,
 		"inputs": [],
 		"name": "lastDecayHeight",
@@ -145,6 +131,20 @@
 		],
 		"payable": false,
 		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "donationPoolAddress",
+		"outputs": [
+			{
+				"name": "",
+				"type": "address"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
 		"type": "function"
 	},
 	{
@@ -283,6 +283,20 @@
 		"type": "function"
 	},
 	{
+		"constant": true,
+		"inputs": [],
+		"name": "lastDonationPoolClaimViewID",
+		"outputs": [
+			{
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
 		"constant": false,
 		"inputs": [
 			{
@@ -303,20 +317,6 @@
 		],
 		"payable": false,
 		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"constant": true,
-		"inputs": [],
-		"name": "donatePoolSize",
-		"outputs": [
-			{
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
 		"type": "function"
 	},
 	{
@@ -342,20 +342,6 @@
 		"constant": true,
 		"inputs": [],
 		"name": "nextDecayHeight",
-		"outputs": [
-			{
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"constant": true,
-		"inputs": [],
-		"name": "lastDonatePoolClaimViewID",
 		"outputs": [
 			{
 				"name": "",
@@ -393,20 +379,6 @@
 		"constant": true,
 		"inputs": [],
 		"name": "owner",
-		"outputs": [
-			{
-				"name": "",
-				"type": "address"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"constant": true,
-		"inputs": [],
-		"name": "donatePoolAddress",
 		"outputs": [
 			{
 				"name": "",
@@ -483,12 +455,17 @@
 		"type": "function"
 	},
 	{
-		"constant": false,
+		"constant": true,
 		"inputs": [],
-		"name": "updateCycle",
-		"outputs": [],
+		"name": "donationPoolSize",
+		"outputs": [
+			{
+				"name": "",
+				"type": "uint256"
+			}
+		],
 		"payable": false,
-		"stateMutability": "nonpayable",
+		"stateMutability": "view",
 		"type": "function"
 	},
 	{
@@ -569,6 +546,20 @@
 		"constant": false,
 		"inputs": [
 			{
+				"name": "_newDonationPool",
+				"type": "address"
+			}
+		],
+		"name": "setDonationPoolAddress",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
 				"name": "newOwner",
 				"type": "address"
 			}
@@ -594,7 +585,7 @@
 				"type": "address"
 			},
 			{
-				"name": "_donatePoolAddress",
+				"name": "_donationPoolAddress",
 				"type": "address"
 			}
 		],
@@ -639,6 +630,18 @@
 			}
 		],
 		"name": "Decay",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"name": "viewID",
+				"type": "uint256"
+			}
+		],
+		"name": "UpdateView",
 		"type": "event"
 	},
 	{

@@ -28,7 +28,7 @@ var (
 )
 
 // VitaABI is the input ABI used to generate the binding from.
-const VitaABI = "[{\"constant\":true,\"inputs\":[],\"name\":\"name\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_spender\",\"type\":\"address\"},{\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"approve\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_newDonatePool\",\"type\":\"address\"}],\"name\":\"setDonatePoolAddress\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"lastDecayHeight\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"cycleIncrementalSupply\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"totalSupply\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"decayedIncrementalSupply\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"rewardPoolSize\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_from\",\"type\":\"address\"},{\"name\":\"_to\",\"type\":\"address\"},{\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"transferFrom\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"decimals\",\"outputs\":[{\"name\":\"\",\"type\":\"uint8\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"address\"}],\"name\":\"lastClaimViewIDs\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"stakingPoolSize\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_newVPS\",\"type\":\"address\"}],\"name\":\"setVPS\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"unpause\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"genesisPoolAddress\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"burn\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"claim\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"vps\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"paused\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_spender\",\"type\":\"address\"},{\"name\":\"_subtractedValue\",\"type\":\"uint256\"}],\"name\":\"decreaseApproval\",\"outputs\":[{\"name\":\"success\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"donatePoolSize\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_owner\",\"type\":\"address\"}],\"name\":\"balanceOf\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"nextDecayHeight\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"lastDonatePoolClaimViewID\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"pause\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"rewardPoolAddress\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"donatePoolAddress\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"symbol\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_to\",\"type\":\"address\"},{\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"transfer\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"claimable\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_newRewardPool\",\"type\":\"address\"}],\"name\":\"setRewardPoolAddress\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"updateCycle\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"lastRewardPoolClaimViewID\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_spender\",\"type\":\"address\"},{\"name\":\"_addedValue\",\"type\":\"uint256\"}],\"name\":\"increaseApproval\",\"outputs\":[{\"name\":\"success\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_owner\",\"type\":\"address\"},{\"name\":\"_spender\",\"type\":\"address\"}],\"name\":\"allowance\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"incrementalSupply\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"name\":\"_vps\",\"type\":\"address\"},{\"name\":\"_genesisPoolAddress\",\"type\":\"address\"},{\"name\":\"_rewardPoolAddress\",\"type\":\"address\"},{\"name\":\"_donatePoolAddress\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"claimer\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"amount\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"viewID\",\"type\":\"uint256\"}],\"name\":\"Claim\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"height\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"incremetnalSupply\",\"type\":\"uint256\"}],\"name\":\"Decay\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"Pause\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"Unpause\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"spender\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"Approval\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"from\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"to\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"Transfer\",\"type\":\"event\"}]"
+const VitaABI = "[{\"constant\":true,\"inputs\":[],\"name\":\"name\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_spender\",\"type\":\"address\"},{\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"approve\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"lastDecayHeight\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"cycleIncrementalSupply\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"totalSupply\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"decayedIncrementalSupply\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"rewardPoolSize\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_from\",\"type\":\"address\"},{\"name\":\"_to\",\"type\":\"address\"},{\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"transferFrom\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"donationPoolAddress\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"decimals\",\"outputs\":[{\"name\":\"\",\"type\":\"uint8\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"address\"}],\"name\":\"lastClaimViewIDs\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"stakingPoolSize\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_newVPS\",\"type\":\"address\"}],\"name\":\"setVPS\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"unpause\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"genesisPoolAddress\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"burn\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"claim\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"vps\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"paused\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"lastDonationPoolClaimViewID\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_spender\",\"type\":\"address\"},{\"name\":\"_subtractedValue\",\"type\":\"uint256\"}],\"name\":\"decreaseApproval\",\"outputs\":[{\"name\":\"success\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_owner\",\"type\":\"address\"}],\"name\":\"balanceOf\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"nextDecayHeight\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"pause\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"rewardPoolAddress\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"symbol\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_to\",\"type\":\"address\"},{\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"transfer\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"claimable\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_newRewardPool\",\"type\":\"address\"}],\"name\":\"setRewardPoolAddress\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"donationPoolSize\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"lastRewardPoolClaimViewID\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_spender\",\"type\":\"address\"},{\"name\":\"_addedValue\",\"type\":\"uint256\"}],\"name\":\"increaseApproval\",\"outputs\":[{\"name\":\"success\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_owner\",\"type\":\"address\"},{\"name\":\"_spender\",\"type\":\"address\"}],\"name\":\"allowance\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"incrementalSupply\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_newDonationPool\",\"type\":\"address\"}],\"name\":\"setDonationPoolAddress\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"name\":\"_vps\",\"type\":\"address\"},{\"name\":\"_genesisPoolAddress\",\"type\":\"address\"},{\"name\":\"_rewardPoolAddress\",\"type\":\"address\"},{\"name\":\"_donationPoolAddress\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"claimer\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"amount\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"viewID\",\"type\":\"uint256\"}],\"name\":\"Claim\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"height\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"incremetnalSupply\",\"type\":\"uint256\"}],\"name\":\"Decay\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"viewID\",\"type\":\"uint256\"}],\"name\":\"UpdateView\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"Pause\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"Unpause\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"spender\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"Approval\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"from\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"to\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"Transfer\",\"type\":\"event\"}]"
 
 // Vita is an auto generated Go binding around an Ethereum contract.
 type Vita struct {
@@ -328,56 +328,56 @@ func (_Vita *VitaCallerSession) Decimals() (uint8, error) {
 	return _Vita.Contract.Decimals(&_Vita.CallOpts)
 }
 
-// DonatePoolAddress is a free data retrieval call binding the contract method 0x92ad7206.
+// DonationPoolAddress is a free data retrieval call binding the contract method 0x280e6434.
 //
-// Solidity: function donatePoolAddress() constant returns(address)
-func (_Vita *VitaCaller) DonatePoolAddress(opts *bind.CallOpts) (common.Address, error) {
+// Solidity: function donationPoolAddress() constant returns(address)
+func (_Vita *VitaCaller) DonationPoolAddress(opts *bind.CallOpts) (common.Address, error) {
 	var (
 		ret0 = new(common.Address)
 	)
 	out := ret0
-	err := _Vita.contract.Call(opts, out, "donatePoolAddress")
+	err := _Vita.contract.Call(opts, out, "donationPoolAddress")
 	return *ret0, err
 }
 
-// DonatePoolAddress is a free data retrieval call binding the contract method 0x92ad7206.
+// DonationPoolAddress is a free data retrieval call binding the contract method 0x280e6434.
 //
-// Solidity: function donatePoolAddress() constant returns(address)
-func (_Vita *VitaSession) DonatePoolAddress() (common.Address, error) {
-	return _Vita.Contract.DonatePoolAddress(&_Vita.CallOpts)
+// Solidity: function donationPoolAddress() constant returns(address)
+func (_Vita *VitaSession) DonationPoolAddress() (common.Address, error) {
+	return _Vita.Contract.DonationPoolAddress(&_Vita.CallOpts)
 }
 
-// DonatePoolAddress is a free data retrieval call binding the contract method 0x92ad7206.
+// DonationPoolAddress is a free data retrieval call binding the contract method 0x280e6434.
 //
-// Solidity: function donatePoolAddress() constant returns(address)
-func (_Vita *VitaCallerSession) DonatePoolAddress() (common.Address, error) {
-	return _Vita.Contract.DonatePoolAddress(&_Vita.CallOpts)
+// Solidity: function donationPoolAddress() constant returns(address)
+func (_Vita *VitaCallerSession) DonationPoolAddress() (common.Address, error) {
+	return _Vita.Contract.DonationPoolAddress(&_Vita.CallOpts)
 }
 
-// DonatePoolSize is a free data retrieval call binding the contract method 0x6d4324f4.
+// DonationPoolSize is a free data retrieval call binding the contract method 0xc7f3a874.
 //
-// Solidity: function donatePoolSize() constant returns(uint256)
-func (_Vita *VitaCaller) DonatePoolSize(opts *bind.CallOpts) (*big.Int, error) {
+// Solidity: function donationPoolSize() constant returns(uint256)
+func (_Vita *VitaCaller) DonationPoolSize(opts *bind.CallOpts) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
 	)
 	out := ret0
-	err := _Vita.contract.Call(opts, out, "donatePoolSize")
+	err := _Vita.contract.Call(opts, out, "donationPoolSize")
 	return *ret0, err
 }
 
-// DonatePoolSize is a free data retrieval call binding the contract method 0x6d4324f4.
+// DonationPoolSize is a free data retrieval call binding the contract method 0xc7f3a874.
 //
-// Solidity: function donatePoolSize() constant returns(uint256)
-func (_Vita *VitaSession) DonatePoolSize() (*big.Int, error) {
-	return _Vita.Contract.DonatePoolSize(&_Vita.CallOpts)
+// Solidity: function donationPoolSize() constant returns(uint256)
+func (_Vita *VitaSession) DonationPoolSize() (*big.Int, error) {
+	return _Vita.Contract.DonationPoolSize(&_Vita.CallOpts)
 }
 
-// DonatePoolSize is a free data retrieval call binding the contract method 0x6d4324f4.
+// DonationPoolSize is a free data retrieval call binding the contract method 0xc7f3a874.
 //
-// Solidity: function donatePoolSize() constant returns(uint256)
-func (_Vita *VitaCallerSession) DonatePoolSize() (*big.Int, error) {
-	return _Vita.Contract.DonatePoolSize(&_Vita.CallOpts)
+// Solidity: function donationPoolSize() constant returns(uint256)
+func (_Vita *VitaCallerSession) DonationPoolSize() (*big.Int, error) {
+	return _Vita.Contract.DonationPoolSize(&_Vita.CallOpts)
 }
 
 // GenesisPoolAddress is a free data retrieval call binding the contract method 0x4063971c.
@@ -484,30 +484,30 @@ func (_Vita *VitaCallerSession) LastDecayHeight() (*big.Int, error) {
 	return _Vita.Contract.LastDecayHeight(&_Vita.CallOpts)
 }
 
-// LastDonatePoolClaimViewID is a free data retrieval call binding the contract method 0x80b98eb7.
+// LastDonationPoolClaimViewID is a free data retrieval call binding the contract method 0x64a23687.
 //
-// Solidity: function lastDonatePoolClaimViewID() constant returns(uint256)
-func (_Vita *VitaCaller) LastDonatePoolClaimViewID(opts *bind.CallOpts) (*big.Int, error) {
+// Solidity: function lastDonationPoolClaimViewID() constant returns(uint256)
+func (_Vita *VitaCaller) LastDonationPoolClaimViewID(opts *bind.CallOpts) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
 	)
 	out := ret0
-	err := _Vita.contract.Call(opts, out, "lastDonatePoolClaimViewID")
+	err := _Vita.contract.Call(opts, out, "lastDonationPoolClaimViewID")
 	return *ret0, err
 }
 
-// LastDonatePoolClaimViewID is a free data retrieval call binding the contract method 0x80b98eb7.
+// LastDonationPoolClaimViewID is a free data retrieval call binding the contract method 0x64a23687.
 //
-// Solidity: function lastDonatePoolClaimViewID() constant returns(uint256)
-func (_Vita *VitaSession) LastDonatePoolClaimViewID() (*big.Int, error) {
-	return _Vita.Contract.LastDonatePoolClaimViewID(&_Vita.CallOpts)
+// Solidity: function lastDonationPoolClaimViewID() constant returns(uint256)
+func (_Vita *VitaSession) LastDonationPoolClaimViewID() (*big.Int, error) {
+	return _Vita.Contract.LastDonationPoolClaimViewID(&_Vita.CallOpts)
 }
 
-// LastDonatePoolClaimViewID is a free data retrieval call binding the contract method 0x80b98eb7.
+// LastDonationPoolClaimViewID is a free data retrieval call binding the contract method 0x64a23687.
 //
-// Solidity: function lastDonatePoolClaimViewID() constant returns(uint256)
-func (_Vita *VitaCallerSession) LastDonatePoolClaimViewID() (*big.Int, error) {
-	return _Vita.Contract.LastDonatePoolClaimViewID(&_Vita.CallOpts)
+// Solidity: function lastDonationPoolClaimViewID() constant returns(uint256)
+func (_Vita *VitaCallerSession) LastDonationPoolClaimViewID() (*big.Int, error) {
+	return _Vita.Contract.LastDonationPoolClaimViewID(&_Vita.CallOpts)
 }
 
 // LastRewardPoolClaimViewID is a free data retrieval call binding the contract method 0xca8153aa.
@@ -922,25 +922,25 @@ func (_Vita *VitaTransactorSession) Pause() (*types.Transaction, error) {
 	return _Vita.Contract.Pause(&_Vita.TransactOpts)
 }
 
-// SetDonatePoolAddress is a paid mutator transaction binding the contract method 0x10f5a5c0.
+// SetDonationPoolAddress is a paid mutator transaction binding the contract method 0xed644211.
 //
-// Solidity: function setDonatePoolAddress(address _newDonatePool) returns()
-func (_Vita *VitaTransactor) SetDonatePoolAddress(opts *bind.TransactOpts, _newDonatePool common.Address) (*types.Transaction, error) {
-	return _Vita.contract.Transact(opts, "setDonatePoolAddress", _newDonatePool)
+// Solidity: function setDonationPoolAddress(address _newDonationPool) returns()
+func (_Vita *VitaTransactor) SetDonationPoolAddress(opts *bind.TransactOpts, _newDonationPool common.Address) (*types.Transaction, error) {
+	return _Vita.contract.Transact(opts, "setDonationPoolAddress", _newDonationPool)
 }
 
-// SetDonatePoolAddress is a paid mutator transaction binding the contract method 0x10f5a5c0.
+// SetDonationPoolAddress is a paid mutator transaction binding the contract method 0xed644211.
 //
-// Solidity: function setDonatePoolAddress(address _newDonatePool) returns()
-func (_Vita *VitaSession) SetDonatePoolAddress(_newDonatePool common.Address) (*types.Transaction, error) {
-	return _Vita.Contract.SetDonatePoolAddress(&_Vita.TransactOpts, _newDonatePool)
+// Solidity: function setDonationPoolAddress(address _newDonationPool) returns()
+func (_Vita *VitaSession) SetDonationPoolAddress(_newDonationPool common.Address) (*types.Transaction, error) {
+	return _Vita.Contract.SetDonationPoolAddress(&_Vita.TransactOpts, _newDonationPool)
 }
 
-// SetDonatePoolAddress is a paid mutator transaction binding the contract method 0x10f5a5c0.
+// SetDonationPoolAddress is a paid mutator transaction binding the contract method 0xed644211.
 //
-// Solidity: function setDonatePoolAddress(address _newDonatePool) returns()
-func (_Vita *VitaTransactorSession) SetDonatePoolAddress(_newDonatePool common.Address) (*types.Transaction, error) {
-	return _Vita.Contract.SetDonatePoolAddress(&_Vita.TransactOpts, _newDonatePool)
+// Solidity: function setDonationPoolAddress(address _newDonationPool) returns()
+func (_Vita *VitaTransactorSession) SetDonationPoolAddress(_newDonationPool common.Address) (*types.Transaction, error) {
+	return _Vita.Contract.SetDonationPoolAddress(&_Vita.TransactOpts, _newDonationPool)
 }
 
 // SetRewardPoolAddress is a paid mutator transaction binding the contract method 0xb24cf5d7.
@@ -1067,27 +1067,6 @@ func (_Vita *VitaSession) Unpause() (*types.Transaction, error) {
 // Solidity: function unpause() returns()
 func (_Vita *VitaTransactorSession) Unpause() (*types.Transaction, error) {
 	return _Vita.Contract.Unpause(&_Vita.TransactOpts)
-}
-
-// UpdateCycle is a paid mutator transaction binding the contract method 0xc65af622.
-//
-// Solidity: function updateCycle() returns()
-func (_Vita *VitaTransactor) UpdateCycle(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _Vita.contract.Transact(opts, "updateCycle")
-}
-
-// UpdateCycle is a paid mutator transaction binding the contract method 0xc65af622.
-//
-// Solidity: function updateCycle() returns()
-func (_Vita *VitaSession) UpdateCycle() (*types.Transaction, error) {
-	return _Vita.Contract.UpdateCycle(&_Vita.TransactOpts)
-}
-
-// UpdateCycle is a paid mutator transaction binding the contract method 0xc65af622.
-//
-// Solidity: function updateCycle() returns()
-func (_Vita *VitaTransactorSession) UpdateCycle() (*types.Transaction, error) {
-	return _Vita.Contract.UpdateCycle(&_Vita.TransactOpts)
 }
 
 // VitaApprovalIterator is returned from FilterApproval and is used to iterate over the raw logs and unpacked data for Approval events raised by the Vita contract.
@@ -1984,6 +1963,128 @@ func (_Vita *VitaFilterer) WatchUnpause(opts *bind.WatchOpts, sink chan<- *VitaU
 				// New log arrived, parse the event and forward to the user
 				event := new(VitaUnpause)
 				if err := _Vita.contract.UnpackLog(event, "Unpause", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// VitaUpdateViewIterator is returned from FilterUpdateView and is used to iterate over the raw logs and unpacked data for UpdateView events raised by the Vita contract.
+type VitaUpdateViewIterator struct {
+	Event *VitaUpdateView // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *VitaUpdateViewIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(VitaUpdateView)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(VitaUpdateView)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *VitaUpdateViewIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *VitaUpdateViewIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// VitaUpdateView represents a UpdateView event raised by the Vita contract.
+type VitaUpdateView struct {
+	ViewID *big.Int
+	Raw    types.Log // Blockchain specific contextual infos
+}
+
+// FilterUpdateView is a free log retrieval operation binding the contract event 0x2087ba3f49fc996df288fe78f79bfa9d28edef119f970f375e2c7305fc4e2bad.
+//
+// Solidity: event UpdateView(uint256 viewID)
+func (_Vita *VitaFilterer) FilterUpdateView(opts *bind.FilterOpts) (*VitaUpdateViewIterator, error) {
+
+	logs, sub, err := _Vita.contract.FilterLogs(opts, "UpdateView")
+	if err != nil {
+		return nil, err
+	}
+	return &VitaUpdateViewIterator{contract: _Vita.contract, event: "UpdateView", logs: logs, sub: sub}, nil
+}
+
+// WatchUpdateView is a free log subscription operation binding the contract event 0x2087ba3f49fc996df288fe78f79bfa9d28edef119f970f375e2c7305fc4e2bad.
+//
+// Solidity: event UpdateView(uint256 viewID)
+func (_Vita *VitaFilterer) WatchUpdateView(opts *bind.WatchOpts, sink chan<- *VitaUpdateView) (event.Subscription, error) {
+
+	logs, sub, err := _Vita.contract.WatchLogs(opts, "UpdateView")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(VitaUpdateView)
+				if err := _Vita.contract.UnpackLog(event, "UpdateView", log); err != nil {
 					return err
 				}
 				event.Raw = log

@@ -26,7 +26,7 @@ voteSync:
   gravityChainTimeInterval: 10m
   operatorPrivateKey: "a000000000000000000000000000000000000000000000000000000000000000"
   ioTeXAPI: "api.testnet.iotex.one:443"
-  vitaContractAddress: "io1yd2wyrj0z44qjdy4g5ahvr70xupr5arp2n86hu"
+  vitaContractAddress: "io1y9ndaezjrdlkw93hquqru7txh9jcsmtmrvt4yw"
   registerContractAddress: "0x95724986563028deb58f15c5fac19fa09304f32d"
   stakingContractAddress: "0x87c9dbff0016af23f5b1ab9b8e072124ab729193"
   paginationSize: 100

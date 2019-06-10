@@ -29,12 +29,14 @@ type VoteSync struct {
 	vitaContractAddress    string
 	vpsContractAddress     string
 	brokerContractAddress  string
+	clerkContractAddress   string
 	service                *iotx.Iotx
 	carrier                carrier.Carrier
 	lastViewHeight         uint64
 	lastViewTimestamp      time.Time
 	lastUpdateHeight       uint64
 	lastBrokerUpdateHeight uint64
+	lastClerkUpdateHeight  uint64
 	lastUpdateTimestamp    time.Time
 	timeInternal           time.Duration
 	paginationSize         uint8
@@ -148,13 +150,27 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 		service,
 		contract.VitaABI,
 		cfg.VitaContractAddress,
-		"donatePoolAddress",
+		"donationPoolAddress",
 		operatorAccount.Address(),
 		&addr,
 	); err != nil {
 		return nil, err
 	}
 	brokerContractAddress, err := toIoAddress(addr)
+	if err != nil {
+		return nil, err
+	}
+	if err = readContract(
+		service,
+		contract.VitaABI,
+		cfg.VitaContractAddress,
+		"rewardPoolAddress",
+		operatorAccount.Address(),
+		&addr,
+	); err != nil {
+		return nil, err
+	}
+	clerkContractAddress, err := toIoAddress(addr)
 	if err != nil {
 		return nil, err
 	}
@@ -196,7 +212,18 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 		service,
 		contract.VitaABI,
 		cfg.VitaContractAddress,
-		"lastDonatePoolClaimViewID",
+		"lastDonationPoolClaimViewID",
+		operatorAccount.Address(),
+		&lastBrokerUpdateHeight,
+	); err != nil {
+		return nil, err
+	}
+	lastClerkUpdateHeight := new(big.Int)
+	if err = readContract(
+		service,
+		contract.VitaABI,
+		cfg.VitaContractAddress,
+		"lastRewardPoolClaimViewID",
 		operatorAccount.Address(),
 		&lastBrokerUpdateHeight,
 	); err != nil {
@@ -207,6 +234,7 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 		vitaContractAddress:    cfg.VitaContractAddress,
 		vpsContractAddress:     vpsContractAddress,
 		brokerContractAddress:  brokerContractAddress,
+		clerkContractAddress:   clerkContractAddress,
 		operator:               operatorAccount.Address(),
 		service:                service,
 		timeInternal:           cfg.GravityChainTimeInterval,
@@ -217,6 +245,7 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 		lastUpdateHeight:       lastUpdateHeight.Uint64(),
 		lastUpdateTimestamp:    lastUpdateTimestamp,
 		lastBrokerUpdateHeight: lastBrokerUpdateHeight.Uint64(),
+		lastClerkUpdateHeight:  lastClerkUpdateHeight.Uint64(),
 		terminate:              make(chan bool),
 	}, nil
 }
@@ -247,6 +276,12 @@ func (vc *VoteSync) Start(ctx context.Context) {
 				if vc.lastUpdateHeight > vc.lastBrokerUpdateHeight {
 					if err := vc.settle(vc.lastUpdateHeight); err != nil {
 						zap.L().Error("failed to settle broker", zap.Error(err))
+					}
+				}
+
+				if vc.lastUpdateHeight > vc.lastClerkUpdateHeight {
+					if err := vc.claimForClerk(); err != nil {
+						zap.L().Error("failed to claim for clerk", zap.Error(err))
 					}
 				}
 			case err := <-errChan:
@@ -357,6 +392,31 @@ func (vc *VoteSync) settle(h uint64) error {
 	}
 	vc.lastBrokerUpdateHeight = h
 	l.Info("Finished broker reset.", zap.Uint64("brokerUpdatedHeight", h))
+	return nil
+}
+
+func (vc *VoteSync) claimForClerk() error {
+	l := zap.L().With(zap.Uint64("lastClerkUpdateHeight", vc.lastClerkUpdateHeight))
+	l.Info("Start clerk claim process.")
+	if err := backoff.Retry(func() error {
+		hash, err := vc.service.ExecuteContract(&iotx.ContractRequest{
+			Address:  vc.clerkContractAddress,
+			From:     vc.operator,
+			Abi:      contract.ClerkABI,
+			Method:   "claim",
+			Amount:   "0",
+			GasLimit: "5000000",
+			GasPrice: "1",
+		})
+		if err != nil {
+			return err
+		}
+		time.Sleep(20 * time.Second)
+		return vc.checkExecutionByHash(hash)
+	}, backoff.NewExponentialBackOff()); err != nil {
+		return err
+	}
+	vc.lastClerkUpdateHeight = vc.lastUpdateHeight
 	return nil
 }
 

@@ -200,6 +200,17 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 	reportChan := make(chan error)
 	go func() {
 		zap.L().Info("catching up via network")
+		for h := ec.nextHeight + 10000; h < tip.Height; h += 10000 {
+			zap.L().Info("catching up to", zap.Uint64("height", h))
+			results, errs := ec.fetchInBatch(h)
+			t, err := ec.carrier.BlockTimestamp(h)
+			if err != nil {
+				zap.L().Error("failed to get block timestamp", zap.Uint64("height", h), zap.Error(err))
+			}
+			if err := ec.storeInBatch(results, errs, t); err != nil {
+				zap.L().Error("failed to catch up via network", zap.Uint64("height", h), zap.Error(err))
+			}
+		}
 		results, errs := ec.fetchInBatch(tip.Height)
 		if err := ec.storeInBatch(results, errs, tip.BlockTime); err != nil {
 			zap.L().Error("failed to catch up via network", zap.Error(err))
@@ -212,6 +223,7 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 				ec.terminate <- true
 				return
 			case tip := <-tipChan:
+				zap.L().Info("new ethereum block", zap.Uint64("height", tip.Height))
 				if err := ec.Sync(tip.Height, tip.BlockTime); err != nil {
 					zap.L().Error("failed to sync", zap.Error(err))
 				}
@@ -256,7 +268,6 @@ func (ec *committee) fetchInBatch(tipHeight uint64) (
 	map[uint64]*types.ElectionResult,
 	map[uint64]error,
 ) {
-	zap.L().Info("new ethereum block", zap.Uint64("height", tipHeight))
 	if ec.currentHeight < tipHeight {
 		ec.currentHeight = tipHeight
 	}
@@ -308,6 +319,7 @@ func (ec *committee) storeInBatch(
 		}
 		ec.nextHeight = height + ec.interval
 	}
+	zap.L().Info("synced to", zap.Time("block time", tipTime))
 	atomic.StoreInt64(&ec.lastUpdateTimestamp, tipTime.Unix())
 
 	return nil

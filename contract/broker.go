@@ -28,7 +28,7 @@ var (
 )
 
 // BrokerABI is the input ABI used to generate the binding from.
-const BrokerABI = "[{\"constant\":true,\"inputs\":[{\"name\":\"_address\",\"type\":\"address\"}],\"name\":\"currentBid\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"round\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"bid\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"addrs\",\"type\":\"address[]\"}],\"name\":\"removeAddressesFromWhitelist\",\"outputs\":[{\"name\":\"success\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"removeAddressFromWhitelist\",\"outputs\":[{\"name\":\"success\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"unpause\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"currentNumBids\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"paused\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"nextBidToSettle\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"addAddressToWhitelist\",\"outputs\":[{\"name\":\"success\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_receiver\",\"type\":\"address\"},{\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"transferCollateral\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"pause\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_count\",\"type\":\"uint256\"}],\"name\":\"settle\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"address\"}],\"name\":\"whitelist\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"currentVitaValue\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"currentBidsValue\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"uint256\"},{\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"bidders\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"reset\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"addrs\",\"type\":\"address[]\"}],\"name\":\"addAddressesToWhitelist\",\"outputs\":[{\"name\":\"success\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"name\":\"_vitaTokenAddress\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"round\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"claimedAmount\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"burnedAmount\",\"type\":\"uint256\"}],\"name\":\"NewRound\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"round\",\"type\":\"uint256\"},{\"indexed\":true,\"name\":\"sender\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"collateral\",\"type\":\"uint256\"}],\"name\":\"VitaBidden\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"round\",\"type\":\"uint256\"},{\"indexed\":true,\"name\":\"sender\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"collateral\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"vita\",\"type\":\"uint256\"}],\"name\":\"VitaBought\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"finished\",\"type\":\"bool\"}],\"name\":\"VitaBidsSettled\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"receiver\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"collateral\",\"type\":\"uint256\"}],\"name\":\"CollateralWithdrawn\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"Pause\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"Unpause\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"WhitelistedAddressAdded\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"WhitelistedAddressRemoved\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"}]"
+const BrokerABI = "[{\"constant\":true,\"inputs\":[],\"name\":\"round\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"bid\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_round\",\"type\":\"uint256\"}],\"name\":\"getTotalBidsValue\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"addrs\",\"type\":\"address[]\"}],\"name\":\"removeAddressesFromWhitelist\",\"outputs\":[{\"name\":\"success\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"removeAddressFromWhitelist\",\"outputs\":[{\"name\":\"success\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"unpause\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"paused\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"nextBidToSettle\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"addAddressToWhitelist\",\"outputs\":[{\"name\":\"success\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_receiver\",\"type\":\"address\"},{\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"transferCollateral\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"pause\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_count\",\"type\":\"uint256\"}],\"name\":\"settle\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"address\"}],\"name\":\"whitelist\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_round\",\"type\":\"uint256\"}],\"name\":\"getNumBids\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"reset\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"addrs\",\"type\":\"address[]\"}],\"name\":\"addAddressesToWhitelist\",\"outputs\":[{\"name\":\"success\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_round\",\"type\":\"uint256\"}],\"name\":\"getAvailableVitaValue\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_round\",\"type\":\"uint256\"},{\"name\":\"_address\",\"type\":\"address\"}],\"name\":\"getBid\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"name\":\"_vitaTokenAddress\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"round\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"claimedAmount\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"burnedAmount\",\"type\":\"uint256\"}],\"name\":\"NewRound\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"round\",\"type\":\"uint256\"},{\"indexed\":true,\"name\":\"sender\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"collateral\",\"type\":\"uint256\"}],\"name\":\"VitaBidden\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"round\",\"type\":\"uint256\"},{\"indexed\":true,\"name\":\"sender\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"collateral\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"vita\",\"type\":\"uint256\"}],\"name\":\"VitaBought\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"finished\",\"type\":\"bool\"}],\"name\":\"VitaBidsSettled\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"receiver\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"collateral\",\"type\":\"uint256\"}],\"name\":\"CollateralWithdrawn\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"Pause\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"Unpause\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"WhitelistedAddressAdded\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"WhitelistedAddressRemoved\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"}]"
 
 // Broker is an auto generated Go binding around an Ethereum contract.
 type Broker struct {
@@ -172,134 +172,108 @@ func (_Broker *BrokerTransactorRaw) Transact(opts *bind.TransactOpts, method str
 	return _Broker.Contract.contract.Transact(opts, method, params...)
 }
 
-// Bidders is a free data retrieval call binding the contract method 0xd1c11205.
+// GetAvailableVitaValue is a free data retrieval call binding the contract method 0xe80804be.
 //
-// Solidity: function bidders(uint256 , uint256 ) constant returns(address)
-func (_Broker *BrokerCaller) Bidders(opts *bind.CallOpts, arg0 *big.Int, arg1 *big.Int) (common.Address, error) {
-	var (
-		ret0 = new(common.Address)
-	)
-	out := ret0
-	err := _Broker.contract.Call(opts, out, "bidders", arg0, arg1)
-	return *ret0, err
-}
-
-// Bidders is a free data retrieval call binding the contract method 0xd1c11205.
-//
-// Solidity: function bidders(uint256 , uint256 ) constant returns(address)
-func (_Broker *BrokerSession) Bidders(arg0 *big.Int, arg1 *big.Int) (common.Address, error) {
-	return _Broker.Contract.Bidders(&_Broker.CallOpts, arg0, arg1)
-}
-
-// Bidders is a free data retrieval call binding the contract method 0xd1c11205.
-//
-// Solidity: function bidders(uint256 , uint256 ) constant returns(address)
-func (_Broker *BrokerCallerSession) Bidders(arg0 *big.Int, arg1 *big.Int) (common.Address, error) {
-	return _Broker.Contract.Bidders(&_Broker.CallOpts, arg0, arg1)
-}
-
-// CurrentBid is a free data retrieval call binding the contract method 0x07bfc5db.
-//
-// Solidity: function currentBid(address _address) constant returns(uint256)
-func (_Broker *BrokerCaller) CurrentBid(opts *bind.CallOpts, _address common.Address) (*big.Int, error) {
+// Solidity: function getAvailableVitaValue(uint256 _round) constant returns(uint256)
+func (_Broker *BrokerCaller) GetAvailableVitaValue(opts *bind.CallOpts, _round *big.Int) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
 	)
 	out := ret0
-	err := _Broker.contract.Call(opts, out, "currentBid", _address)
+	err := _Broker.contract.Call(opts, out, "getAvailableVitaValue", _round)
 	return *ret0, err
 }
 
-// CurrentBid is a free data retrieval call binding the contract method 0x07bfc5db.
+// GetAvailableVitaValue is a free data retrieval call binding the contract method 0xe80804be.
 //
-// Solidity: function currentBid(address _address) constant returns(uint256)
-func (_Broker *BrokerSession) CurrentBid(_address common.Address) (*big.Int, error) {
-	return _Broker.Contract.CurrentBid(&_Broker.CallOpts, _address)
+// Solidity: function getAvailableVitaValue(uint256 _round) constant returns(uint256)
+func (_Broker *BrokerSession) GetAvailableVitaValue(_round *big.Int) (*big.Int, error) {
+	return _Broker.Contract.GetAvailableVitaValue(&_Broker.CallOpts, _round)
 }
 
-// CurrentBid is a free data retrieval call binding the contract method 0x07bfc5db.
+// GetAvailableVitaValue is a free data retrieval call binding the contract method 0xe80804be.
 //
-// Solidity: function currentBid(address _address) constant returns(uint256)
-func (_Broker *BrokerCallerSession) CurrentBid(_address common.Address) (*big.Int, error) {
-	return _Broker.Contract.CurrentBid(&_Broker.CallOpts, _address)
+// Solidity: function getAvailableVitaValue(uint256 _round) constant returns(uint256)
+func (_Broker *BrokerCallerSession) GetAvailableVitaValue(_round *big.Int) (*big.Int, error) {
+	return _Broker.Contract.GetAvailableVitaValue(&_Broker.CallOpts, _round)
 }
 
-// CurrentBidsValue is a free data retrieval call binding the contract method 0xbb4e90c2.
+// GetBid is a free data retrieval call binding the contract method 0xeba1b60b.
 //
-// Solidity: function currentBidsValue() constant returns(uint256)
-func (_Broker *BrokerCaller) CurrentBidsValue(opts *bind.CallOpts) (*big.Int, error) {
+// Solidity: function getBid(uint256 _round, address _address) constant returns(uint256)
+func (_Broker *BrokerCaller) GetBid(opts *bind.CallOpts, _round *big.Int, _address common.Address) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
 	)
 	out := ret0
-	err := _Broker.contract.Call(opts, out, "currentBidsValue")
+	err := _Broker.contract.Call(opts, out, "getBid", _round, _address)
 	return *ret0, err
 }
 
-// CurrentBidsValue is a free data retrieval call binding the contract method 0xbb4e90c2.
+// GetBid is a free data retrieval call binding the contract method 0xeba1b60b.
 //
-// Solidity: function currentBidsValue() constant returns(uint256)
-func (_Broker *BrokerSession) CurrentBidsValue() (*big.Int, error) {
-	return _Broker.Contract.CurrentBidsValue(&_Broker.CallOpts)
+// Solidity: function getBid(uint256 _round, address _address) constant returns(uint256)
+func (_Broker *BrokerSession) GetBid(_round *big.Int, _address common.Address) (*big.Int, error) {
+	return _Broker.Contract.GetBid(&_Broker.CallOpts, _round, _address)
 }
 
-// CurrentBidsValue is a free data retrieval call binding the contract method 0xbb4e90c2.
+// GetBid is a free data retrieval call binding the contract method 0xeba1b60b.
 //
-// Solidity: function currentBidsValue() constant returns(uint256)
-func (_Broker *BrokerCallerSession) CurrentBidsValue() (*big.Int, error) {
-	return _Broker.Contract.CurrentBidsValue(&_Broker.CallOpts)
+// Solidity: function getBid(uint256 _round, address _address) constant returns(uint256)
+func (_Broker *BrokerCallerSession) GetBid(_round *big.Int, _address common.Address) (*big.Int, error) {
+	return _Broker.Contract.GetBid(&_Broker.CallOpts, _round, _address)
 }
 
-// CurrentNumBids is a free data retrieval call binding the contract method 0x510f693d.
+// GetNumBids is a free data retrieval call binding the contract method 0x9e0a673f.
 //
-// Solidity: function currentNumBids() constant returns(uint256)
-func (_Broker *BrokerCaller) CurrentNumBids(opts *bind.CallOpts) (*big.Int, error) {
+// Solidity: function getNumBids(uint256 _round) constant returns(uint256)
+func (_Broker *BrokerCaller) GetNumBids(opts *bind.CallOpts, _round *big.Int) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
 	)
 	out := ret0
-	err := _Broker.contract.Call(opts, out, "currentNumBids")
+	err := _Broker.contract.Call(opts, out, "getNumBids", _round)
 	return *ret0, err
 }
 
-// CurrentNumBids is a free data retrieval call binding the contract method 0x510f693d.
+// GetNumBids is a free data retrieval call binding the contract method 0x9e0a673f.
 //
-// Solidity: function currentNumBids() constant returns(uint256)
-func (_Broker *BrokerSession) CurrentNumBids() (*big.Int, error) {
-	return _Broker.Contract.CurrentNumBids(&_Broker.CallOpts)
+// Solidity: function getNumBids(uint256 _round) constant returns(uint256)
+func (_Broker *BrokerSession) GetNumBids(_round *big.Int) (*big.Int, error) {
+	return _Broker.Contract.GetNumBids(&_Broker.CallOpts, _round)
 }
 
-// CurrentNumBids is a free data retrieval call binding the contract method 0x510f693d.
+// GetNumBids is a free data retrieval call binding the contract method 0x9e0a673f.
 //
-// Solidity: function currentNumBids() constant returns(uint256)
-func (_Broker *BrokerCallerSession) CurrentNumBids() (*big.Int, error) {
-	return _Broker.Contract.CurrentNumBids(&_Broker.CallOpts)
+// Solidity: function getNumBids(uint256 _round) constant returns(uint256)
+func (_Broker *BrokerCallerSession) GetNumBids(_round *big.Int) (*big.Int, error) {
+	return _Broker.Contract.GetNumBids(&_Broker.CallOpts, _round)
 }
 
-// CurrentVitaValue is a free data retrieval call binding the contract method 0xaaf768c9.
+// GetTotalBidsValue is a free data retrieval call binding the contract method 0x23702b34.
 //
-// Solidity: function currentVitaValue() constant returns(uint256)
-func (_Broker *BrokerCaller) CurrentVitaValue(opts *bind.CallOpts) (*big.Int, error) {
+// Solidity: function getTotalBidsValue(uint256 _round) constant returns(uint256)
+func (_Broker *BrokerCaller) GetTotalBidsValue(opts *bind.CallOpts, _round *big.Int) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
 	)
 	out := ret0
-	err := _Broker.contract.Call(opts, out, "currentVitaValue")
+	err := _Broker.contract.Call(opts, out, "getTotalBidsValue", _round)
 	return *ret0, err
 }
 
-// CurrentVitaValue is a free data retrieval call binding the contract method 0xaaf768c9.
+// GetTotalBidsValue is a free data retrieval call binding the contract method 0x23702b34.
 //
-// Solidity: function currentVitaValue() constant returns(uint256)
-func (_Broker *BrokerSession) CurrentVitaValue() (*big.Int, error) {
-	return _Broker.Contract.CurrentVitaValue(&_Broker.CallOpts)
+// Solidity: function getTotalBidsValue(uint256 _round) constant returns(uint256)
+func (_Broker *BrokerSession) GetTotalBidsValue(_round *big.Int) (*big.Int, error) {
+	return _Broker.Contract.GetTotalBidsValue(&_Broker.CallOpts, _round)
 }
 
-// CurrentVitaValue is a free data retrieval call binding the contract method 0xaaf768c9.
+// GetTotalBidsValue is a free data retrieval call binding the contract method 0x23702b34.
 //
-// Solidity: function currentVitaValue() constant returns(uint256)
-func (_Broker *BrokerCallerSession) CurrentVitaValue() (*big.Int, error) {
-	return _Broker.Contract.CurrentVitaValue(&_Broker.CallOpts)
+// Solidity: function getTotalBidsValue(uint256 _round) constant returns(uint256)
+func (_Broker *BrokerCallerSession) GetTotalBidsValue(_round *big.Int) (*big.Int, error) {
+	return _Broker.Contract.GetTotalBidsValue(&_Broker.CallOpts, _round)
 }
 
 // NextBidToSettle is a free data retrieval call binding the contract method 0x650cc7cc.

@@ -39,20 +39,6 @@
 	{
 		"constant": true,
 		"inputs": [],
-		"name": "lastDecayHeight",
-		"outputs": [
-			{
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"constant": true,
-		"inputs": [],
 		"name": "cycleIncrementalSupply",
 		"outputs": [
 			{
@@ -68,6 +54,20 @@
 		"constant": true,
 		"inputs": [],
 		"name": "totalSupply",
+		"outputs": [
+			{
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "numOfViews",
 		"outputs": [
 			{
 				"name": "",
@@ -328,20 +328,6 @@
 			}
 		],
 		"name": "balanceOf",
-		"outputs": [
-			{
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"constant": true,
-		"inputs": [],
-		"name": "nextDecayHeight",
 		"outputs": [
 			{
 				"name": "",

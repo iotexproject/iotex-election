@@ -16,11 +16,12 @@ require (
 	github.com/golang/mock v1.3.1
 	github.com/golang/protobuf v1.3.1
 	github.com/google/pprof v0.0.0-20190515194954-54271f7e092f // indirect
+	github.com/iotexproject/go-p2p v0.2.10
 	github.com/iotexproject/go-pkgs v0.1.1-0.20190513193226-f065b9342b78
 	github.com/iotexproject/iotex-address v0.2.0
 	github.com/iotexproject/iotex-antenna-go v0.0.0-20190522194402-4d96cae2af68
 	github.com/iotexproject/iotex-core v0.7.0 // indirect
-	github.com/iotexproject/iotex-proto v0.2.1-0.20190520183050-e748b9589841
+	github.com/iotexproject/iotex-proto v0.2.1-0.20190528210926-c48a31f9d016
 	github.com/ipfs/go-ds-badger v0.0.3 // indirect
 	github.com/ipfs/go-ds-leveldb v0.0.2 // indirect
 	github.com/ipfs/go-ipfs-delay v0.0.1 // indirect
@@ -30,12 +31,12 @@ require (
 	github.com/kkdai/bstream v1.0.0 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/kr/pty v1.1.4 // indirect
-	github.com/libp2p/go-libp2p v0.1.1 // indirect
-	github.com/libp2p/go-libp2p-connmgr v0.1.0 // indirect
-	github.com/libp2p/go-libp2p-core v0.0.3 // indirect
-	github.com/libp2p/go-libp2p-host v0.1.0 // indirect
-	github.com/libp2p/go-libp2p-kad-dht v0.1.0 // indirect
-	github.com/libp2p/go-libp2p-pubsub v0.1.0 // indirect
+	github.com/libp2p/go-libp2p v0.0.21 // indirect
+	github.com/libp2p/go-libp2p-connmgr v0.0.3 // indirect
+	github.com/libp2p/go-libp2p-host v0.0.2 // indirect
+	github.com/libp2p/go-libp2p-kad-dht v0.0.10 // indirect
+	github.com/libp2p/go-libp2p-peerstore v0.0.5
+	github.com/libp2p/go-libp2p-pubsub v0.0.1 // indirect
 	github.com/magiconair/properties v1.8.1 // indirect
 	github.com/mattn/go-colorable v0.1.2 // indirect
 	github.com/miekg/dns v1.1.13 // indirect

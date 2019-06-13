@@ -51,6 +51,7 @@ type Config struct {
 	CacheSize                  uint32   `yaml:"cacheSize"`
 	NumOfFetchInParallel       uint8    `yaml:"numOfFetchInParallel"`
 	SkipManifiedCandidate      bool     `yaml:"skipManifiedCandidate"`
+	GravityChainBatchSize           uint64   `yaml:"gravityChainBatchSize"`
 }
 
 // STATUS represents the status of committee
@@ -105,6 +106,7 @@ type committee struct {
 	lastUpdateTimestamp int64
 	terminate           chan bool
 	mutex               sync.RWMutex
+	gravityChainBatchSize    uint64
 }
 
 // NewCommitteeWithKVStoreWithNamespace creates a committee with kvstore with namespace
@@ -146,6 +148,10 @@ func NewCommittee(kvstore db.KVStore, cfg Config) (Committee, error) {
 	if cfg.NumOfFetchInParallel > 0 {
 		fetchInParallel = cfg.NumOfFetchInParallel
 	}
+	gravityChainBatchSize := uint64(10)
+	if cfg.GravityChainBatchSize > 0 {
+		gravityChainBatchSize = cfg.GravityChainBatchSize
+	}
 	return &committee{
 		db:                    kvstore,
 		cache:                 newResultCache(cfg.CacheSize),
@@ -163,6 +169,7 @@ func NewCommittee(kvstore db.KVStore, cfg Config) (Committee, error) {
 		interval:              cfg.GravityChainHeightInterval,
 		currentHeight:         0,
 		nextHeight:            cfg.GravityChainStartHeight,
+		gravityChainBatchSize:      gravityChainBatchSize,
 	}, nil
 }
 
@@ -200,7 +207,8 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 	reportChan := make(chan error)
 	go func() {
 		zap.L().Info("catching up via network")
-		for h := ec.nextHeight + 10000; h < tip.Height; h += 10000 {
+		gap := ec.interval * ec.gravityChainBatchSize
+		for h := ec.nextHeight + gap; h < tip.Height; h += gap {
 			zap.L().Info("catching up to", zap.Uint64("height", h))
 			results, errs := ec.fetchInBatch(h)
 			t, err := ec.carrier.BlockTimestamp(h)

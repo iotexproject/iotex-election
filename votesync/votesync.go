@@ -33,6 +33,7 @@ type VoteSync struct {
 	clerkContractAddress   string
 	discordBotToken        string
 	discordChannelID       string
+	discordMsg             string
 	service                *iotx.Iotx
 	carrier                carrier.Carrier
 	lastViewHeight         uint64
@@ -59,6 +60,7 @@ type Config struct {
 	VitaContractAddress      string        `yaml:"vitaContractAddress"`
 	DiscordBotToken          string        `yaml:"discordBotToken"`
 	DiscordChannelID         string        `yaml:"discordChannelID"`
+	DiscordMsg               string        `yaml:"discordMsg"`
 }
 
 type WeightedVote struct {
@@ -254,6 +256,7 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 		terminate:              make(chan bool),
 		discordBotToken:        cfg.DiscordBotToken,
 		discordChannelID:       cfg.DiscordChannelID,
+		discordMsg:             cfg.DiscordMsg,
 	}, nil
 }
 
@@ -615,7 +618,7 @@ func (vc *VoteSync) sendDiscordMsg() error {
 	}
 	defer dg.Close()
 
-	_, err = dg.ChannelMessage(vc.discordChannelID, "Today's Vita tokens are ready to be claimed at https://vita.iotex.io/ !")
+	_, err = dg.ChannelMessage(vc.discordChannelID, vc.discordMsg)
 	return err
 }
 

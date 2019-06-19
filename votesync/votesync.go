@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bwmarrin/discordgo"
 	"github.com/cenkalti/backoff"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -30,6 +31,9 @@ type VoteSync struct {
 	vpsContractAddress     string
 	brokerContractAddress  string
 	clerkContractAddress   string
+	discordBotToken        string
+	discordChannelID       string
+	discordMsg             string
 	service                *iotx.Iotx
 	carrier                carrier.Carrier
 	lastViewHeight         uint64
@@ -54,6 +58,9 @@ type Config struct {
 	PaginationSize           uint8         `yaml:"paginationSize"`
 	BrokerPaginationSize     uint8         `yaml:"brokerPaginationSize"`
 	VitaContractAddress      string        `yaml:"vitaContractAddress"`
+	DiscordBotToken          string        `yaml:"discordBotToken"`
+	DiscordChannelID         string        `yaml:"discordChannelID"`
+	DiscordMsg               string        `yaml:"discordMsg"`
 }
 
 type WeightedVote struct {
@@ -247,6 +254,9 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 		lastBrokerUpdateHeight: lastBrokerUpdateHeight.Uint64(),
 		lastClerkUpdateHeight:  lastClerkUpdateHeight.Uint64(),
 		terminate:              make(chan bool),
+		discordBotToken:        cfg.DiscordBotToken,
+		discordChannelID:       cfg.DiscordChannelID,
+		discordMsg:             cfg.DiscordMsg,
 	}, nil
 }
 
@@ -270,6 +280,9 @@ func (vc *VoteSync) Start(ctx context.Context) {
 					if err := vc.sync(vc.lastViewHeight, tip.Height, vc.lastViewTimestamp, tip.BlockTime); err != nil {
 						zap.L().Error("failed to sync votes", zap.Error(err))
 						continue
+					}
+					if err := vc.sendDiscordMsg(); err != nil {
+						zap.L().Error("failed to send discord msg", zap.Error(err))
 					}
 				}
 
@@ -396,8 +409,7 @@ func (vc *VoteSync) settle(h uint64) error {
 }
 
 func (vc *VoteSync) claimForClerk() error {
-	l := zap.L().With(zap.Uint64("lastClerkUpdateHeight", vc.lastClerkUpdateHeight))
-	l.Info("Start clerk claim process.")
+	zap.L().Info("Start clerk claim process.", zap.Uint64("lastClerkUpdateHeight", vc.lastClerkUpdateHeight))
 	if err := backoff.Retry(func() error {
 		hash, err := vc.service.ExecuteContract(&iotx.ContractRequest{
 			Address:  vc.clerkContractAddress,
@@ -417,6 +429,7 @@ func (vc *VoteSync) claimForClerk() error {
 		return err
 	}
 	vc.lastClerkUpdateHeight = vc.lastUpdateHeight
+	zap.L().Info("Finished clerk.", zap.Uint64("cleerkUpdatedHeight", vc.lastUpdateHeight))
 	return nil
 }
 
@@ -589,6 +602,24 @@ func (vc *VoteSync) fetchVotesByHeight(h uint64) ([]*types.Vote, error) {
 		}
 	}
 	return allVotes, nil
+}
+
+func (vc *VoteSync) sendDiscordMsg() error {
+	if vc.discordBotToken == "" {
+		return nil
+	}
+
+	dg, err := discordgo.New("Bot " + vc.discordBotToken)
+	if err != nil {
+		return err
+	}
+	if err := dg.Open(); err != nil {
+		return err
+	}
+	defer dg.Close()
+
+	_, err = dg.ChannelMessageSend(vc.discordChannelID, vc.discordMsg)
+	return err
 }
 
 func calWeightedVotes(curr []*types.Vote, currTs time.Time) map[string]*WeightedVote {

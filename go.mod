@@ -7,6 +7,7 @@ require (
 	github.com/OneOfOne/xxhash v1.2.5 // indirect
 	github.com/aristanetworks/goarista v0.0.0-20190531155855-fef20d617fa7 // indirect
 	github.com/btcsuite/goleveldb v1.0.0 // indirect
+	github.com/bwmarrin/discordgo v0.19.0
 	github.com/cenkalti/backoff v2.1.1+incompatible
 	github.com/coreos/etcd v3.3.13+incompatible // indirect
 	github.com/dgryski/go-sip13 v0.0.0-20190329191031-25c5027a8c7b // indirect
@@ -38,6 +39,7 @@ require (
 	github.com/prometheus/procfs v0.0.2 // indirect
 	github.com/prometheus/tsdb v0.8.0 // indirect
 	github.com/rogpeppe/fastuuid v1.1.0 // indirect
+	github.com/rs/cors v1.6.0 // indirect
 	github.com/russross/blackfriday v2.0.0+incompatible // indirect
 	github.com/sirupsen/logrus v1.4.2 // indirect
 	github.com/spf13/afero v1.2.2 // indirect

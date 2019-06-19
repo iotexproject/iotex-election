@@ -618,7 +618,7 @@ func (vc *VoteSync) sendDiscordMsg() error {
 	}
 	defer dg.Close()
 
-	_, err = dg.ChannelMessage(vc.discordChannelID, vc.discordMsg)
+	_, err = dg.ChannelMessageSend(vc.discordChannelID, vc.discordMsg)
 	return err
 }
 

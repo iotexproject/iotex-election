@@ -232,7 +232,7 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 		cfg.VitaContractAddress,
 		"lastRewardPoolClaimViewID",
 		operatorAccount.Address(),
-		&lastBrokerUpdateHeight,
+		&lastClerkUpdateHeight,
 	); err != nil {
 		return nil, err
 	}

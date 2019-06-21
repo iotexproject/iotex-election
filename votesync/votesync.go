@@ -18,7 +18,8 @@ import (
 	"github.com/iotexproject/go-pkgs/crypto"
 	"github.com/iotexproject/iotex-address/address"
 	"github.com/iotexproject/iotex-antenna-go/account"
-	"github.com/iotexproject/iotex-antenna-go/iotx"
+	"github.com/iotexproject/iotex-antenna-go/iotex"
+	"github.com/iotexproject/iotex-antenna-go/utils/wait"
 	"github.com/iotexproject/iotex-election/carrier"
 	"github.com/iotexproject/iotex-election/contract"
 	"github.com/iotexproject/iotex-election/types"
@@ -26,15 +27,13 @@ import (
 )
 
 type VoteSync struct {
-	operator               string
-	vitaContractAddress    string
-	vpsContractAddress     string
-	brokerContractAddress  string
-	clerkContractAddress   string
+	service                iotex.AuthedClient
+	vpsContract            iotex.Contract
+	brokerContract         iotex.Contract
+	clerkContract          iotex.Contract
 	discordBotToken        string
 	discordChannelID       string
 	discordMsg             string
-	service                *iotx.Iotx
 	carrier                carrier.Carrier
 	lastViewHeight         uint64
 	lastViewTimestamp      time.Time
@@ -68,53 +67,16 @@ type WeightedVote struct {
 	Votes *big.Int
 }
 
-func readContract(
-	service *iotx.Iotx,
-	contractABI string,
-	contractAddr string,
-	method string,
-	accountAddr string,
-	retval interface{},
-) error {
-	parsed, err := abi.JSON(strings.NewReader(contractABI))
-	if err != nil {
-		return err
-	}
-	var response string
-	err = backoff.Retry(func() error {
-		response, err = service.ReadContractByMethod(&iotx.ContractRequest{
-			Address:  contractAddr,
-			From:     accountAddr,
-			Abi:      contractABI,
-			Method:   method,
-			GasLimit: "5000000",
-			GasPrice: "1",
-		})
-		return err
-	}, backoff.NewExponentialBackOff())
-	if err != nil {
-		return err
-	}
-	decoded, err := hex.DecodeString(response)
-	if err != nil {
-		return err
-	}
-	return parsed.Unpack(retval, method, decoded)
-}
-
-func toIoAddress(addr common.Address) (string, error) {
+func toIoAddress(addr common.Address) (address.Address, error) {
 	pkhash, err := hex.DecodeString(strings.TrimLeft(addr.String(), "0x"))
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	ioaddr, err := address.FromBytes(pkhash)
-	if err != nil {
-		return "", err
-	}
-	return ioaddr.String(), nil
+	return address.FromBytes(pkhash)
 }
 
 func NewVoteSync(cfg Config) (*VoteSync, error) {
+	ctx := context.Background()
 	carrier, err := carrier.NewEthereumVoteCarrier(
 		cfg.GravityChainAPIs,
 		common.HexToAddress(cfg.RegisterContractAddress),
@@ -123,7 +85,8 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 	if err != nil {
 		return nil, err
 	}
-	service, err := iotx.NewIotx(cfg.IoTeXAPI, true)
+
+	conn, err := iotex.NewDefaultGRPCConn(cfg.IoTeXAPI)
 	if err != nil {
 		return nil, err
 	}
@@ -135,46 +98,48 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 	if err != nil {
 		return nil, err
 	}
-	if service.Accounts.AddAccount(operatorAccount); err != nil {
+	cli := iotex.NewAuthedClient(iotexapi.NewAPIServiceClient(conn), operatorAccount)
+
+	vitaABI, err := abi.JSON(strings.NewReader(contract.VitaABI))
+	if err != nil {
 		return nil, err
 	}
+	vitaContractAddress, err := address.FromString(cfg.VitaContractAddress)
+	if err != nil {
+		return nil, err
+	}
+	vitaContract := cli.Contract(vitaContractAddress, vitaABI)
+
 	var addr common.Address
-	if err = readContract(
-		service,
-		contract.VitaABI,
-		cfg.VitaContractAddress,
-		"vps",
-		operatorAccount.Address(),
-		&addr,
-	); err != nil {
+	d, err := vitaContract.Read("vps").Call(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := d.Unmarshal(&addr); err != nil {
 		return nil, err
 	}
 	vpsContractAddress, err := toIoAddress(addr)
 	if err != nil {
 		return nil, err
 	}
-	if err = readContract(
-		service,
-		contract.VitaABI,
-		cfg.VitaContractAddress,
-		"donationPoolAddress",
-		operatorAccount.Address(),
-		&addr,
-	); err != nil {
+
+	d, err = vitaContract.Read("donationPoolAddress").Call(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := d.Unmarshal(&addr); err != nil {
 		return nil, err
 	}
 	brokerContractAddress, err := toIoAddress(addr)
 	if err != nil {
 		return nil, err
 	}
-	if err = readContract(
-		service,
-		contract.VitaABI,
-		cfg.VitaContractAddress,
-		"rewardPoolAddress",
-		operatorAccount.Address(),
-		&addr,
-	); err != nil {
+
+	d, err = vitaContract.Read("rewardPoolAddress").Call(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := d.Unmarshal(&addr); err != nil {
 		return nil, err
 	}
 	clerkContractAddress, err := toIoAddress(addr)
@@ -182,15 +147,18 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 		return nil, err
 	}
 
+	vpsABI, err := abi.JSON(strings.NewReader(contract.RotatableVPSABI))
+	if err != nil {
+		return nil, err
+	}
+	vpsContract := cli.Contract(vpsContractAddress, vpsABI)
+
 	lastUpdateHeight := new(big.Int)
-	if err = readContract(
-		service,
-		contract.RotatableVPSABI,
-		vpsContractAddress,
-		"viewID",
-		operatorAccount.Address(),
-		&lastUpdateHeight,
-	); err != nil {
+	d, err = vpsContract.Read("viewID").Call(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := d.Unmarshal(&lastUpdateHeight); err != nil {
 		return nil, err
 	}
 	lastUpdateTimestamp, err := carrier.BlockTimestamp(lastUpdateHeight.Uint64())
@@ -199,14 +167,11 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 	}
 
 	lastViewHeight := new(big.Int)
-	if err = readContract(
-		service,
-		contract.RotatableVPSABI,
-		vpsContractAddress,
-		"inactiveViewID",
-		operatorAccount.Address(),
-		&lastViewHeight,
-	); err != nil {
+	d, err = vpsContract.Read("inactiveViewID").Call(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := d.Unmarshal(&lastViewHeight); err != nil {
 		return nil, err
 	}
 	lastViewTimestamp, err := carrier.BlockTimestamp(lastViewHeight.Uint64())
@@ -215,35 +180,41 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 	}
 
 	lastBrokerUpdateHeight := new(big.Int)
-	if err = readContract(
-		service,
-		contract.VitaABI,
-		cfg.VitaContractAddress,
-		"lastDonationPoolClaimViewID",
-		operatorAccount.Address(),
-		&lastBrokerUpdateHeight,
-	); err != nil {
+	d, err = vitaContract.Read("lastDonationPoolClaimViewID").Call(ctx)
+	if err != nil {
 		return nil, err
 	}
+	if err := d.Unmarshal(&lastBrokerUpdateHeight); err != nil {
+		return nil, err
+	}
+
 	lastClerkUpdateHeight := new(big.Int)
-	if err = readContract(
-		service,
-		contract.VitaABI,
-		cfg.VitaContractAddress,
-		"lastRewardPoolClaimViewID",
-		operatorAccount.Address(),
-		&lastClerkUpdateHeight,
-	); err != nil {
+	d, err = vitaContract.Read("lastRewardPoolClaimViewID").Call(ctx)
+	if err != nil {
 		return nil, err
 	}
+	if err := d.Unmarshal(&lastClerkUpdateHeight); err != nil {
+		return nil, err
+	}
+
+	brokerABI, err := abi.JSON(strings.NewReader(contract.BrokerABI))
+	if err != nil {
+		return nil, err
+	}
+	brokerContract := cli.Contract(brokerContractAddress, brokerABI)
+
+	clerkABI, err := abi.JSON(strings.NewReader(contract.ClerkABI))
+	if err != nil {
+		return nil, err
+	}
+	clerkContract := cli.Contract(clerkContractAddress, clerkABI)
+
 	return &VoteSync{
 		carrier:                carrier,
-		vitaContractAddress:    cfg.VitaContractAddress,
-		vpsContractAddress:     vpsContractAddress,
-		brokerContractAddress:  brokerContractAddress,
-		clerkContractAddress:   clerkContractAddress,
-		operator:               operatorAccount.Address(),
-		service:                service,
+		vpsContract:            vpsContract,
+		brokerContract:         brokerContract,
+		clerkContract:          clerkContract,
+		service:                cli,
 		timeInternal:           cfg.GravityChainTimeInterval,
 		paginationSize:         cfg.PaginationSize,
 		brokerPaginationSize:   cfg.BrokerPaginationSize,
@@ -311,49 +282,18 @@ func (vc *VoteSync) Stop(ctx context.Context) {
 	return
 }
 
-func (vc *VoteSync) checkExecutionByHash(hash string) error {
-	response, err := vc.service.GetReceiptByAction(&iotexapi.GetReceiptByActionRequest{
-		ActionHash: hash,
-	})
-	if err != nil {
-		return err
-	}
-	if response.ReceiptInfo.Receipt.Status != 1 {
-		return errors.Errorf("execution failed: %s", hash)
-	}
-
-	return err
-}
-
 func (vc *VoteSync) brokerReset() error {
-	return backoff.Retry(func() error {
-		hash, err := vc.service.ExecuteContract(&iotx.ContractRequest{
-			Address:  vc.brokerContractAddress,
-			From:     vc.operator,
-			Abi:      contract.BrokerABI,
-			Method:   "reset",
-			Amount:   "0",
-			GasLimit: "5000000",
-			GasPrice: "1",
-		})
-		if err != nil {
-			return err
-		}
-		time.Sleep(20 * time.Second)
-		return vc.checkExecutionByHash(hash)
-	}, backoff.NewExponentialBackOff())
+	caller := vc.brokerContract.Execute("reset").SetGasPrice(big.NewInt(1)).SetGasLimit(5000000)
+	return wait.Wait(context.Background(), caller)
 }
 
 func (vc *VoteSync) brokerNextBidToSettle() (uint64, error) {
 	nextBidToSettle := new(big.Int)
-	if err := readContract(
-		vc.service,
-		contract.BrokerABI,
-		vc.brokerContractAddress,
-		"nextBidToSettle",
-		vc.operator,
-		&nextBidToSettle,
-	); err != nil {
+	d, err := vc.brokerContract.Read("nextBidToSettle").Call(context.Background())
+	if err != nil {
+		return 0, err
+	}
+	if err := d.Unmarshal(&nextBidToSettle); err != nil {
 		return 0, err
 	}
 	return nextBidToSettle.Uint64(), nil
@@ -362,22 +302,10 @@ func (vc *VoteSync) brokerNextBidToSettle() (uint64, error) {
 func (vc *VoteSync) brokerSettle() error {
 	oldStart := uint64(0)
 	for {
-		if err := backoff.Retry(func() error {
-			hash, err := vc.service.ExecuteContract(&iotx.ContractRequest{
-				Address:  vc.brokerContractAddress,
-				From:     vc.operator,
-				Abi:      contract.BrokerABI,
-				Method:   "settle",
-				Amount:   "0",
-				GasLimit: "5000000",
-				GasPrice: "1",
-			}, big.NewInt(0).SetUint64(uint64(vc.brokerPaginationSize)))
-			if err != nil {
-				return err
-			}
-			time.Sleep(20 * time.Second)
-			return vc.checkExecutionByHash(hash)
-		}, backoff.NewExponentialBackOff()); err != nil {
+		caller := vc.brokerContract.Execute(
+			"settle", big.NewInt(0).SetUint64(uint64(vc.brokerPaginationSize))).
+			SetGasPrice(big.NewInt(1)).SetGasLimit(5000000)
+		if err := wait.Wait(context.Background(), caller); err != nil {
 			return err
 		}
 
@@ -410,22 +338,8 @@ func (vc *VoteSync) settle(h uint64) error {
 
 func (vc *VoteSync) claimForClerk() error {
 	zap.L().Info("Start clerk claim process.", zap.Uint64("lastClerkUpdateHeight", vc.lastClerkUpdateHeight))
-	if err := backoff.Retry(func() error {
-		hash, err := vc.service.ExecuteContract(&iotx.ContractRequest{
-			Address:  vc.clerkContractAddress,
-			From:     vc.operator,
-			Abi:      contract.ClerkABI,
-			Method:   "claim",
-			Amount:   "0",
-			GasLimit: "5000000",
-			GasPrice: "1",
-		})
-		if err != nil {
-			return err
-		}
-		time.Sleep(20 * time.Second)
-		return vc.checkExecutionByHash(hash)
-	}, backoff.NewExponentialBackOff()); err != nil {
+	caller := vc.clerkContract.Execute("claim").SetGasPrice(big.NewInt(1)).SetGasLimit(5000000)
+	if err := wait.Wait(context.Background(), caller); err != nil {
 		return err
 	}
 	vc.lastClerkUpdateHeight = vc.lastUpdateHeight
@@ -434,22 +348,9 @@ func (vc *VoteSync) claimForClerk() error {
 }
 
 func (vc *VoteSync) updateVotingPowers(addrs []common.Address, weights []*big.Int) error {
-	return backoff.Retry(func() error {
-		hash, err := vc.service.ExecuteContract(&iotx.ContractRequest{
-			Address:  vc.vpsContractAddress,
-			From:     vc.operator,
-			Abi:      contract.RotatableVPSABI,
-			Method:   "updateVotingPowers",
-			Amount:   "0",
-			GasLimit: "5000000",
-			GasPrice: "1",
-		}, addrs, weights)
-		if err != nil {
-			return err
-		}
-		time.Sleep(20 * time.Second)
-		return vc.checkExecutionByHash(hash)
-	}, backoff.NewExponentialBackOff())
+	caller := vc.vpsContract.Execute("updateVotingPowers", addrs, weights).
+		SetGasPrice(big.NewInt(1)).SetGasLimit(5000000)
+	return wait.Wait(context.Background(), caller)
 }
 
 func (vc *VoteSync) sync(prevHeight, currHeight uint64, prevTs, currTs time.Time) error {
@@ -483,23 +384,9 @@ func (vc *VoteSync) sync(prevHeight, currHeight uint64, prevTs, currTs time.Time
 			return errors.Wrap(err, fmt.Sprintf("update vote error, reqNum:%d", reqNum))
 		}
 	}
-	err = backoff.Retry(func() error {
-		hash, err := vc.service.ExecuteContract(&iotx.ContractRequest{
-			Address:  vc.vpsContractAddress,
-			From:     vc.operator,
-			Abi:      contract.RotatableVPSABI,
-			Method:   "rotate",
-			Amount:   "0",
-			GasLimit: "4000000",
-			GasPrice: "1",
-		}, new(big.Int).SetUint64(currHeight))
-		if err != nil {
-			return err
-		}
-		time.Sleep(20 * time.Second)
-		return vc.checkExecutionByHash(hash)
-	}, backoff.NewExponentialBackOff())
-	if err != nil {
+	caller := vc.vpsContract.Execute("rotate", new(big.Int).SetUint64(currHeight)).
+		SetGasPrice(big.NewInt(1)).SetGasLimit(4000000)
+	if err := wait.Wait(context.Background(), caller); err != nil {
 		return errors.Wrap(err, "failed to execute rotate")
 	}
 

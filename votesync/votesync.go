@@ -19,6 +19,7 @@ import (
 	"github.com/iotexproject/iotex-address/address"
 	"github.com/iotexproject/iotex-antenna-go/account"
 	"github.com/iotexproject/iotex-antenna-go/iotex"
+	"github.com/iotexproject/iotex-antenna-go/utils/unit"
 	"github.com/iotexproject/iotex-antenna-go/utils/wait"
 	"github.com/iotexproject/iotex-election/carrier"
 	"github.com/iotexproject/iotex-election/contract"
@@ -283,7 +284,7 @@ func (vc *VoteSync) Stop(ctx context.Context) {
 }
 
 func (vc *VoteSync) brokerReset() error {
-	caller := vc.brokerContract.Execute("reset").SetGasPrice(big.NewInt(1)).SetGasLimit(5000000)
+	caller := vc.brokerContract.Execute("reset").SetGasPrice(big.NewInt(int64(1 * unit.Qev))).SetGasLimit(5000000)
 	return wait.Wait(context.Background(), caller)
 }
 
@@ -304,7 +305,7 @@ func (vc *VoteSync) brokerSettle() error {
 	for {
 		caller := vc.brokerContract.Execute(
 			"settle", big.NewInt(0).SetUint64(uint64(vc.brokerPaginationSize))).
-			SetGasPrice(big.NewInt(1)).SetGasLimit(5000000)
+			SetGasPrice(big.NewInt(int64(1 * unit.Qev))).SetGasLimit(5000000)
 		if err := wait.Wait(context.Background(), caller); err != nil {
 			return err
 		}
@@ -338,7 +339,7 @@ func (vc *VoteSync) settle(h uint64) error {
 
 func (vc *VoteSync) claimForClerk() error {
 	zap.L().Info("Start clerk claim process.", zap.Uint64("lastClerkUpdateHeight", vc.lastClerkUpdateHeight))
-	caller := vc.clerkContract.Execute("claim").SetGasPrice(big.NewInt(1)).SetGasLimit(5000000)
+	caller := vc.clerkContract.Execute("claim").SetGasPrice(big.NewInt(int64(1 * unit.Qev))).SetGasLimit(5000000)
 	if err := wait.Wait(context.Background(), caller); err != nil {
 		return err
 	}
@@ -349,7 +350,7 @@ func (vc *VoteSync) claimForClerk() error {
 
 func (vc *VoteSync) updateVotingPowers(addrs []common.Address, weights []*big.Int) error {
 	caller := vc.vpsContract.Execute("updateVotingPowers", addrs, weights).
-		SetGasPrice(big.NewInt(1)).SetGasLimit(5000000)
+		SetGasPrice(big.NewInt(int64(1 * unit.Qev))).SetGasLimit(5000000)
 	return wait.Wait(context.Background(), caller)
 }
 
@@ -385,7 +386,7 @@ func (vc *VoteSync) sync(prevHeight, currHeight uint64, prevTs, currTs time.Time
 		}
 	}
 	caller := vc.vpsContract.Execute("rotate", new(big.Int).SetUint64(currHeight)).
-		SetGasPrice(big.NewInt(1)).SetGasLimit(4000000)
+		SetGasPrice(big.NewInt(int64(1 * unit.Qev))).SetGasLimit(4000000)
 	if err := wait.Wait(context.Background(), caller); err != nil {
 		return errors.Wrap(err, "failed to execute rotate")
 	}

@@ -12,6 +12,7 @@ import (
 	"github.com/cenkalti/backoff"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
@@ -69,7 +70,7 @@ type WeightedVote struct {
 }
 
 func toIoAddress(addr common.Address) (address.Address, error) {
-	pkhash, err := hex.DecodeString(strings.TrimLeft(addr.String(), "0x"))
+	pkhash, err := hexutil.Decode(addr.String())
 	if err != nil {
 		return nil, err
 	}
@@ -147,6 +148,7 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 	if err != nil {
 		return nil, err
 	}
+	zap.L().Info("vote contracts.", zap.String("brokerContract", brokerContractAddress.String()), zap.String("clerkContract", clerkContractAddress.String()))
 
 	vpsABI, err := abi.JSON(strings.NewReader(contract.RotatableVPSABI))
 	if err != nil {
@@ -239,6 +241,7 @@ func (vc *VoteSync) Start(ctx context.Context) {
 	zap.L().Info("Start VoteSync.",
 		zap.Uint64("lastUpdateHeight", vc.lastUpdateHeight),
 		zap.Uint64("lastBrokerUpdateHeight", vc.lastBrokerUpdateHeight),
+		zap.Uint64("lastClerkUpdateHeight", vc.lastClerkUpdateHeight),
 		zap.Uint64("lastViewID", vc.lastViewHeight),
 	)
 	go func() {

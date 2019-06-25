@@ -37,6 +37,7 @@ type VoteSync struct {
 	discordChannelID       string
 	discordMsg             string
 	discordReminder        string
+	discordReminded        bool
 	carrier                carrier.Carrier
 	lastViewHeight         uint64
 	lastViewTimestamp      time.Time
@@ -262,11 +263,13 @@ func (vc *VoteSync) Start(ctx context.Context) {
 					if err := vc.sendDiscordMsg(vc.discordMsg); err != nil {
 						zap.L().Error("failed to send discord msg", zap.Error(err))
 					}
+					vc.discordReminded = false
 				}
-				if tip.BlockTime.After(vc.lastUpdateTimestamp.Add(vc.timeInternal * 24 / 25)) {
+				if tip.BlockTime.After(vc.lastUpdateTimestamp.Add(vc.timeInternal*24/25)) && !vc.discordReminded {
 					if err := vc.sendDiscordMsg(vc.discordReminder); err != nil {
 						zap.L().Error("failed to send discord reminder", zap.Error(err))
 					}
+					vc.discordReminded = true
 				}
 
 				if vc.lastUpdateHeight > vc.lastBrokerUpdateHeight {

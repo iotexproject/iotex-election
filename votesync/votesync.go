@@ -36,6 +36,8 @@ type VoteSync struct {
 	discordBotToken        string
 	discordChannelID       string
 	discordMsg             string
+	discordReminder        string
+	discordReminded        bool
 	carrier                carrier.Carrier
 	lastViewHeight         uint64
 	lastViewTimestamp      time.Time
@@ -62,6 +64,7 @@ type Config struct {
 	DiscordBotToken          string        `yaml:"discordBotToken"`
 	DiscordChannelID         string        `yaml:"discordChannelID"`
 	DiscordMsg               string        `yaml:"discordMsg"`
+	DiscordReminder          string        `yaml:"discordReminder"`
 }
 
 type WeightedVote struct {
@@ -231,6 +234,7 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 		discordBotToken:        cfg.DiscordBotToken,
 		discordChannelID:       cfg.DiscordChannelID,
 		discordMsg:             cfg.DiscordMsg,
+		discordReminder:        cfg.DiscordReminder,
 	}, nil
 }
 
@@ -256,9 +260,16 @@ func (vc *VoteSync) Start(ctx context.Context) {
 						zap.L().Error("failed to sync votes", zap.Error(err))
 						continue
 					}
-					if err := vc.sendDiscordMsg(); err != nil {
+					if err := vc.sendDiscordMsg(vc.discordMsg); err != nil {
 						zap.L().Error("failed to send discord msg", zap.Error(err))
 					}
+					vc.discordReminded = false
+				}
+				if tip.BlockTime.After(vc.lastUpdateTimestamp.Add(vc.timeInternal*24/25)) && !vc.discordReminded {
+					if err := vc.sendDiscordMsg(vc.discordReminder); err != nil {
+						zap.L().Error("failed to send discord reminder", zap.Error(err))
+					}
+					vc.discordReminded = true
 				}
 
 				if vc.lastUpdateHeight > vc.lastBrokerUpdateHeight {
@@ -495,8 +506,8 @@ func (vc *VoteSync) fetchVotesByHeight(h uint64) ([]*types.Vote, error) {
 	return allVotes, nil
 }
 
-func (vc *VoteSync) sendDiscordMsg() error {
-	if vc.discordBotToken == "" {
+func (vc *VoteSync) sendDiscordMsg(msg string) error {
+	if vc.discordBotToken == "" || msg == "" {
 		return nil
 	}
 
@@ -509,7 +520,7 @@ func (vc *VoteSync) sendDiscordMsg() error {
 	}
 	defer dg.Close()
 
-	_, err = dg.ChannelMessageSend(vc.discordChannelID, vc.discordMsg)
+	_, err = dg.ChannelMessageSend(vc.discordChannelID, msg)
 	return err
 }
 

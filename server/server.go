@@ -308,3 +308,42 @@ func (s *server) GetBucketsByCandidate(ctx context.Context, request *api.GetBuck
 
 	return response, nil
 }
+
+// GetBuckets returns a list of buckets
+func (s *server) GetBuckets(ctx context.Context, request *api.GetBucketsRequest) (*api.BucketResponse, error) {
+	height, err := strconv.ParseUint(request.Height, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	result, err := s.electionCommittee.ResultByHeight(height)
+	if err != nil {
+		return nil, err
+	}
+	votes := result.Votes()
+	offset := request.Offset
+	if int(offset) >= len(votes) {
+		return nil, errors.New("offset is out of range")
+	}
+	limit := request.Limit
+	// If limit is missing, return all buckets with indices starting from the offset
+	if limit == uint32(0) {
+		limit = math.MaxUint32
+	}
+	if int(offset+limit) >= len(votes) {
+		limit = uint32(len(votes)) - offset
+	}
+	response := &api.BucketResponse{
+		Buckets: make([]*api.Bucket, limit),
+	}
+	for i := uint32(0); i < limit; i++ {
+		vote := votes[offset+i]
+		response.Buckets[i] = &api.Bucket{
+			Voter:             hex.EncodeToString(vote.Voter()),
+			Votes:             vote.Amount().Text(10),
+			WeightedVotes:     vote.WeightedAmount().Text(10),
+			RemainingDuration: vote.RemainingTime(result.MintTime()).String(),
+		}
+	}
+
+	return response, nil
+}

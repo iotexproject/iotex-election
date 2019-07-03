@@ -29,6 +29,9 @@ service APIService {
 	// get buckets by candidate
 	rpc getBucketsByCandidate(GetBucketsByCandidateRequest) returns (BucketResponse) {}
 
+	// get Buckets
+	rpc getBuckets(GetBucketsRequest) returns (BucketResponse) {}
+
 	// health endpoint
 	rpc isHealth(google.protobuf.Empty) returns (HealthCheckResponse) {}
 }
@@ -75,6 +78,12 @@ message GetBucketsByCandidateRequest {
 	string height = 2;
 	uint32 offset = 3;
 	uint32 limit = 4;
+}
+
+message GetBucketsRequest {
+	string height = 1;
+	uint32 offset = 2;
+	uint32 limit = 3;
 }
 
 message HealthCheckResponse {

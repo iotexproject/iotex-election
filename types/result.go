@@ -52,6 +52,15 @@ func (r *ElectionResult) VotesByDelegate(name []byte) []*Vote {
 	return r.votes[hex.EncodeToString(name)]
 }
 
+// Votes returns all votes
+func (r *ElectionResult) Votes() []*Vote {
+	votes := []*Vote{}
+	for _, vs := range r.votes {
+		votes = append(votes, vs...)
+	}
+	return votes
+}
+
 // DelegateByName returns the candidate details
 func (r *ElectionResult) DelegateByName(name []byte) *Candidate {
 	for _, candidate := range r.delegates {

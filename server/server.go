@@ -18,6 +18,7 @@ import (
 	"math/big"
 	"net"
 	"strconv"
+	"time"
 
 	"github.com/golang/protobuf/ptypes/empty"
 	"go.uber.org/zap"
@@ -29,6 +30,7 @@ import (
 	"github.com/iotexproject/iotex-election/committee"
 	"github.com/iotexproject/iotex-election/db"
 	"github.com/iotexproject/iotex-election/pb/api"
+	"github.com/iotexproject/iotex-election/types"
 	"github.com/iotexproject/iotex-election/util"
 	"github.com/iotexproject/iotex-election/votesync"
 )
@@ -274,10 +276,15 @@ func (s *server) GetBucketsByCandidate(ctx context.Context, request *api.GetBuck
 	if err != nil {
 		return nil, err
 	}
-	if len(name) != 12 {
-		return nil, errors.New("invalid candidate name")
+	var votes []*types.Vote
+	switch len(name) {
+		case 0:
+			votes = result.Votes()
+		case 12:
+			votes = result.VotesByDelegate(name)
+		default:
+			return nil, errors.New("invalid candidate name")
 	}
-	votes := result.VotesByDelegate(name)
 	if votes == nil {
 		return nil, errors.New("No buckets for the candidate")
 	}
@@ -285,7 +292,11 @@ func (s *server) GetBucketsByCandidate(ctx context.Context, request *api.GetBuck
 	if int(offset) >= len(votes) {
 		return nil, errors.New("offset is out of range")
 	}
-	limit := request.Limit
+
+	return s.toBucketResponse(votes, offset, request.Limit, result.MintTime()), nil
+}
+
+func (s *server) toBucketResponse(votes []*types.Vote, offset uint32, limit uint32, mintTime time.Time) *api.BucketResponse {
 	// If limit is missing, return all buckets with indices starting from the offset
 	if limit == uint32(0) {
 		limit = math.MaxUint32
@@ -302,11 +313,10 @@ func (s *server) GetBucketsByCandidate(ctx context.Context, request *api.GetBuck
 			Voter:             hex.EncodeToString(vote.Voter()),
 			Votes:             vote.Amount().Text(10),
 			WeightedVotes:     vote.WeightedAmount().Text(10),
-			RemainingDuration: vote.RemainingTime(result.MintTime()).String(),
+			RemainingDuration: vote.RemainingTime(mintTime).String(),
 		}
 	}
-
-	return response, nil
+	return response
 }
 
 // GetBuckets returns a list of buckets
@@ -320,30 +330,13 @@ func (s *server) GetBuckets(ctx context.Context, request *api.GetBucketsRequest)
 		return nil, err
 	}
 	votes := result.Votes()
+	if votes == nil {
+		return nil, errors.New("No buckets available")
+	}
 	offset := request.Offset
 	if int(offset) >= len(votes) {
 		return nil, errors.New("offset is out of range")
 	}
-	limit := request.Limit
-	// If limit is missing, return all buckets with indices starting from the offset
-	if limit == uint32(0) {
-		limit = math.MaxUint32
-	}
-	if int(offset+limit) >= len(votes) {
-		limit = uint32(len(votes)) - offset
-	}
-	response := &api.BucketResponse{
-		Buckets: make([]*api.Bucket, limit),
-	}
-	for i := uint32(0); i < limit; i++ {
-		vote := votes[offset+i]
-		response.Buckets[i] = &api.Bucket{
-			Voter:             hex.EncodeToString(vote.Voter()),
-			Votes:             vote.Amount().Text(10),
-			WeightedVotes:     vote.WeightedAmount().Text(10),
-			RemainingDuration: vote.RemainingTime(result.MintTime()).String(),
-		}
-	}
 
-	return response, nil
+	return s.toBucketResponse(votes, offset, request.Limit, result.MintTime()), nil
 }

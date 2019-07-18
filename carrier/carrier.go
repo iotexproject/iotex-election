@@ -147,7 +147,7 @@ func (evc *ethereumCarrier) BlockTimestamp(height uint64) (ts time.Time, err err
 			big.NewInt(0).SetUint64(height),
 		)
 		if err == nil {
-			ts = time.Unix(header.Time.Int64(), 0)
+			ts = time.Unix(int64(header.Time), 0)
 		}
 		return err
 	})
@@ -189,7 +189,7 @@ func (evc *ethereumCarrier) tip(lastHeight uint64) (tip *TipInfo, err error) {
 			if header.Number.Uint64() > lastHeight {
 				tip = &TipInfo{
 					Height:    header.Number.Uint64(),
-					BlockTime: time.Unix(header.Time.Int64(), 0),
+					BlockTime: time.Unix(int64(header.Time), 0),
 				}
 				return nil
 			}

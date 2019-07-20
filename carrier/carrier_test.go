@@ -26,7 +26,7 @@ func TestVoteCarrier(t *testing.T) {
 	require := require.New(t)
 	// TODO: update contract address once finalize it
 	carrier, err := NewEthereumVoteCarrier(
-		[]string{"wss://kovan.infura.io/ws"},
+		[]string{"wss://kovan.infura.io/ws/v3/b355cae6fafc4302b106b937ee6c15af"},
 		common.HexToAddress("0xb4ca6cf2fe760517a3f92120acbe577311252663"),
 		common.HexToAddress("0xdedf0c1610d8a75ca896d8c93a0dc39abf7daff4"),
 	)

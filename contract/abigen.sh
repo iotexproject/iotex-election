@@ -7,3 +7,4 @@ abigen --abi clerk.abi --bin clerk.bin --pkg contract --type Clerk --out clerk.g
 abigen --abi vita.abi --bin vita.bin --pkg contract --type Vita --out vita.go
 abigen --abi register.abi --pkg contract --type Register --out register.go
 abigen --abi staking.abi --pkg contract --type Staking --out staking.go
+abigen --abi delegateprofile.abi --pkg contract --type DelegateProfile --out delegateprofile.go

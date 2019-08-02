@@ -15,18 +15,6 @@ import (
 	"github.com/ethereum/go-ethereum/event"
 )
 
-// Reference imports to suppress errors if they are not otherwise used.
-var (
-	_ = big.NewInt
-	_ = strings.NewReader
-	_ = ethereum.NotFound
-	_ = abi.U256
-	_ = bind.Bind
-	_ = common.Big1
-	_ = types.BloomLookup
-	_ = event.NewSubscription
-)
-
 // IOTXABI is the input ABI used to generate the binding from.
 const IOTXABI = "[{\"constant\":true,\"inputs\":[],\"name\":\"name\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"totalSupply\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"decimals\",\"outputs\":[{\"name\":\"\",\"type\":\"uint8\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"unpause\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"paused\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_owner\",\"type\":\"address\"}],\"name\":\"balanceOf\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"pause\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"symbol\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_owner\",\"type\":\"address\"},{\"name\":\"_spender\",\"type\":\"address\"}],\"name\":\"allowance\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"name\":\"tokenTotalAmount\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"Pause\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"Unpause\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"spender\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"Approval\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"from\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"to\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"Transfer\",\"type\":\"event\"},{\"constant\":false,\"inputs\":[{\"name\":\"_to\",\"type\":\"address\"},{\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"transfer\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_from\",\"type\":\"address\"},{\"name\":\"_to\",\"type\":\"address\"},{\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"transferFrom\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_spender\",\"type\":\"address\"},{\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"approve\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_spender\",\"type\":\"address\"},{\"name\":\"_addedValue\",\"type\":\"uint256\"}],\"name\":\"increaseApproval\",\"outputs\":[{\"name\":\"success\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_spender\",\"type\":\"address\"},{\"name\":\"_subtractedValue\",\"type\":\"uint256\"}],\"name\":\"decreaseApproval\",\"outputs\":[{\"name\":\"success\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
 
@@ -174,7 +162,7 @@ func (_IOTX *IOTXTransactorRaw) Transact(opts *bind.TransactOpts, method string,
 
 // Allowance is a free data retrieval call binding the contract method 0xdd62ed3e.
 //
-// Solidity: function allowance(address _owner, address _spender) constant returns(uint256)
+// Solidity: function allowance(_owner address, _spender address) constant returns(uint256)
 func (_IOTX *IOTXCaller) Allowance(opts *bind.CallOpts, _owner common.Address, _spender common.Address) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
@@ -186,21 +174,21 @@ func (_IOTX *IOTXCaller) Allowance(opts *bind.CallOpts, _owner common.Address, _
 
 // Allowance is a free data retrieval call binding the contract method 0xdd62ed3e.
 //
-// Solidity: function allowance(address _owner, address _spender) constant returns(uint256)
+// Solidity: function allowance(_owner address, _spender address) constant returns(uint256)
 func (_IOTX *IOTXSession) Allowance(_owner common.Address, _spender common.Address) (*big.Int, error) {
 	return _IOTX.Contract.Allowance(&_IOTX.CallOpts, _owner, _spender)
 }
 
 // Allowance is a free data retrieval call binding the contract method 0xdd62ed3e.
 //
-// Solidity: function allowance(address _owner, address _spender) constant returns(uint256)
+// Solidity: function allowance(_owner address, _spender address) constant returns(uint256)
 func (_IOTX *IOTXCallerSession) Allowance(_owner common.Address, _spender common.Address) (*big.Int, error) {
 	return _IOTX.Contract.Allowance(&_IOTX.CallOpts, _owner, _spender)
 }
 
 // BalanceOf is a free data retrieval call binding the contract method 0x70a08231.
 //
-// Solidity: function balanceOf(address _owner) constant returns(uint256)
+// Solidity: function balanceOf(_owner address) constant returns(uint256)
 func (_IOTX *IOTXCaller) BalanceOf(opts *bind.CallOpts, _owner common.Address) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
@@ -212,14 +200,14 @@ func (_IOTX *IOTXCaller) BalanceOf(opts *bind.CallOpts, _owner common.Address) (
 
 // BalanceOf is a free data retrieval call binding the contract method 0x70a08231.
 //
-// Solidity: function balanceOf(address _owner) constant returns(uint256)
+// Solidity: function balanceOf(_owner address) constant returns(uint256)
 func (_IOTX *IOTXSession) BalanceOf(_owner common.Address) (*big.Int, error) {
 	return _IOTX.Contract.BalanceOf(&_IOTX.CallOpts, _owner)
 }
 
 // BalanceOf is a free data retrieval call binding the contract method 0x70a08231.
 //
-// Solidity: function balanceOf(address _owner) constant returns(uint256)
+// Solidity: function balanceOf(_owner address) constant returns(uint256)
 func (_IOTX *IOTXCallerSession) BalanceOf(_owner common.Address) (*big.Int, error) {
 	return _IOTX.Contract.BalanceOf(&_IOTX.CallOpts, _owner)
 }
@@ -382,63 +370,63 @@ func (_IOTX *IOTXCallerSession) TotalSupply() (*big.Int, error) {
 
 // Approve is a paid mutator transaction binding the contract method 0x095ea7b3.
 //
-// Solidity: function approve(address _spender, uint256 _value) returns(bool)
+// Solidity: function approve(_spender address, _value uint256) returns(bool)
 func (_IOTX *IOTXTransactor) Approve(opts *bind.TransactOpts, _spender common.Address, _value *big.Int) (*types.Transaction, error) {
 	return _IOTX.contract.Transact(opts, "approve", _spender, _value)
 }
 
 // Approve is a paid mutator transaction binding the contract method 0x095ea7b3.
 //
-// Solidity: function approve(address _spender, uint256 _value) returns(bool)
+// Solidity: function approve(_spender address, _value uint256) returns(bool)
 func (_IOTX *IOTXSession) Approve(_spender common.Address, _value *big.Int) (*types.Transaction, error) {
 	return _IOTX.Contract.Approve(&_IOTX.TransactOpts, _spender, _value)
 }
 
 // Approve is a paid mutator transaction binding the contract method 0x095ea7b3.
 //
-// Solidity: function approve(address _spender, uint256 _value) returns(bool)
+// Solidity: function approve(_spender address, _value uint256) returns(bool)
 func (_IOTX *IOTXTransactorSession) Approve(_spender common.Address, _value *big.Int) (*types.Transaction, error) {
 	return _IOTX.Contract.Approve(&_IOTX.TransactOpts, _spender, _value)
 }
 
 // DecreaseApproval is a paid mutator transaction binding the contract method 0x66188463.
 //
-// Solidity: function decreaseApproval(address _spender, uint256 _subtractedValue) returns(bool success)
+// Solidity: function decreaseApproval(_spender address, _subtractedValue uint256) returns(success bool)
 func (_IOTX *IOTXTransactor) DecreaseApproval(opts *bind.TransactOpts, _spender common.Address, _subtractedValue *big.Int) (*types.Transaction, error) {
 	return _IOTX.contract.Transact(opts, "decreaseApproval", _spender, _subtractedValue)
 }
 
 // DecreaseApproval is a paid mutator transaction binding the contract method 0x66188463.
 //
-// Solidity: function decreaseApproval(address _spender, uint256 _subtractedValue) returns(bool success)
+// Solidity: function decreaseApproval(_spender address, _subtractedValue uint256) returns(success bool)
 func (_IOTX *IOTXSession) DecreaseApproval(_spender common.Address, _subtractedValue *big.Int) (*types.Transaction, error) {
 	return _IOTX.Contract.DecreaseApproval(&_IOTX.TransactOpts, _spender, _subtractedValue)
 }
 
 // DecreaseApproval is a paid mutator transaction binding the contract method 0x66188463.
 //
-// Solidity: function decreaseApproval(address _spender, uint256 _subtractedValue) returns(bool success)
+// Solidity: function decreaseApproval(_spender address, _subtractedValue uint256) returns(success bool)
 func (_IOTX *IOTXTransactorSession) DecreaseApproval(_spender common.Address, _subtractedValue *big.Int) (*types.Transaction, error) {
 	return _IOTX.Contract.DecreaseApproval(&_IOTX.TransactOpts, _spender, _subtractedValue)
 }
 
 // IncreaseApproval is a paid mutator transaction binding the contract method 0xd73dd623.
 //
-// Solidity: function increaseApproval(address _spender, uint256 _addedValue) returns(bool success)
+// Solidity: function increaseApproval(_spender address, _addedValue uint256) returns(success bool)
 func (_IOTX *IOTXTransactor) IncreaseApproval(opts *bind.TransactOpts, _spender common.Address, _addedValue *big.Int) (*types.Transaction, error) {
 	return _IOTX.contract.Transact(opts, "increaseApproval", _spender, _addedValue)
 }
 
 // IncreaseApproval is a paid mutator transaction binding the contract method 0xd73dd623.
 //
-// Solidity: function increaseApproval(address _spender, uint256 _addedValue) returns(bool success)
+// Solidity: function increaseApproval(_spender address, _addedValue uint256) returns(success bool)
 func (_IOTX *IOTXSession) IncreaseApproval(_spender common.Address, _addedValue *big.Int) (*types.Transaction, error) {
 	return _IOTX.Contract.IncreaseApproval(&_IOTX.TransactOpts, _spender, _addedValue)
 }
 
 // IncreaseApproval is a paid mutator transaction binding the contract method 0xd73dd623.
 //
-// Solidity: function increaseApproval(address _spender, uint256 _addedValue) returns(bool success)
+// Solidity: function increaseApproval(_spender address, _addedValue uint256) returns(success bool)
 func (_IOTX *IOTXTransactorSession) IncreaseApproval(_spender common.Address, _addedValue *big.Int) (*types.Transaction, error) {
 	return _IOTX.Contract.IncreaseApproval(&_IOTX.TransactOpts, _spender, _addedValue)
 }
@@ -466,63 +454,63 @@ func (_IOTX *IOTXTransactorSession) Pause() (*types.Transaction, error) {
 
 // Transfer is a paid mutator transaction binding the contract method 0xa9059cbb.
 //
-// Solidity: function transfer(address _to, uint256 _value) returns(bool)
+// Solidity: function transfer(_to address, _value uint256) returns(bool)
 func (_IOTX *IOTXTransactor) Transfer(opts *bind.TransactOpts, _to common.Address, _value *big.Int) (*types.Transaction, error) {
 	return _IOTX.contract.Transact(opts, "transfer", _to, _value)
 }
 
 // Transfer is a paid mutator transaction binding the contract method 0xa9059cbb.
 //
-// Solidity: function transfer(address _to, uint256 _value) returns(bool)
+// Solidity: function transfer(_to address, _value uint256) returns(bool)
 func (_IOTX *IOTXSession) Transfer(_to common.Address, _value *big.Int) (*types.Transaction, error) {
 	return _IOTX.Contract.Transfer(&_IOTX.TransactOpts, _to, _value)
 }
 
 // Transfer is a paid mutator transaction binding the contract method 0xa9059cbb.
 //
-// Solidity: function transfer(address _to, uint256 _value) returns(bool)
+// Solidity: function transfer(_to address, _value uint256) returns(bool)
 func (_IOTX *IOTXTransactorSession) Transfer(_to common.Address, _value *big.Int) (*types.Transaction, error) {
 	return _IOTX.Contract.Transfer(&_IOTX.TransactOpts, _to, _value)
 }
 
 // TransferFrom is a paid mutator transaction binding the contract method 0x23b872dd.
 //
-// Solidity: function transferFrom(address _from, address _to, uint256 _value) returns(bool)
+// Solidity: function transferFrom(_from address, _to address, _value uint256) returns(bool)
 func (_IOTX *IOTXTransactor) TransferFrom(opts *bind.TransactOpts, _from common.Address, _to common.Address, _value *big.Int) (*types.Transaction, error) {
 	return _IOTX.contract.Transact(opts, "transferFrom", _from, _to, _value)
 }
 
 // TransferFrom is a paid mutator transaction binding the contract method 0x23b872dd.
 //
-// Solidity: function transferFrom(address _from, address _to, uint256 _value) returns(bool)
+// Solidity: function transferFrom(_from address, _to address, _value uint256) returns(bool)
 func (_IOTX *IOTXSession) TransferFrom(_from common.Address, _to common.Address, _value *big.Int) (*types.Transaction, error) {
 	return _IOTX.Contract.TransferFrom(&_IOTX.TransactOpts, _from, _to, _value)
 }
 
 // TransferFrom is a paid mutator transaction binding the contract method 0x23b872dd.
 //
-// Solidity: function transferFrom(address _from, address _to, uint256 _value) returns(bool)
+// Solidity: function transferFrom(_from address, _to address, _value uint256) returns(bool)
 func (_IOTX *IOTXTransactorSession) TransferFrom(_from common.Address, _to common.Address, _value *big.Int) (*types.Transaction, error) {
 	return _IOTX.Contract.TransferFrom(&_IOTX.TransactOpts, _from, _to, _value)
 }
 
 // TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
 //
-// Solidity: function transferOwnership(address newOwner) returns()
+// Solidity: function transferOwnership(newOwner address) returns()
 func (_IOTX *IOTXTransactor) TransferOwnership(opts *bind.TransactOpts, newOwner common.Address) (*types.Transaction, error) {
 	return _IOTX.contract.Transact(opts, "transferOwnership", newOwner)
 }
 
 // TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
 //
-// Solidity: function transferOwnership(address newOwner) returns()
+// Solidity: function transferOwnership(newOwner address) returns()
 func (_IOTX *IOTXSession) TransferOwnership(newOwner common.Address) (*types.Transaction, error) {
 	return _IOTX.Contract.TransferOwnership(&_IOTX.TransactOpts, newOwner)
 }
 
 // TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
 //
-// Solidity: function transferOwnership(address newOwner) returns()
+// Solidity: function transferOwnership(newOwner address) returns()
 func (_IOTX *IOTXTransactorSession) TransferOwnership(newOwner common.Address) (*types.Transaction, error) {
 	return _IOTX.Contract.TransferOwnership(&_IOTX.TransactOpts, newOwner)
 }
@@ -625,7 +613,7 @@ type IOTXApproval struct {
 
 // FilterApproval is a free log retrieval operation binding the contract event 0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925.
 //
-// Solidity: event Approval(address indexed owner, address indexed spender, uint256 value)
+// Solidity: e Approval(owner indexed address, spender indexed address, value uint256)
 func (_IOTX *IOTXFilterer) FilterApproval(opts *bind.FilterOpts, owner []common.Address, spender []common.Address) (*IOTXApprovalIterator, error) {
 
 	var ownerRule []interface{}
@@ -646,7 +634,7 @@ func (_IOTX *IOTXFilterer) FilterApproval(opts *bind.FilterOpts, owner []common.
 
 // WatchApproval is a free log subscription operation binding the contract event 0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925.
 //
-// Solidity: event Approval(address indexed owner, address indexed spender, uint256 value)
+// Solidity: e Approval(owner indexed address, spender indexed address, value uint256)
 func (_IOTX *IOTXFilterer) WatchApproval(opts *bind.WatchOpts, sink chan<- *IOTXApproval, owner []common.Address, spender []common.Address) (event.Subscription, error) {
 
 	var ownerRule []interface{}
@@ -766,7 +754,7 @@ type IOTXOwnershipTransferred struct {
 
 // FilterOwnershipTransferred is a free log retrieval operation binding the contract event 0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0.
 //
-// Solidity: event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)
+// Solidity: e OwnershipTransferred(previousOwner indexed address, newOwner indexed address)
 func (_IOTX *IOTXFilterer) FilterOwnershipTransferred(opts *bind.FilterOpts, previousOwner []common.Address, newOwner []common.Address) (*IOTXOwnershipTransferredIterator, error) {
 
 	var previousOwnerRule []interface{}
@@ -787,7 +775,7 @@ func (_IOTX *IOTXFilterer) FilterOwnershipTransferred(opts *bind.FilterOpts, pre
 
 // WatchOwnershipTransferred is a free log subscription operation binding the contract event 0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0.
 //
-// Solidity: event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)
+// Solidity: e OwnershipTransferred(previousOwner indexed address, newOwner indexed address)
 func (_IOTX *IOTXFilterer) WatchOwnershipTransferred(opts *bind.WatchOpts, sink chan<- *IOTXOwnershipTransferred, previousOwner []common.Address, newOwner []common.Address) (event.Subscription, error) {
 
 	var previousOwnerRule []interface{}
@@ -905,7 +893,7 @@ type IOTXPause struct {
 
 // FilterPause is a free log retrieval operation binding the contract event 0x6985a02210a168e66602d3235cb6db0e70f92b3ba4d376a33c0f3d9434bff625.
 //
-// Solidity: event Pause()
+// Solidity: e Pause()
 func (_IOTX *IOTXFilterer) FilterPause(opts *bind.FilterOpts) (*IOTXPauseIterator, error) {
 
 	logs, sub, err := _IOTX.contract.FilterLogs(opts, "Pause")
@@ -917,7 +905,7 @@ func (_IOTX *IOTXFilterer) FilterPause(opts *bind.FilterOpts) (*IOTXPauseIterato
 
 // WatchPause is a free log subscription operation binding the contract event 0x6985a02210a168e66602d3235cb6db0e70f92b3ba4d376a33c0f3d9434bff625.
 //
-// Solidity: event Pause()
+// Solidity: e Pause()
 func (_IOTX *IOTXFilterer) WatchPause(opts *bind.WatchOpts, sink chan<- *IOTXPause) (event.Subscription, error) {
 
 	logs, sub, err := _IOTX.contract.WatchLogs(opts, "Pause")
@@ -1029,7 +1017,7 @@ type IOTXTransfer struct {
 
 // FilterTransfer is a free log retrieval operation binding the contract event 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef.
 //
-// Solidity: event Transfer(address indexed from, address indexed to, uint256 value)
+// Solidity: e Transfer(from indexed address, to indexed address, value uint256)
 func (_IOTX *IOTXFilterer) FilterTransfer(opts *bind.FilterOpts, from []common.Address, to []common.Address) (*IOTXTransferIterator, error) {
 
 	var fromRule []interface{}
@@ -1050,7 +1038,7 @@ func (_IOTX *IOTXFilterer) FilterTransfer(opts *bind.FilterOpts, from []common.A
 
 // WatchTransfer is a free log subscription operation binding the contract event 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef.
 //
-// Solidity: event Transfer(address indexed from, address indexed to, uint256 value)
+// Solidity: e Transfer(from indexed address, to indexed address, value uint256)
 func (_IOTX *IOTXFilterer) WatchTransfer(opts *bind.WatchOpts, sink chan<- *IOTXTransfer, from []common.Address, to []common.Address) (event.Subscription, error) {
 
 	var fromRule []interface{}
@@ -1168,7 +1156,7 @@ type IOTXUnpause struct {
 
 // FilterUnpause is a free log retrieval operation binding the contract event 0x7805862f689e2f13df9f062ff482ad3ad112aca9e0847911ed832e158c525b33.
 //
-// Solidity: event Unpause()
+// Solidity: e Unpause()
 func (_IOTX *IOTXFilterer) FilterUnpause(opts *bind.FilterOpts) (*IOTXUnpauseIterator, error) {
 
 	logs, sub, err := _IOTX.contract.FilterLogs(opts, "Unpause")
@@ -1180,7 +1168,7 @@ func (_IOTX *IOTXFilterer) FilterUnpause(opts *bind.FilterOpts) (*IOTXUnpauseIte
 
 // WatchUnpause is a free log subscription operation binding the contract event 0x7805862f689e2f13df9f062ff482ad3ad112aca9e0847911ed832e158c525b33.
 //
-// Solidity: event Unpause()
+// Solidity: e Unpause()
 func (_IOTX *IOTXFilterer) WatchUnpause(opts *bind.WatchOpts, sink chan<- *IOTXUnpause) (event.Subscription, error) {
 
 	logs, sub, err := _IOTX.contract.WatchLogs(opts, "Unpause")

@@ -15,18 +15,6 @@ import (
 	"github.com/ethereum/go-ethereum/event"
 )
 
-// Reference imports to suppress errors if they are not otherwise used.
-var (
-	_ = big.NewInt
-	_ = strings.NewReader
-	_ = ethereum.NotFound
-	_ = abi.U256
-	_ = bind.Bind
-	_ = common.Big1
-	_ = types.BloomLookup
-	_ = event.NewSubscription
-)
-
 // ClerkABI is the input ABI used to generate the binding from.
 const ClerkABI = "[{\"constant\":false,\"inputs\":[{\"name\":\"addrs\",\"type\":\"address[]\"}],\"name\":\"removeAddressesFromWhitelist\",\"outputs\":[{\"name\":\"success\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"removeAddressFromWhitelist\",\"outputs\":[{\"name\":\"success\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"vita\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"claim\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"addAddressToWhitelist\",\"outputs\":[{\"name\":\"success\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"address\"}],\"name\":\"whitelist\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"addrs\",\"type\":\"address[]\"}],\"name\":\"addAddressesToWhitelist\",\"outputs\":[{\"name\":\"success\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"receivers\",\"type\":\"address[]\"},{\"name\":\"amounts\",\"type\":\"uint256[]\"}],\"name\":\"transfer\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"name\":\"vitaTokenAddress\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"WhitelistedAddressAdded\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"WhitelistedAddressRemoved\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"}]"
 
@@ -247,7 +235,7 @@ func (_Clerk *ClerkCallerSession) Vita() (common.Address, error) {
 
 // Whitelist is a free data retrieval call binding the contract method 0x9b19251a.
 //
-// Solidity: function whitelist(address ) constant returns(bool)
+// Solidity: function whitelist( address) constant returns(bool)
 func (_Clerk *ClerkCaller) Whitelist(opts *bind.CallOpts, arg0 common.Address) (bool, error) {
 	var (
 		ret0 = new(bool)
@@ -259,56 +247,56 @@ func (_Clerk *ClerkCaller) Whitelist(opts *bind.CallOpts, arg0 common.Address) (
 
 // Whitelist is a free data retrieval call binding the contract method 0x9b19251a.
 //
-// Solidity: function whitelist(address ) constant returns(bool)
+// Solidity: function whitelist( address) constant returns(bool)
 func (_Clerk *ClerkSession) Whitelist(arg0 common.Address) (bool, error) {
 	return _Clerk.Contract.Whitelist(&_Clerk.CallOpts, arg0)
 }
 
 // Whitelist is a free data retrieval call binding the contract method 0x9b19251a.
 //
-// Solidity: function whitelist(address ) constant returns(bool)
+// Solidity: function whitelist( address) constant returns(bool)
 func (_Clerk *ClerkCallerSession) Whitelist(arg0 common.Address) (bool, error) {
 	return _Clerk.Contract.Whitelist(&_Clerk.CallOpts, arg0)
 }
 
 // AddAddressToWhitelist is a paid mutator transaction binding the contract method 0x7b9417c8.
 //
-// Solidity: function addAddressToWhitelist(address addr) returns(bool success)
+// Solidity: function addAddressToWhitelist(addr address) returns(success bool)
 func (_Clerk *ClerkTransactor) AddAddressToWhitelist(opts *bind.TransactOpts, addr common.Address) (*types.Transaction, error) {
 	return _Clerk.contract.Transact(opts, "addAddressToWhitelist", addr)
 }
 
 // AddAddressToWhitelist is a paid mutator transaction binding the contract method 0x7b9417c8.
 //
-// Solidity: function addAddressToWhitelist(address addr) returns(bool success)
+// Solidity: function addAddressToWhitelist(addr address) returns(success bool)
 func (_Clerk *ClerkSession) AddAddressToWhitelist(addr common.Address) (*types.Transaction, error) {
 	return _Clerk.Contract.AddAddressToWhitelist(&_Clerk.TransactOpts, addr)
 }
 
 // AddAddressToWhitelist is a paid mutator transaction binding the contract method 0x7b9417c8.
 //
-// Solidity: function addAddressToWhitelist(address addr) returns(bool success)
+// Solidity: function addAddressToWhitelist(addr address) returns(success bool)
 func (_Clerk *ClerkTransactorSession) AddAddressToWhitelist(addr common.Address) (*types.Transaction, error) {
 	return _Clerk.Contract.AddAddressToWhitelist(&_Clerk.TransactOpts, addr)
 }
 
 // AddAddressesToWhitelist is a paid mutator transaction binding the contract method 0xe2ec6ec3.
 //
-// Solidity: function addAddressesToWhitelist(address[] addrs) returns(bool success)
+// Solidity: function addAddressesToWhitelist(addrs address[]) returns(success bool)
 func (_Clerk *ClerkTransactor) AddAddressesToWhitelist(opts *bind.TransactOpts, addrs []common.Address) (*types.Transaction, error) {
 	return _Clerk.contract.Transact(opts, "addAddressesToWhitelist", addrs)
 }
 
 // AddAddressesToWhitelist is a paid mutator transaction binding the contract method 0xe2ec6ec3.
 //
-// Solidity: function addAddressesToWhitelist(address[] addrs) returns(bool success)
+// Solidity: function addAddressesToWhitelist(addrs address[]) returns(success bool)
 func (_Clerk *ClerkSession) AddAddressesToWhitelist(addrs []common.Address) (*types.Transaction, error) {
 	return _Clerk.Contract.AddAddressesToWhitelist(&_Clerk.TransactOpts, addrs)
 }
 
 // AddAddressesToWhitelist is a paid mutator transaction binding the contract method 0xe2ec6ec3.
 //
-// Solidity: function addAddressesToWhitelist(address[] addrs) returns(bool success)
+// Solidity: function addAddressesToWhitelist(addrs address[]) returns(success bool)
 func (_Clerk *ClerkTransactorSession) AddAddressesToWhitelist(addrs []common.Address) (*types.Transaction, error) {
 	return _Clerk.Contract.AddAddressesToWhitelist(&_Clerk.TransactOpts, addrs)
 }
@@ -336,84 +324,84 @@ func (_Clerk *ClerkTransactorSession) Claim() (*types.Transaction, error) {
 
 // RemoveAddressFromWhitelist is a paid mutator transaction binding the contract method 0x286dd3f5.
 //
-// Solidity: function removeAddressFromWhitelist(address addr) returns(bool success)
+// Solidity: function removeAddressFromWhitelist(addr address) returns(success bool)
 func (_Clerk *ClerkTransactor) RemoveAddressFromWhitelist(opts *bind.TransactOpts, addr common.Address) (*types.Transaction, error) {
 	return _Clerk.contract.Transact(opts, "removeAddressFromWhitelist", addr)
 }
 
 // RemoveAddressFromWhitelist is a paid mutator transaction binding the contract method 0x286dd3f5.
 //
-// Solidity: function removeAddressFromWhitelist(address addr) returns(bool success)
+// Solidity: function removeAddressFromWhitelist(addr address) returns(success bool)
 func (_Clerk *ClerkSession) RemoveAddressFromWhitelist(addr common.Address) (*types.Transaction, error) {
 	return _Clerk.Contract.RemoveAddressFromWhitelist(&_Clerk.TransactOpts, addr)
 }
 
 // RemoveAddressFromWhitelist is a paid mutator transaction binding the contract method 0x286dd3f5.
 //
-// Solidity: function removeAddressFromWhitelist(address addr) returns(bool success)
+// Solidity: function removeAddressFromWhitelist(addr address) returns(success bool)
 func (_Clerk *ClerkTransactorSession) RemoveAddressFromWhitelist(addr common.Address) (*types.Transaction, error) {
 	return _Clerk.Contract.RemoveAddressFromWhitelist(&_Clerk.TransactOpts, addr)
 }
 
 // RemoveAddressesFromWhitelist is a paid mutator transaction binding the contract method 0x24953eaa.
 //
-// Solidity: function removeAddressesFromWhitelist(address[] addrs) returns(bool success)
+// Solidity: function removeAddressesFromWhitelist(addrs address[]) returns(success bool)
 func (_Clerk *ClerkTransactor) RemoveAddressesFromWhitelist(opts *bind.TransactOpts, addrs []common.Address) (*types.Transaction, error) {
 	return _Clerk.contract.Transact(opts, "removeAddressesFromWhitelist", addrs)
 }
 
 // RemoveAddressesFromWhitelist is a paid mutator transaction binding the contract method 0x24953eaa.
 //
-// Solidity: function removeAddressesFromWhitelist(address[] addrs) returns(bool success)
+// Solidity: function removeAddressesFromWhitelist(addrs address[]) returns(success bool)
 func (_Clerk *ClerkSession) RemoveAddressesFromWhitelist(addrs []common.Address) (*types.Transaction, error) {
 	return _Clerk.Contract.RemoveAddressesFromWhitelist(&_Clerk.TransactOpts, addrs)
 }
 
 // RemoveAddressesFromWhitelist is a paid mutator transaction binding the contract method 0x24953eaa.
 //
-// Solidity: function removeAddressesFromWhitelist(address[] addrs) returns(bool success)
+// Solidity: function removeAddressesFromWhitelist(addrs address[]) returns(success bool)
 func (_Clerk *ClerkTransactorSession) RemoveAddressesFromWhitelist(addrs []common.Address) (*types.Transaction, error) {
 	return _Clerk.Contract.RemoveAddressesFromWhitelist(&_Clerk.TransactOpts, addrs)
 }
 
 // Transfer is a paid mutator transaction binding the contract method 0xffc3a769.
 //
-// Solidity: function transfer(address[] receivers, uint256[] amounts) returns()
+// Solidity: function transfer(receivers address[], amounts uint256[]) returns()
 func (_Clerk *ClerkTransactor) Transfer(opts *bind.TransactOpts, receivers []common.Address, amounts []*big.Int) (*types.Transaction, error) {
 	return _Clerk.contract.Transact(opts, "transfer", receivers, amounts)
 }
 
 // Transfer is a paid mutator transaction binding the contract method 0xffc3a769.
 //
-// Solidity: function transfer(address[] receivers, uint256[] amounts) returns()
+// Solidity: function transfer(receivers address[], amounts uint256[]) returns()
 func (_Clerk *ClerkSession) Transfer(receivers []common.Address, amounts []*big.Int) (*types.Transaction, error) {
 	return _Clerk.Contract.Transfer(&_Clerk.TransactOpts, receivers, amounts)
 }
 
 // Transfer is a paid mutator transaction binding the contract method 0xffc3a769.
 //
-// Solidity: function transfer(address[] receivers, uint256[] amounts) returns()
+// Solidity: function transfer(receivers address[], amounts uint256[]) returns()
 func (_Clerk *ClerkTransactorSession) Transfer(receivers []common.Address, amounts []*big.Int) (*types.Transaction, error) {
 	return _Clerk.Contract.Transfer(&_Clerk.TransactOpts, receivers, amounts)
 }
 
 // TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
 //
-// Solidity: function transferOwnership(address newOwner) returns()
+// Solidity: function transferOwnership(newOwner address) returns()
 func (_Clerk *ClerkTransactor) TransferOwnership(opts *bind.TransactOpts, newOwner common.Address) (*types.Transaction, error) {
 	return _Clerk.contract.Transact(opts, "transferOwnership", newOwner)
 }
 
 // TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
 //
-// Solidity: function transferOwnership(address newOwner) returns()
+// Solidity: function transferOwnership(newOwner address) returns()
 func (_Clerk *ClerkSession) TransferOwnership(newOwner common.Address) (*types.Transaction, error) {
 	return _Clerk.Contract.TransferOwnership(&_Clerk.TransactOpts, newOwner)
 }
 
 // TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
 //
-// Solidity: function transferOwnership(address newOwner) returns()
+// Solidity: function transferOwnership(newOwner address) returns()
 func (_Clerk *ClerkTransactorSession) TransferOwnership(newOwner common.Address) (*types.Transaction, error) {
 	return _Clerk.Contract.TransferOwnership(&_Clerk.TransactOpts, newOwner)
 }
@@ -494,7 +482,7 @@ type ClerkOwnershipTransferred struct {
 
 // FilterOwnershipTransferred is a free log retrieval operation binding the contract event 0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0.
 //
-// Solidity: event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)
+// Solidity: e OwnershipTransferred(previousOwner indexed address, newOwner indexed address)
 func (_Clerk *ClerkFilterer) FilterOwnershipTransferred(opts *bind.FilterOpts, previousOwner []common.Address, newOwner []common.Address) (*ClerkOwnershipTransferredIterator, error) {
 
 	var previousOwnerRule []interface{}
@@ -515,7 +503,7 @@ func (_Clerk *ClerkFilterer) FilterOwnershipTransferred(opts *bind.FilterOpts, p
 
 // WatchOwnershipTransferred is a free log subscription operation binding the contract event 0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0.
 //
-// Solidity: event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)
+// Solidity: e OwnershipTransferred(previousOwner indexed address, newOwner indexed address)
 func (_Clerk *ClerkFilterer) WatchOwnershipTransferred(opts *bind.WatchOpts, sink chan<- *ClerkOwnershipTransferred, previousOwner []common.Address, newOwner []common.Address) (event.Subscription, error) {
 
 	var previousOwnerRule []interface{}
@@ -634,7 +622,7 @@ type ClerkWhitelistedAddressAdded struct {
 
 // FilterWhitelistedAddressAdded is a free log retrieval operation binding the contract event 0xd1bba68c128cc3f427e5831b3c6f99f480b6efa6b9e80c757768f6124158cc3f.
 //
-// Solidity: event WhitelistedAddressAdded(address addr)
+// Solidity: e WhitelistedAddressAdded(addr address)
 func (_Clerk *ClerkFilterer) FilterWhitelistedAddressAdded(opts *bind.FilterOpts) (*ClerkWhitelistedAddressAddedIterator, error) {
 
 	logs, sub, err := _Clerk.contract.FilterLogs(opts, "WhitelistedAddressAdded")
@@ -646,7 +634,7 @@ func (_Clerk *ClerkFilterer) FilterWhitelistedAddressAdded(opts *bind.FilterOpts
 
 // WatchWhitelistedAddressAdded is a free log subscription operation binding the contract event 0xd1bba68c128cc3f427e5831b3c6f99f480b6efa6b9e80c757768f6124158cc3f.
 //
-// Solidity: event WhitelistedAddressAdded(address addr)
+// Solidity: e WhitelistedAddressAdded(addr address)
 func (_Clerk *ClerkFilterer) WatchWhitelistedAddressAdded(opts *bind.WatchOpts, sink chan<- *ClerkWhitelistedAddressAdded) (event.Subscription, error) {
 
 	logs, sub, err := _Clerk.contract.WatchLogs(opts, "WhitelistedAddressAdded")
@@ -756,7 +744,7 @@ type ClerkWhitelistedAddressRemoved struct {
 
 // FilterWhitelistedAddressRemoved is a free log retrieval operation binding the contract event 0xf1abf01a1043b7c244d128e8595cf0c1d10743b022b03a02dffd8ca3bf729f5a.
 //
-// Solidity: event WhitelistedAddressRemoved(address addr)
+// Solidity: e WhitelistedAddressRemoved(addr address)
 func (_Clerk *ClerkFilterer) FilterWhitelistedAddressRemoved(opts *bind.FilterOpts) (*ClerkWhitelistedAddressRemovedIterator, error) {
 
 	logs, sub, err := _Clerk.contract.FilterLogs(opts, "WhitelistedAddressRemoved")
@@ -768,7 +756,7 @@ func (_Clerk *ClerkFilterer) FilterWhitelistedAddressRemoved(opts *bind.FilterOp
 
 // WatchWhitelistedAddressRemoved is a free log subscription operation binding the contract event 0xf1abf01a1043b7c244d128e8595cf0c1d10743b022b03a02dffd8ca3bf729f5a.
 //
-// Solidity: event WhitelistedAddressRemoved(address addr)
+// Solidity: e WhitelistedAddressRemoved(addr address)
 func (_Clerk *ClerkFilterer) WatchWhitelistedAddressRemoved(opts *bind.WatchOpts, sink chan<- *ClerkWhitelistedAddressRemoved) (event.Subscription, error) {
 
 	logs, sub, err := _Clerk.contract.WatchLogs(opts, "WhitelistedAddressRemoved")

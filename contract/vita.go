@@ -15,18 +15,6 @@ import (
 	"github.com/ethereum/go-ethereum/event"
 )
 
-// Reference imports to suppress errors if they are not otherwise used.
-var (
-	_ = big.NewInt
-	_ = strings.NewReader
-	_ = ethereum.NotFound
-	_ = abi.U256
-	_ = bind.Bind
-	_ = common.Big1
-	_ = types.BloomLookup
-	_ = event.NewSubscription
-)
-
 // VitaABI is the input ABI used to generate the binding from.
 const VitaABI = "[{\"constant\":true,\"inputs\":[],\"name\":\"name\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_spender\",\"type\":\"address\"},{\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"approve\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"cycleIncrementalSupply\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"totalSupply\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"numOfViews\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"decayedIncrementalSupply\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"rewardPoolSize\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_from\",\"type\":\"address\"},{\"name\":\"_to\",\"type\":\"address\"},{\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"transferFrom\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"donationPoolAddress\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"decimals\",\"outputs\":[{\"name\":\"\",\"type\":\"uint8\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"address\"}],\"name\":\"lastClaimViewIDs\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"stakingPoolSize\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_newVPS\",\"type\":\"address\"}],\"name\":\"setVPS\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"unpause\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"genesisPoolAddress\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"burn\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"claim\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"vps\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"paused\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"lastDonationPoolClaimViewID\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_spender\",\"type\":\"address\"},{\"name\":\"_subtractedValue\",\"type\":\"uint256\"}],\"name\":\"decreaseApproval\",\"outputs\":[{\"name\":\"success\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_owner\",\"type\":\"address\"}],\"name\":\"balanceOf\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"pause\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"rewardPoolAddress\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"symbol\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_to\",\"type\":\"address\"},{\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"transfer\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"claimable\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_newRewardPool\",\"type\":\"address\"}],\"name\":\"setRewardPoolAddress\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"donationPoolSize\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"lastRewardPoolClaimViewID\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_spender\",\"type\":\"address\"},{\"name\":\"_addedValue\",\"type\":\"uint256\"}],\"name\":\"increaseApproval\",\"outputs\":[{\"name\":\"success\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_owner\",\"type\":\"address\"},{\"name\":\"_spender\",\"type\":\"address\"}],\"name\":\"allowance\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"incrementalSupply\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_newDonationPool\",\"type\":\"address\"}],\"name\":\"setDonationPoolAddress\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"name\":\"_vps\",\"type\":\"address\"},{\"name\":\"_genesisPoolAddress\",\"type\":\"address\"},{\"name\":\"_rewardPoolAddress\",\"type\":\"address\"},{\"name\":\"_donationPoolAddress\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"claimer\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"amount\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"viewID\",\"type\":\"uint256\"}],\"name\":\"Claim\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"height\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"incremetnalSupply\",\"type\":\"uint256\"}],\"name\":\"Decay\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"viewID\",\"type\":\"uint256\"}],\"name\":\"UpdateView\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"Pause\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"Unpause\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"spender\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"Approval\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"from\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"to\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"Transfer\",\"type\":\"event\"}]"
 
@@ -195,7 +183,7 @@ func (_Vita *VitaTransactorRaw) Transact(opts *bind.TransactOpts, method string,
 
 // Allowance is a free data retrieval call binding the contract method 0xdd62ed3e.
 //
-// Solidity: function allowance(address _owner, address _spender) constant returns(uint256)
+// Solidity: function allowance(_owner address, _spender address) constant returns(uint256)
 func (_Vita *VitaCaller) Allowance(opts *bind.CallOpts, _owner common.Address, _spender common.Address) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
@@ -207,21 +195,21 @@ func (_Vita *VitaCaller) Allowance(opts *bind.CallOpts, _owner common.Address, _
 
 // Allowance is a free data retrieval call binding the contract method 0xdd62ed3e.
 //
-// Solidity: function allowance(address _owner, address _spender) constant returns(uint256)
+// Solidity: function allowance(_owner address, _spender address) constant returns(uint256)
 func (_Vita *VitaSession) Allowance(_owner common.Address, _spender common.Address) (*big.Int, error) {
 	return _Vita.Contract.Allowance(&_Vita.CallOpts, _owner, _spender)
 }
 
 // Allowance is a free data retrieval call binding the contract method 0xdd62ed3e.
 //
-// Solidity: function allowance(address _owner, address _spender) constant returns(uint256)
+// Solidity: function allowance(_owner address, _spender address) constant returns(uint256)
 func (_Vita *VitaCallerSession) Allowance(_owner common.Address, _spender common.Address) (*big.Int, error) {
 	return _Vita.Contract.Allowance(&_Vita.CallOpts, _owner, _spender)
 }
 
 // BalanceOf is a free data retrieval call binding the contract method 0x70a08231.
 //
-// Solidity: function balanceOf(address _owner) constant returns(uint256)
+// Solidity: function balanceOf(_owner address) constant returns(uint256)
 func (_Vita *VitaCaller) BalanceOf(opts *bind.CallOpts, _owner common.Address) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
@@ -233,14 +221,14 @@ func (_Vita *VitaCaller) BalanceOf(opts *bind.CallOpts, _owner common.Address) (
 
 // BalanceOf is a free data retrieval call binding the contract method 0x70a08231.
 //
-// Solidity: function balanceOf(address _owner) constant returns(uint256)
+// Solidity: function balanceOf(_owner address) constant returns(uint256)
 func (_Vita *VitaSession) BalanceOf(_owner common.Address) (*big.Int, error) {
 	return _Vita.Contract.BalanceOf(&_Vita.CallOpts, _owner)
 }
 
 // BalanceOf is a free data retrieval call binding the contract method 0x70a08231.
 //
-// Solidity: function balanceOf(address _owner) constant returns(uint256)
+// Solidity: function balanceOf(_owner address) constant returns(uint256)
 func (_Vita *VitaCallerSession) BalanceOf(_owner common.Address) (*big.Int, error) {
 	return _Vita.Contract.BalanceOf(&_Vita.CallOpts, _owner)
 }
@@ -455,7 +443,7 @@ func (_Vita *VitaCallerSession) IncrementalSupply() (*big.Int, error) {
 
 // LastClaimViewIDs is a free data retrieval call binding the contract method 0x3609c052.
 //
-// Solidity: function lastClaimViewIDs(address ) constant returns(uint256)
+// Solidity: function lastClaimViewIDs( address) constant returns(uint256)
 func (_Vita *VitaCaller) LastClaimViewIDs(opts *bind.CallOpts, arg0 common.Address) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
@@ -467,14 +455,14 @@ func (_Vita *VitaCaller) LastClaimViewIDs(opts *bind.CallOpts, arg0 common.Addre
 
 // LastClaimViewIDs is a free data retrieval call binding the contract method 0x3609c052.
 //
-// Solidity: function lastClaimViewIDs(address ) constant returns(uint256)
+// Solidity: function lastClaimViewIDs( address) constant returns(uint256)
 func (_Vita *VitaSession) LastClaimViewIDs(arg0 common.Address) (*big.Int, error) {
 	return _Vita.Contract.LastClaimViewIDs(&_Vita.CallOpts, arg0)
 }
 
 // LastClaimViewIDs is a free data retrieval call binding the contract method 0x3609c052.
 //
-// Solidity: function lastClaimViewIDs(address ) constant returns(uint256)
+// Solidity: function lastClaimViewIDs( address) constant returns(uint256)
 func (_Vita *VitaCallerSession) LastClaimViewIDs(arg0 common.Address) (*big.Int, error) {
 	return _Vita.Contract.LastClaimViewIDs(&_Vita.CallOpts, arg0)
 }
@@ -793,42 +781,42 @@ func (_Vita *VitaCallerSession) Vps() (common.Address, error) {
 
 // Approve is a paid mutator transaction binding the contract method 0x095ea7b3.
 //
-// Solidity: function approve(address _spender, uint256 _value) returns(bool)
+// Solidity: function approve(_spender address, _value uint256) returns(bool)
 func (_Vita *VitaTransactor) Approve(opts *bind.TransactOpts, _spender common.Address, _value *big.Int) (*types.Transaction, error) {
 	return _Vita.contract.Transact(opts, "approve", _spender, _value)
 }
 
 // Approve is a paid mutator transaction binding the contract method 0x095ea7b3.
 //
-// Solidity: function approve(address _spender, uint256 _value) returns(bool)
+// Solidity: function approve(_spender address, _value uint256) returns(bool)
 func (_Vita *VitaSession) Approve(_spender common.Address, _value *big.Int) (*types.Transaction, error) {
 	return _Vita.Contract.Approve(&_Vita.TransactOpts, _spender, _value)
 }
 
 // Approve is a paid mutator transaction binding the contract method 0x095ea7b3.
 //
-// Solidity: function approve(address _spender, uint256 _value) returns(bool)
+// Solidity: function approve(_spender address, _value uint256) returns(bool)
 func (_Vita *VitaTransactorSession) Approve(_spender common.Address, _value *big.Int) (*types.Transaction, error) {
 	return _Vita.Contract.Approve(&_Vita.TransactOpts, _spender, _value)
 }
 
 // Burn is a paid mutator transaction binding the contract method 0x42966c68.
 //
-// Solidity: function burn(uint256 amount) returns()
+// Solidity: function burn(amount uint256) returns()
 func (_Vita *VitaTransactor) Burn(opts *bind.TransactOpts, amount *big.Int) (*types.Transaction, error) {
 	return _Vita.contract.Transact(opts, "burn", amount)
 }
 
 // Burn is a paid mutator transaction binding the contract method 0x42966c68.
 //
-// Solidity: function burn(uint256 amount) returns()
+// Solidity: function burn(amount uint256) returns()
 func (_Vita *VitaSession) Burn(amount *big.Int) (*types.Transaction, error) {
 	return _Vita.Contract.Burn(&_Vita.TransactOpts, amount)
 }
 
 // Burn is a paid mutator transaction binding the contract method 0x42966c68.
 //
-// Solidity: function burn(uint256 amount) returns()
+// Solidity: function burn(amount uint256) returns()
 func (_Vita *VitaTransactorSession) Burn(amount *big.Int) (*types.Transaction, error) {
 	return _Vita.Contract.Burn(&_Vita.TransactOpts, amount)
 }
@@ -856,42 +844,42 @@ func (_Vita *VitaTransactorSession) Claim() (*types.Transaction, error) {
 
 // DecreaseApproval is a paid mutator transaction binding the contract method 0x66188463.
 //
-// Solidity: function decreaseApproval(address _spender, uint256 _subtractedValue) returns(bool success)
+// Solidity: function decreaseApproval(_spender address, _subtractedValue uint256) returns(success bool)
 func (_Vita *VitaTransactor) DecreaseApproval(opts *bind.TransactOpts, _spender common.Address, _subtractedValue *big.Int) (*types.Transaction, error) {
 	return _Vita.contract.Transact(opts, "decreaseApproval", _spender, _subtractedValue)
 }
 
 // DecreaseApproval is a paid mutator transaction binding the contract method 0x66188463.
 //
-// Solidity: function decreaseApproval(address _spender, uint256 _subtractedValue) returns(bool success)
+// Solidity: function decreaseApproval(_spender address, _subtractedValue uint256) returns(success bool)
 func (_Vita *VitaSession) DecreaseApproval(_spender common.Address, _subtractedValue *big.Int) (*types.Transaction, error) {
 	return _Vita.Contract.DecreaseApproval(&_Vita.TransactOpts, _spender, _subtractedValue)
 }
 
 // DecreaseApproval is a paid mutator transaction binding the contract method 0x66188463.
 //
-// Solidity: function decreaseApproval(address _spender, uint256 _subtractedValue) returns(bool success)
+// Solidity: function decreaseApproval(_spender address, _subtractedValue uint256) returns(success bool)
 func (_Vita *VitaTransactorSession) DecreaseApproval(_spender common.Address, _subtractedValue *big.Int) (*types.Transaction, error) {
 	return _Vita.Contract.DecreaseApproval(&_Vita.TransactOpts, _spender, _subtractedValue)
 }
 
 // IncreaseApproval is a paid mutator transaction binding the contract method 0xd73dd623.
 //
-// Solidity: function increaseApproval(address _spender, uint256 _addedValue) returns(bool success)
+// Solidity: function increaseApproval(_spender address, _addedValue uint256) returns(success bool)
 func (_Vita *VitaTransactor) IncreaseApproval(opts *bind.TransactOpts, _spender common.Address, _addedValue *big.Int) (*types.Transaction, error) {
 	return _Vita.contract.Transact(opts, "increaseApproval", _spender, _addedValue)
 }
 
 // IncreaseApproval is a paid mutator transaction binding the contract method 0xd73dd623.
 //
-// Solidity: function increaseApproval(address _spender, uint256 _addedValue) returns(bool success)
+// Solidity: function increaseApproval(_spender address, _addedValue uint256) returns(success bool)
 func (_Vita *VitaSession) IncreaseApproval(_spender common.Address, _addedValue *big.Int) (*types.Transaction, error) {
 	return _Vita.Contract.IncreaseApproval(&_Vita.TransactOpts, _spender, _addedValue)
 }
 
 // IncreaseApproval is a paid mutator transaction binding the contract method 0xd73dd623.
 //
-// Solidity: function increaseApproval(address _spender, uint256 _addedValue) returns(bool success)
+// Solidity: function increaseApproval(_spender address, _addedValue uint256) returns(success bool)
 func (_Vita *VitaTransactorSession) IncreaseApproval(_spender common.Address, _addedValue *big.Int) (*types.Transaction, error) {
 	return _Vita.Contract.IncreaseApproval(&_Vita.TransactOpts, _spender, _addedValue)
 }
@@ -919,126 +907,126 @@ func (_Vita *VitaTransactorSession) Pause() (*types.Transaction, error) {
 
 // SetDonationPoolAddress is a paid mutator transaction binding the contract method 0xed644211.
 //
-// Solidity: function setDonationPoolAddress(address _newDonationPool) returns()
+// Solidity: function setDonationPoolAddress(_newDonationPool address) returns()
 func (_Vita *VitaTransactor) SetDonationPoolAddress(opts *bind.TransactOpts, _newDonationPool common.Address) (*types.Transaction, error) {
 	return _Vita.contract.Transact(opts, "setDonationPoolAddress", _newDonationPool)
 }
 
 // SetDonationPoolAddress is a paid mutator transaction binding the contract method 0xed644211.
 //
-// Solidity: function setDonationPoolAddress(address _newDonationPool) returns()
+// Solidity: function setDonationPoolAddress(_newDonationPool address) returns()
 func (_Vita *VitaSession) SetDonationPoolAddress(_newDonationPool common.Address) (*types.Transaction, error) {
 	return _Vita.Contract.SetDonationPoolAddress(&_Vita.TransactOpts, _newDonationPool)
 }
 
 // SetDonationPoolAddress is a paid mutator transaction binding the contract method 0xed644211.
 //
-// Solidity: function setDonationPoolAddress(address _newDonationPool) returns()
+// Solidity: function setDonationPoolAddress(_newDonationPool address) returns()
 func (_Vita *VitaTransactorSession) SetDonationPoolAddress(_newDonationPool common.Address) (*types.Transaction, error) {
 	return _Vita.Contract.SetDonationPoolAddress(&_Vita.TransactOpts, _newDonationPool)
 }
 
 // SetRewardPoolAddress is a paid mutator transaction binding the contract method 0xb24cf5d7.
 //
-// Solidity: function setRewardPoolAddress(address _newRewardPool) returns()
+// Solidity: function setRewardPoolAddress(_newRewardPool address) returns()
 func (_Vita *VitaTransactor) SetRewardPoolAddress(opts *bind.TransactOpts, _newRewardPool common.Address) (*types.Transaction, error) {
 	return _Vita.contract.Transact(opts, "setRewardPoolAddress", _newRewardPool)
 }
 
 // SetRewardPoolAddress is a paid mutator transaction binding the contract method 0xb24cf5d7.
 //
-// Solidity: function setRewardPoolAddress(address _newRewardPool) returns()
+// Solidity: function setRewardPoolAddress(_newRewardPool address) returns()
 func (_Vita *VitaSession) SetRewardPoolAddress(_newRewardPool common.Address) (*types.Transaction, error) {
 	return _Vita.Contract.SetRewardPoolAddress(&_Vita.TransactOpts, _newRewardPool)
 }
 
 // SetRewardPoolAddress is a paid mutator transaction binding the contract method 0xb24cf5d7.
 //
-// Solidity: function setRewardPoolAddress(address _newRewardPool) returns()
+// Solidity: function setRewardPoolAddress(_newRewardPool address) returns()
 func (_Vita *VitaTransactorSession) SetRewardPoolAddress(_newRewardPool common.Address) (*types.Transaction, error) {
 	return _Vita.Contract.SetRewardPoolAddress(&_Vita.TransactOpts, _newRewardPool)
 }
 
 // SetVPS is a paid mutator transaction binding the contract method 0x3d8384b6.
 //
-// Solidity: function setVPS(address _newVPS) returns()
+// Solidity: function setVPS(_newVPS address) returns()
 func (_Vita *VitaTransactor) SetVPS(opts *bind.TransactOpts, _newVPS common.Address) (*types.Transaction, error) {
 	return _Vita.contract.Transact(opts, "setVPS", _newVPS)
 }
 
 // SetVPS is a paid mutator transaction binding the contract method 0x3d8384b6.
 //
-// Solidity: function setVPS(address _newVPS) returns()
+// Solidity: function setVPS(_newVPS address) returns()
 func (_Vita *VitaSession) SetVPS(_newVPS common.Address) (*types.Transaction, error) {
 	return _Vita.Contract.SetVPS(&_Vita.TransactOpts, _newVPS)
 }
 
 // SetVPS is a paid mutator transaction binding the contract method 0x3d8384b6.
 //
-// Solidity: function setVPS(address _newVPS) returns()
+// Solidity: function setVPS(_newVPS address) returns()
 func (_Vita *VitaTransactorSession) SetVPS(_newVPS common.Address) (*types.Transaction, error) {
 	return _Vita.Contract.SetVPS(&_Vita.TransactOpts, _newVPS)
 }
 
 // Transfer is a paid mutator transaction binding the contract method 0xa9059cbb.
 //
-// Solidity: function transfer(address _to, uint256 _value) returns(bool)
+// Solidity: function transfer(_to address, _value uint256) returns(bool)
 func (_Vita *VitaTransactor) Transfer(opts *bind.TransactOpts, _to common.Address, _value *big.Int) (*types.Transaction, error) {
 	return _Vita.contract.Transact(opts, "transfer", _to, _value)
 }
 
 // Transfer is a paid mutator transaction binding the contract method 0xa9059cbb.
 //
-// Solidity: function transfer(address _to, uint256 _value) returns(bool)
+// Solidity: function transfer(_to address, _value uint256) returns(bool)
 func (_Vita *VitaSession) Transfer(_to common.Address, _value *big.Int) (*types.Transaction, error) {
 	return _Vita.Contract.Transfer(&_Vita.TransactOpts, _to, _value)
 }
 
 // Transfer is a paid mutator transaction binding the contract method 0xa9059cbb.
 //
-// Solidity: function transfer(address _to, uint256 _value) returns(bool)
+// Solidity: function transfer(_to address, _value uint256) returns(bool)
 func (_Vita *VitaTransactorSession) Transfer(_to common.Address, _value *big.Int) (*types.Transaction, error) {
 	return _Vita.Contract.Transfer(&_Vita.TransactOpts, _to, _value)
 }
 
 // TransferFrom is a paid mutator transaction binding the contract method 0x23b872dd.
 //
-// Solidity: function transferFrom(address _from, address _to, uint256 _value) returns(bool)
+// Solidity: function transferFrom(_from address, _to address, _value uint256) returns(bool)
 func (_Vita *VitaTransactor) TransferFrom(opts *bind.TransactOpts, _from common.Address, _to common.Address, _value *big.Int) (*types.Transaction, error) {
 	return _Vita.contract.Transact(opts, "transferFrom", _from, _to, _value)
 }
 
 // TransferFrom is a paid mutator transaction binding the contract method 0x23b872dd.
 //
-// Solidity: function transferFrom(address _from, address _to, uint256 _value) returns(bool)
+// Solidity: function transferFrom(_from address, _to address, _value uint256) returns(bool)
 func (_Vita *VitaSession) TransferFrom(_from common.Address, _to common.Address, _value *big.Int) (*types.Transaction, error) {
 	return _Vita.Contract.TransferFrom(&_Vita.TransactOpts, _from, _to, _value)
 }
 
 // TransferFrom is a paid mutator transaction binding the contract method 0x23b872dd.
 //
-// Solidity: function transferFrom(address _from, address _to, uint256 _value) returns(bool)
+// Solidity: function transferFrom(_from address, _to address, _value uint256) returns(bool)
 func (_Vita *VitaTransactorSession) TransferFrom(_from common.Address, _to common.Address, _value *big.Int) (*types.Transaction, error) {
 	return _Vita.Contract.TransferFrom(&_Vita.TransactOpts, _from, _to, _value)
 }
 
 // TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
 //
-// Solidity: function transferOwnership(address newOwner) returns()
+// Solidity: function transferOwnership(newOwner address) returns()
 func (_Vita *VitaTransactor) TransferOwnership(opts *bind.TransactOpts, newOwner common.Address) (*types.Transaction, error) {
 	return _Vita.contract.Transact(opts, "transferOwnership", newOwner)
 }
 
 // TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
 //
-// Solidity: function transferOwnership(address newOwner) returns()
+// Solidity: function transferOwnership(newOwner address) returns()
 func (_Vita *VitaSession) TransferOwnership(newOwner common.Address) (*types.Transaction, error) {
 	return _Vita.Contract.TransferOwnership(&_Vita.TransactOpts, newOwner)
 }
 
 // TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
 //
-// Solidity: function transferOwnership(address newOwner) returns()
+// Solidity: function transferOwnership(newOwner address) returns()
 func (_Vita *VitaTransactorSession) TransferOwnership(newOwner common.Address) (*types.Transaction, error) {
 	return _Vita.Contract.TransferOwnership(&_Vita.TransactOpts, newOwner)
 }
@@ -1141,7 +1129,7 @@ type VitaApproval struct {
 
 // FilterApproval is a free log retrieval operation binding the contract event 0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925.
 //
-// Solidity: event Approval(address indexed owner, address indexed spender, uint256 value)
+// Solidity: e Approval(owner indexed address, spender indexed address, value uint256)
 func (_Vita *VitaFilterer) FilterApproval(opts *bind.FilterOpts, owner []common.Address, spender []common.Address) (*VitaApprovalIterator, error) {
 
 	var ownerRule []interface{}
@@ -1162,7 +1150,7 @@ func (_Vita *VitaFilterer) FilterApproval(opts *bind.FilterOpts, owner []common.
 
 // WatchApproval is a free log subscription operation binding the contract event 0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925.
 //
-// Solidity: event Approval(address indexed owner, address indexed spender, uint256 value)
+// Solidity: e Approval(owner indexed address, spender indexed address, value uint256)
 func (_Vita *VitaFilterer) WatchApproval(opts *bind.WatchOpts, sink chan<- *VitaApproval, owner []common.Address, spender []common.Address) (event.Subscription, error) {
 
 	var ownerRule []interface{}
@@ -1283,7 +1271,7 @@ type VitaClaim struct {
 
 // FilterClaim is a free log retrieval operation binding the contract event 0x34fcbac0073d7c3d388e51312faf357774904998eeb8fca628b9e6f65ee1cbf7.
 //
-// Solidity: event Claim(address claimer, uint256 amount, uint256 viewID)
+// Solidity: e Claim(claimer address, amount uint256, viewID uint256)
 func (_Vita *VitaFilterer) FilterClaim(opts *bind.FilterOpts) (*VitaClaimIterator, error) {
 
 	logs, sub, err := _Vita.contract.FilterLogs(opts, "Claim")
@@ -1295,7 +1283,7 @@ func (_Vita *VitaFilterer) FilterClaim(opts *bind.FilterOpts) (*VitaClaimIterato
 
 // WatchClaim is a free log subscription operation binding the contract event 0x34fcbac0073d7c3d388e51312faf357774904998eeb8fca628b9e6f65ee1cbf7.
 //
-// Solidity: event Claim(address claimer, uint256 amount, uint256 viewID)
+// Solidity: e Claim(claimer address, amount uint256, viewID uint256)
 func (_Vita *VitaFilterer) WatchClaim(opts *bind.WatchOpts, sink chan<- *VitaClaim) (event.Subscription, error) {
 
 	logs, sub, err := _Vita.contract.WatchLogs(opts, "Claim")
@@ -1406,7 +1394,7 @@ type VitaDecay struct {
 
 // FilterDecay is a free log retrieval operation binding the contract event 0xb78fecc4804d4e8de58f70e839d77affe1cd72a59c58f87bafad35eb08813679.
 //
-// Solidity: event Decay(uint256 height, uint256 incremetnalSupply)
+// Solidity: e Decay(height uint256, incremetnalSupply uint256)
 func (_Vita *VitaFilterer) FilterDecay(opts *bind.FilterOpts) (*VitaDecayIterator, error) {
 
 	logs, sub, err := _Vita.contract.FilterLogs(opts, "Decay")
@@ -1418,7 +1406,7 @@ func (_Vita *VitaFilterer) FilterDecay(opts *bind.FilterOpts) (*VitaDecayIterato
 
 // WatchDecay is a free log subscription operation binding the contract event 0xb78fecc4804d4e8de58f70e839d77affe1cd72a59c58f87bafad35eb08813679.
 //
-// Solidity: event Decay(uint256 height, uint256 incremetnalSupply)
+// Solidity: e Decay(height uint256, incremetnalSupply uint256)
 func (_Vita *VitaFilterer) WatchDecay(opts *bind.WatchOpts, sink chan<- *VitaDecay) (event.Subscription, error) {
 
 	logs, sub, err := _Vita.contract.WatchLogs(opts, "Decay")
@@ -1529,7 +1517,7 @@ type VitaOwnershipTransferred struct {
 
 // FilterOwnershipTransferred is a free log retrieval operation binding the contract event 0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0.
 //
-// Solidity: event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)
+// Solidity: e OwnershipTransferred(previousOwner indexed address, newOwner indexed address)
 func (_Vita *VitaFilterer) FilterOwnershipTransferred(opts *bind.FilterOpts, previousOwner []common.Address, newOwner []common.Address) (*VitaOwnershipTransferredIterator, error) {
 
 	var previousOwnerRule []interface{}
@@ -1550,7 +1538,7 @@ func (_Vita *VitaFilterer) FilterOwnershipTransferred(opts *bind.FilterOpts, pre
 
 // WatchOwnershipTransferred is a free log subscription operation binding the contract event 0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0.
 //
-// Solidity: event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)
+// Solidity: e OwnershipTransferred(previousOwner indexed address, newOwner indexed address)
 func (_Vita *VitaFilterer) WatchOwnershipTransferred(opts *bind.WatchOpts, sink chan<- *VitaOwnershipTransferred, previousOwner []common.Address, newOwner []common.Address) (event.Subscription, error) {
 
 	var previousOwnerRule []interface{}
@@ -1668,7 +1656,7 @@ type VitaPause struct {
 
 // FilterPause is a free log retrieval operation binding the contract event 0x6985a02210a168e66602d3235cb6db0e70f92b3ba4d376a33c0f3d9434bff625.
 //
-// Solidity: event Pause()
+// Solidity: e Pause()
 func (_Vita *VitaFilterer) FilterPause(opts *bind.FilterOpts) (*VitaPauseIterator, error) {
 
 	logs, sub, err := _Vita.contract.FilterLogs(opts, "Pause")
@@ -1680,7 +1668,7 @@ func (_Vita *VitaFilterer) FilterPause(opts *bind.FilterOpts) (*VitaPauseIterato
 
 // WatchPause is a free log subscription operation binding the contract event 0x6985a02210a168e66602d3235cb6db0e70f92b3ba4d376a33c0f3d9434bff625.
 //
-// Solidity: event Pause()
+// Solidity: e Pause()
 func (_Vita *VitaFilterer) WatchPause(opts *bind.WatchOpts, sink chan<- *VitaPause) (event.Subscription, error) {
 
 	logs, sub, err := _Vita.contract.WatchLogs(opts, "Pause")
@@ -1792,7 +1780,7 @@ type VitaTransfer struct {
 
 // FilterTransfer is a free log retrieval operation binding the contract event 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef.
 //
-// Solidity: event Transfer(address indexed from, address indexed to, uint256 value)
+// Solidity: e Transfer(from indexed address, to indexed address, value uint256)
 func (_Vita *VitaFilterer) FilterTransfer(opts *bind.FilterOpts, from []common.Address, to []common.Address) (*VitaTransferIterator, error) {
 
 	var fromRule []interface{}
@@ -1813,7 +1801,7 @@ func (_Vita *VitaFilterer) FilterTransfer(opts *bind.FilterOpts, from []common.A
 
 // WatchTransfer is a free log subscription operation binding the contract event 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef.
 //
-// Solidity: event Transfer(address indexed from, address indexed to, uint256 value)
+// Solidity: e Transfer(from indexed address, to indexed address, value uint256)
 func (_Vita *VitaFilterer) WatchTransfer(opts *bind.WatchOpts, sink chan<- *VitaTransfer, from []common.Address, to []common.Address) (event.Subscription, error) {
 
 	var fromRule []interface{}
@@ -1931,7 +1919,7 @@ type VitaUnpause struct {
 
 // FilterUnpause is a free log retrieval operation binding the contract event 0x7805862f689e2f13df9f062ff482ad3ad112aca9e0847911ed832e158c525b33.
 //
-// Solidity: event Unpause()
+// Solidity: e Unpause()
 func (_Vita *VitaFilterer) FilterUnpause(opts *bind.FilterOpts) (*VitaUnpauseIterator, error) {
 
 	logs, sub, err := _Vita.contract.FilterLogs(opts, "Unpause")
@@ -1943,7 +1931,7 @@ func (_Vita *VitaFilterer) FilterUnpause(opts *bind.FilterOpts) (*VitaUnpauseIte
 
 // WatchUnpause is a free log subscription operation binding the contract event 0x7805862f689e2f13df9f062ff482ad3ad112aca9e0847911ed832e158c525b33.
 //
-// Solidity: event Unpause()
+// Solidity: e Unpause()
 func (_Vita *VitaFilterer) WatchUnpause(opts *bind.WatchOpts, sink chan<- *VitaUnpause) (event.Subscription, error) {
 
 	logs, sub, err := _Vita.contract.WatchLogs(opts, "Unpause")
@@ -2053,7 +2041,7 @@ type VitaUpdateView struct {
 
 // FilterUpdateView is a free log retrieval operation binding the contract event 0x2087ba3f49fc996df288fe78f79bfa9d28edef119f970f375e2c7305fc4e2bad.
 //
-// Solidity: event UpdateView(uint256 viewID)
+// Solidity: e UpdateView(viewID uint256)
 func (_Vita *VitaFilterer) FilterUpdateView(opts *bind.FilterOpts) (*VitaUpdateViewIterator, error) {
 
 	logs, sub, err := _Vita.contract.FilterLogs(opts, "UpdateView")
@@ -2065,7 +2053,7 @@ func (_Vita *VitaFilterer) FilterUpdateView(opts *bind.FilterOpts) (*VitaUpdateV
 
 // WatchUpdateView is a free log subscription operation binding the contract event 0x2087ba3f49fc996df288fe78f79bfa9d28edef119f970f375e2c7305fc4e2bad.
 //
-// Solidity: event UpdateView(uint256 viewID)
+// Solidity: e UpdateView(viewID uint256)
 func (_Vita *VitaFilterer) WatchUpdateView(opts *bind.WatchOpts, sink chan<- *VitaUpdateView) (event.Subscription, error) {
 
 	logs, sub, err := _Vita.contract.WatchLogs(opts, "UpdateView")

@@ -15,18 +15,6 @@ import (
 	"github.com/ethereum/go-ethereum/event"
 )
 
-// Reference imports to suppress errors if they are not otherwise used.
-var (
-	_ = big.NewInt
-	_ = strings.NewReader
-	_ = ethereum.NotFound
-	_ = abi.U256
-	_ = bind.Bind
-	_ = common.Big1
-	_ = types.BloomLookup
-	_ = event.NewSubscription
-)
-
 // BrokerABI is the input ABI used to generate the binding from.
 const BrokerABI = "[{\"constant\":true,\"inputs\":[],\"name\":\"round\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"bid\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_round\",\"type\":\"uint256\"}],\"name\":\"getTotalBidsValue\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"addrs\",\"type\":\"address[]\"}],\"name\":\"removeAddressesFromWhitelist\",\"outputs\":[{\"name\":\"success\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"removeAddressFromWhitelist\",\"outputs\":[{\"name\":\"success\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"unpause\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"paused\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"nextBidToSettle\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"addAddressToWhitelist\",\"outputs\":[{\"name\":\"success\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_receiver\",\"type\":\"address\"},{\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"transferCollateral\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"pause\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_count\",\"type\":\"uint256\"}],\"name\":\"settle\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"address\"}],\"name\":\"whitelist\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_round\",\"type\":\"uint256\"}],\"name\":\"getNumBids\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"reset\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"addrs\",\"type\":\"address[]\"}],\"name\":\"addAddressesToWhitelist\",\"outputs\":[{\"name\":\"success\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_round\",\"type\":\"uint256\"}],\"name\":\"getAvailableVitaValue\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_round\",\"type\":\"uint256\"},{\"name\":\"_address\",\"type\":\"address\"}],\"name\":\"getBid\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"name\":\"_vitaTokenAddress\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"round\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"claimedAmount\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"burnedAmount\",\"type\":\"uint256\"}],\"name\":\"NewRound\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"round\",\"type\":\"uint256\"},{\"indexed\":true,\"name\":\"sender\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"collateral\",\"type\":\"uint256\"}],\"name\":\"VitaBidden\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"round\",\"type\":\"uint256\"},{\"indexed\":true,\"name\":\"sender\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"collateral\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"vita\",\"type\":\"uint256\"}],\"name\":\"VitaBought\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"finished\",\"type\":\"bool\"}],\"name\":\"VitaBidsSettled\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"receiver\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"collateral\",\"type\":\"uint256\"}],\"name\":\"CollateralWithdrawn\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"Pause\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"Unpause\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"WhitelistedAddressAdded\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"WhitelistedAddressRemoved\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"}]"
 
@@ -195,7 +183,7 @@ func (_Broker *BrokerTransactorRaw) Transact(opts *bind.TransactOpts, method str
 
 // GetAvailableVitaValue is a free data retrieval call binding the contract method 0xe80804be.
 //
-// Solidity: function getAvailableVitaValue(uint256 _round) constant returns(uint256)
+// Solidity: function getAvailableVitaValue(_round uint256) constant returns(uint256)
 func (_Broker *BrokerCaller) GetAvailableVitaValue(opts *bind.CallOpts, _round *big.Int) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
@@ -207,21 +195,21 @@ func (_Broker *BrokerCaller) GetAvailableVitaValue(opts *bind.CallOpts, _round *
 
 // GetAvailableVitaValue is a free data retrieval call binding the contract method 0xe80804be.
 //
-// Solidity: function getAvailableVitaValue(uint256 _round) constant returns(uint256)
+// Solidity: function getAvailableVitaValue(_round uint256) constant returns(uint256)
 func (_Broker *BrokerSession) GetAvailableVitaValue(_round *big.Int) (*big.Int, error) {
 	return _Broker.Contract.GetAvailableVitaValue(&_Broker.CallOpts, _round)
 }
 
 // GetAvailableVitaValue is a free data retrieval call binding the contract method 0xe80804be.
 //
-// Solidity: function getAvailableVitaValue(uint256 _round) constant returns(uint256)
+// Solidity: function getAvailableVitaValue(_round uint256) constant returns(uint256)
 func (_Broker *BrokerCallerSession) GetAvailableVitaValue(_round *big.Int) (*big.Int, error) {
 	return _Broker.Contract.GetAvailableVitaValue(&_Broker.CallOpts, _round)
 }
 
 // GetBid is a free data retrieval call binding the contract method 0xeba1b60b.
 //
-// Solidity: function getBid(uint256 _round, address _address) constant returns(uint256)
+// Solidity: function getBid(_round uint256, _address address) constant returns(uint256)
 func (_Broker *BrokerCaller) GetBid(opts *bind.CallOpts, _round *big.Int, _address common.Address) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
@@ -233,21 +221,21 @@ func (_Broker *BrokerCaller) GetBid(opts *bind.CallOpts, _round *big.Int, _addre
 
 // GetBid is a free data retrieval call binding the contract method 0xeba1b60b.
 //
-// Solidity: function getBid(uint256 _round, address _address) constant returns(uint256)
+// Solidity: function getBid(_round uint256, _address address) constant returns(uint256)
 func (_Broker *BrokerSession) GetBid(_round *big.Int, _address common.Address) (*big.Int, error) {
 	return _Broker.Contract.GetBid(&_Broker.CallOpts, _round, _address)
 }
 
 // GetBid is a free data retrieval call binding the contract method 0xeba1b60b.
 //
-// Solidity: function getBid(uint256 _round, address _address) constant returns(uint256)
+// Solidity: function getBid(_round uint256, _address address) constant returns(uint256)
 func (_Broker *BrokerCallerSession) GetBid(_round *big.Int, _address common.Address) (*big.Int, error) {
 	return _Broker.Contract.GetBid(&_Broker.CallOpts, _round, _address)
 }
 
 // GetNumBids is a free data retrieval call binding the contract method 0x9e0a673f.
 //
-// Solidity: function getNumBids(uint256 _round) constant returns(uint256)
+// Solidity: function getNumBids(_round uint256) constant returns(uint256)
 func (_Broker *BrokerCaller) GetNumBids(opts *bind.CallOpts, _round *big.Int) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
@@ -259,21 +247,21 @@ func (_Broker *BrokerCaller) GetNumBids(opts *bind.CallOpts, _round *big.Int) (*
 
 // GetNumBids is a free data retrieval call binding the contract method 0x9e0a673f.
 //
-// Solidity: function getNumBids(uint256 _round) constant returns(uint256)
+// Solidity: function getNumBids(_round uint256) constant returns(uint256)
 func (_Broker *BrokerSession) GetNumBids(_round *big.Int) (*big.Int, error) {
 	return _Broker.Contract.GetNumBids(&_Broker.CallOpts, _round)
 }
 
 // GetNumBids is a free data retrieval call binding the contract method 0x9e0a673f.
 //
-// Solidity: function getNumBids(uint256 _round) constant returns(uint256)
+// Solidity: function getNumBids(_round uint256) constant returns(uint256)
 func (_Broker *BrokerCallerSession) GetNumBids(_round *big.Int) (*big.Int, error) {
 	return _Broker.Contract.GetNumBids(&_Broker.CallOpts, _round)
 }
 
 // GetTotalBidsValue is a free data retrieval call binding the contract method 0x23702b34.
 //
-// Solidity: function getTotalBidsValue(uint256 _round) constant returns(uint256)
+// Solidity: function getTotalBidsValue(_round uint256) constant returns(uint256)
 func (_Broker *BrokerCaller) GetTotalBidsValue(opts *bind.CallOpts, _round *big.Int) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
@@ -285,14 +273,14 @@ func (_Broker *BrokerCaller) GetTotalBidsValue(opts *bind.CallOpts, _round *big.
 
 // GetTotalBidsValue is a free data retrieval call binding the contract method 0x23702b34.
 //
-// Solidity: function getTotalBidsValue(uint256 _round) constant returns(uint256)
+// Solidity: function getTotalBidsValue(_round uint256) constant returns(uint256)
 func (_Broker *BrokerSession) GetTotalBidsValue(_round *big.Int) (*big.Int, error) {
 	return _Broker.Contract.GetTotalBidsValue(&_Broker.CallOpts, _round)
 }
 
 // GetTotalBidsValue is a free data retrieval call binding the contract method 0x23702b34.
 //
-// Solidity: function getTotalBidsValue(uint256 _round) constant returns(uint256)
+// Solidity: function getTotalBidsValue(_round uint256) constant returns(uint256)
 func (_Broker *BrokerCallerSession) GetTotalBidsValue(_round *big.Int) (*big.Int, error) {
 	return _Broker.Contract.GetTotalBidsValue(&_Broker.CallOpts, _round)
 }
@@ -403,7 +391,7 @@ func (_Broker *BrokerCallerSession) Round() (*big.Int, error) {
 
 // Whitelist is a free data retrieval call binding the contract method 0x9b19251a.
 //
-// Solidity: function whitelist(address ) constant returns(bool)
+// Solidity: function whitelist( address) constant returns(bool)
 func (_Broker *BrokerCaller) Whitelist(opts *bind.CallOpts, arg0 common.Address) (bool, error) {
 	var (
 		ret0 = new(bool)
@@ -415,56 +403,56 @@ func (_Broker *BrokerCaller) Whitelist(opts *bind.CallOpts, arg0 common.Address)
 
 // Whitelist is a free data retrieval call binding the contract method 0x9b19251a.
 //
-// Solidity: function whitelist(address ) constant returns(bool)
+// Solidity: function whitelist( address) constant returns(bool)
 func (_Broker *BrokerSession) Whitelist(arg0 common.Address) (bool, error) {
 	return _Broker.Contract.Whitelist(&_Broker.CallOpts, arg0)
 }
 
 // Whitelist is a free data retrieval call binding the contract method 0x9b19251a.
 //
-// Solidity: function whitelist(address ) constant returns(bool)
+// Solidity: function whitelist( address) constant returns(bool)
 func (_Broker *BrokerCallerSession) Whitelist(arg0 common.Address) (bool, error) {
 	return _Broker.Contract.Whitelist(&_Broker.CallOpts, arg0)
 }
 
 // AddAddressToWhitelist is a paid mutator transaction binding the contract method 0x7b9417c8.
 //
-// Solidity: function addAddressToWhitelist(address addr) returns(bool success)
+// Solidity: function addAddressToWhitelist(addr address) returns(success bool)
 func (_Broker *BrokerTransactor) AddAddressToWhitelist(opts *bind.TransactOpts, addr common.Address) (*types.Transaction, error) {
 	return _Broker.contract.Transact(opts, "addAddressToWhitelist", addr)
 }
 
 // AddAddressToWhitelist is a paid mutator transaction binding the contract method 0x7b9417c8.
 //
-// Solidity: function addAddressToWhitelist(address addr) returns(bool success)
+// Solidity: function addAddressToWhitelist(addr address) returns(success bool)
 func (_Broker *BrokerSession) AddAddressToWhitelist(addr common.Address) (*types.Transaction, error) {
 	return _Broker.Contract.AddAddressToWhitelist(&_Broker.TransactOpts, addr)
 }
 
 // AddAddressToWhitelist is a paid mutator transaction binding the contract method 0x7b9417c8.
 //
-// Solidity: function addAddressToWhitelist(address addr) returns(bool success)
+// Solidity: function addAddressToWhitelist(addr address) returns(success bool)
 func (_Broker *BrokerTransactorSession) AddAddressToWhitelist(addr common.Address) (*types.Transaction, error) {
 	return _Broker.Contract.AddAddressToWhitelist(&_Broker.TransactOpts, addr)
 }
 
 // AddAddressesToWhitelist is a paid mutator transaction binding the contract method 0xe2ec6ec3.
 //
-// Solidity: function addAddressesToWhitelist(address[] addrs) returns(bool success)
+// Solidity: function addAddressesToWhitelist(addrs address[]) returns(success bool)
 func (_Broker *BrokerTransactor) AddAddressesToWhitelist(opts *bind.TransactOpts, addrs []common.Address) (*types.Transaction, error) {
 	return _Broker.contract.Transact(opts, "addAddressesToWhitelist", addrs)
 }
 
 // AddAddressesToWhitelist is a paid mutator transaction binding the contract method 0xe2ec6ec3.
 //
-// Solidity: function addAddressesToWhitelist(address[] addrs) returns(bool success)
+// Solidity: function addAddressesToWhitelist(addrs address[]) returns(success bool)
 func (_Broker *BrokerSession) AddAddressesToWhitelist(addrs []common.Address) (*types.Transaction, error) {
 	return _Broker.Contract.AddAddressesToWhitelist(&_Broker.TransactOpts, addrs)
 }
 
 // AddAddressesToWhitelist is a paid mutator transaction binding the contract method 0xe2ec6ec3.
 //
-// Solidity: function addAddressesToWhitelist(address[] addrs) returns(bool success)
+// Solidity: function addAddressesToWhitelist(addrs address[]) returns(success bool)
 func (_Broker *BrokerTransactorSession) AddAddressesToWhitelist(addrs []common.Address) (*types.Transaction, error) {
 	return _Broker.Contract.AddAddressesToWhitelist(&_Broker.TransactOpts, addrs)
 }
@@ -513,42 +501,42 @@ func (_Broker *BrokerTransactorSession) Pause() (*types.Transaction, error) {
 
 // RemoveAddressFromWhitelist is a paid mutator transaction binding the contract method 0x286dd3f5.
 //
-// Solidity: function removeAddressFromWhitelist(address addr) returns(bool success)
+// Solidity: function removeAddressFromWhitelist(addr address) returns(success bool)
 func (_Broker *BrokerTransactor) RemoveAddressFromWhitelist(opts *bind.TransactOpts, addr common.Address) (*types.Transaction, error) {
 	return _Broker.contract.Transact(opts, "removeAddressFromWhitelist", addr)
 }
 
 // RemoveAddressFromWhitelist is a paid mutator transaction binding the contract method 0x286dd3f5.
 //
-// Solidity: function removeAddressFromWhitelist(address addr) returns(bool success)
+// Solidity: function removeAddressFromWhitelist(addr address) returns(success bool)
 func (_Broker *BrokerSession) RemoveAddressFromWhitelist(addr common.Address) (*types.Transaction, error) {
 	return _Broker.Contract.RemoveAddressFromWhitelist(&_Broker.TransactOpts, addr)
 }
 
 // RemoveAddressFromWhitelist is a paid mutator transaction binding the contract method 0x286dd3f5.
 //
-// Solidity: function removeAddressFromWhitelist(address addr) returns(bool success)
+// Solidity: function removeAddressFromWhitelist(addr address) returns(success bool)
 func (_Broker *BrokerTransactorSession) RemoveAddressFromWhitelist(addr common.Address) (*types.Transaction, error) {
 	return _Broker.Contract.RemoveAddressFromWhitelist(&_Broker.TransactOpts, addr)
 }
 
 // RemoveAddressesFromWhitelist is a paid mutator transaction binding the contract method 0x24953eaa.
 //
-// Solidity: function removeAddressesFromWhitelist(address[] addrs) returns(bool success)
+// Solidity: function removeAddressesFromWhitelist(addrs address[]) returns(success bool)
 func (_Broker *BrokerTransactor) RemoveAddressesFromWhitelist(opts *bind.TransactOpts, addrs []common.Address) (*types.Transaction, error) {
 	return _Broker.contract.Transact(opts, "removeAddressesFromWhitelist", addrs)
 }
 
 // RemoveAddressesFromWhitelist is a paid mutator transaction binding the contract method 0x24953eaa.
 //
-// Solidity: function removeAddressesFromWhitelist(address[] addrs) returns(bool success)
+// Solidity: function removeAddressesFromWhitelist(addrs address[]) returns(success bool)
 func (_Broker *BrokerSession) RemoveAddressesFromWhitelist(addrs []common.Address) (*types.Transaction, error) {
 	return _Broker.Contract.RemoveAddressesFromWhitelist(&_Broker.TransactOpts, addrs)
 }
 
 // RemoveAddressesFromWhitelist is a paid mutator transaction binding the contract method 0x24953eaa.
 //
-// Solidity: function removeAddressesFromWhitelist(address[] addrs) returns(bool success)
+// Solidity: function removeAddressesFromWhitelist(addrs address[]) returns(success bool)
 func (_Broker *BrokerTransactorSession) RemoveAddressesFromWhitelist(addrs []common.Address) (*types.Transaction, error) {
 	return _Broker.Contract.RemoveAddressesFromWhitelist(&_Broker.TransactOpts, addrs)
 }
@@ -576,63 +564,63 @@ func (_Broker *BrokerTransactorSession) Reset() (*types.Transaction, error) {
 
 // Settle is a paid mutator transaction binding the contract method 0x8df82800.
 //
-// Solidity: function settle(uint256 _count) returns()
+// Solidity: function settle(_count uint256) returns()
 func (_Broker *BrokerTransactor) Settle(opts *bind.TransactOpts, _count *big.Int) (*types.Transaction, error) {
 	return _Broker.contract.Transact(opts, "settle", _count)
 }
 
 // Settle is a paid mutator transaction binding the contract method 0x8df82800.
 //
-// Solidity: function settle(uint256 _count) returns()
+// Solidity: function settle(_count uint256) returns()
 func (_Broker *BrokerSession) Settle(_count *big.Int) (*types.Transaction, error) {
 	return _Broker.Contract.Settle(&_Broker.TransactOpts, _count)
 }
 
 // Settle is a paid mutator transaction binding the contract method 0x8df82800.
 //
-// Solidity: function settle(uint256 _count) returns()
+// Solidity: function settle(_count uint256) returns()
 func (_Broker *BrokerTransactorSession) Settle(_count *big.Int) (*types.Transaction, error) {
 	return _Broker.Contract.Settle(&_Broker.TransactOpts, _count)
 }
 
 // TransferCollateral is a paid mutator transaction binding the contract method 0x816b1e8f.
 //
-// Solidity: function transferCollateral(address _receiver, uint256 _amount) returns()
+// Solidity: function transferCollateral(_receiver address, _amount uint256) returns()
 func (_Broker *BrokerTransactor) TransferCollateral(opts *bind.TransactOpts, _receiver common.Address, _amount *big.Int) (*types.Transaction, error) {
 	return _Broker.contract.Transact(opts, "transferCollateral", _receiver, _amount)
 }
 
 // TransferCollateral is a paid mutator transaction binding the contract method 0x816b1e8f.
 //
-// Solidity: function transferCollateral(address _receiver, uint256 _amount) returns()
+// Solidity: function transferCollateral(_receiver address, _amount uint256) returns()
 func (_Broker *BrokerSession) TransferCollateral(_receiver common.Address, _amount *big.Int) (*types.Transaction, error) {
 	return _Broker.Contract.TransferCollateral(&_Broker.TransactOpts, _receiver, _amount)
 }
 
 // TransferCollateral is a paid mutator transaction binding the contract method 0x816b1e8f.
 //
-// Solidity: function transferCollateral(address _receiver, uint256 _amount) returns()
+// Solidity: function transferCollateral(_receiver address, _amount uint256) returns()
 func (_Broker *BrokerTransactorSession) TransferCollateral(_receiver common.Address, _amount *big.Int) (*types.Transaction, error) {
 	return _Broker.Contract.TransferCollateral(&_Broker.TransactOpts, _receiver, _amount)
 }
 
 // TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
 //
-// Solidity: function transferOwnership(address newOwner) returns()
+// Solidity: function transferOwnership(newOwner address) returns()
 func (_Broker *BrokerTransactor) TransferOwnership(opts *bind.TransactOpts, newOwner common.Address) (*types.Transaction, error) {
 	return _Broker.contract.Transact(opts, "transferOwnership", newOwner)
 }
 
 // TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
 //
-// Solidity: function transferOwnership(address newOwner) returns()
+// Solidity: function transferOwnership(newOwner address) returns()
 func (_Broker *BrokerSession) TransferOwnership(newOwner common.Address) (*types.Transaction, error) {
 	return _Broker.Contract.TransferOwnership(&_Broker.TransactOpts, newOwner)
 }
 
 // TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
 //
-// Solidity: function transferOwnership(address newOwner) returns()
+// Solidity: function transferOwnership(newOwner address) returns()
 func (_Broker *BrokerTransactorSession) TransferOwnership(newOwner common.Address) (*types.Transaction, error) {
 	return _Broker.Contract.TransferOwnership(&_Broker.TransactOpts, newOwner)
 }
@@ -734,7 +722,7 @@ type BrokerCollateralWithdrawn struct {
 
 // FilterCollateralWithdrawn is a free log retrieval operation binding the contract event 0xc30fcfbcaac9e0deffa719714eaa82396ff506a0d0d0eebe170830177288715d.
 //
-// Solidity: event CollateralWithdrawn(address indexed receiver, uint256 collateral)
+// Solidity: e CollateralWithdrawn(receiver indexed address, collateral uint256)
 func (_Broker *BrokerFilterer) FilterCollateralWithdrawn(opts *bind.FilterOpts, receiver []common.Address) (*BrokerCollateralWithdrawnIterator, error) {
 
 	var receiverRule []interface{}
@@ -751,7 +739,7 @@ func (_Broker *BrokerFilterer) FilterCollateralWithdrawn(opts *bind.FilterOpts, 
 
 // WatchCollateralWithdrawn is a free log subscription operation binding the contract event 0xc30fcfbcaac9e0deffa719714eaa82396ff506a0d0d0eebe170830177288715d.
 //
-// Solidity: event CollateralWithdrawn(address indexed receiver, uint256 collateral)
+// Solidity: e CollateralWithdrawn(receiver indexed address, collateral uint256)
 func (_Broker *BrokerFilterer) WatchCollateralWithdrawn(opts *bind.WatchOpts, sink chan<- *BrokerCollateralWithdrawn, receiver []common.Address) (event.Subscription, error) {
 
 	var receiverRule []interface{}
@@ -868,7 +856,7 @@ type BrokerNewRound struct {
 
 // FilterNewRound is a free log retrieval operation binding the contract event 0x5aec57d81928b24d30b1a2aec0d23d693412c37d7ec106b5d8259413716bb1f4.
 //
-// Solidity: event NewRound(uint256 round, uint256 claimedAmount, uint256 burnedAmount)
+// Solidity: e NewRound(round uint256, claimedAmount uint256, burnedAmount uint256)
 func (_Broker *BrokerFilterer) FilterNewRound(opts *bind.FilterOpts) (*BrokerNewRoundIterator, error) {
 
 	logs, sub, err := _Broker.contract.FilterLogs(opts, "NewRound")
@@ -880,7 +868,7 @@ func (_Broker *BrokerFilterer) FilterNewRound(opts *bind.FilterOpts) (*BrokerNew
 
 // WatchNewRound is a free log subscription operation binding the contract event 0x5aec57d81928b24d30b1a2aec0d23d693412c37d7ec106b5d8259413716bb1f4.
 //
-// Solidity: event NewRound(uint256 round, uint256 claimedAmount, uint256 burnedAmount)
+// Solidity: e NewRound(round uint256, claimedAmount uint256, burnedAmount uint256)
 func (_Broker *BrokerFilterer) WatchNewRound(opts *bind.WatchOpts, sink chan<- *BrokerNewRound) (event.Subscription, error) {
 
 	logs, sub, err := _Broker.contract.WatchLogs(opts, "NewRound")
@@ -991,7 +979,7 @@ type BrokerOwnershipTransferred struct {
 
 // FilterOwnershipTransferred is a free log retrieval operation binding the contract event 0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0.
 //
-// Solidity: event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)
+// Solidity: e OwnershipTransferred(previousOwner indexed address, newOwner indexed address)
 func (_Broker *BrokerFilterer) FilterOwnershipTransferred(opts *bind.FilterOpts, previousOwner []common.Address, newOwner []common.Address) (*BrokerOwnershipTransferredIterator, error) {
 
 	var previousOwnerRule []interface{}
@@ -1012,7 +1000,7 @@ func (_Broker *BrokerFilterer) FilterOwnershipTransferred(opts *bind.FilterOpts,
 
 // WatchOwnershipTransferred is a free log subscription operation binding the contract event 0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0.
 //
-// Solidity: event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)
+// Solidity: e OwnershipTransferred(previousOwner indexed address, newOwner indexed address)
 func (_Broker *BrokerFilterer) WatchOwnershipTransferred(opts *bind.WatchOpts, sink chan<- *BrokerOwnershipTransferred, previousOwner []common.Address, newOwner []common.Address) (event.Subscription, error) {
 
 	var previousOwnerRule []interface{}
@@ -1130,7 +1118,7 @@ type BrokerPause struct {
 
 // FilterPause is a free log retrieval operation binding the contract event 0x6985a02210a168e66602d3235cb6db0e70f92b3ba4d376a33c0f3d9434bff625.
 //
-// Solidity: event Pause()
+// Solidity: e Pause()
 func (_Broker *BrokerFilterer) FilterPause(opts *bind.FilterOpts) (*BrokerPauseIterator, error) {
 
 	logs, sub, err := _Broker.contract.FilterLogs(opts, "Pause")
@@ -1142,7 +1130,7 @@ func (_Broker *BrokerFilterer) FilterPause(opts *bind.FilterOpts) (*BrokerPauseI
 
 // WatchPause is a free log subscription operation binding the contract event 0x6985a02210a168e66602d3235cb6db0e70f92b3ba4d376a33c0f3d9434bff625.
 //
-// Solidity: event Pause()
+// Solidity: e Pause()
 func (_Broker *BrokerFilterer) WatchPause(opts *bind.WatchOpts, sink chan<- *BrokerPause) (event.Subscription, error) {
 
 	logs, sub, err := _Broker.contract.WatchLogs(opts, "Pause")
@@ -1251,7 +1239,7 @@ type BrokerUnpause struct {
 
 // FilterUnpause is a free log retrieval operation binding the contract event 0x7805862f689e2f13df9f062ff482ad3ad112aca9e0847911ed832e158c525b33.
 //
-// Solidity: event Unpause()
+// Solidity: e Unpause()
 func (_Broker *BrokerFilterer) FilterUnpause(opts *bind.FilterOpts) (*BrokerUnpauseIterator, error) {
 
 	logs, sub, err := _Broker.contract.FilterLogs(opts, "Unpause")
@@ -1263,7 +1251,7 @@ func (_Broker *BrokerFilterer) FilterUnpause(opts *bind.FilterOpts) (*BrokerUnpa
 
 // WatchUnpause is a free log subscription operation binding the contract event 0x7805862f689e2f13df9f062ff482ad3ad112aca9e0847911ed832e158c525b33.
 //
-// Solidity: event Unpause()
+// Solidity: e Unpause()
 func (_Broker *BrokerFilterer) WatchUnpause(opts *bind.WatchOpts, sink chan<- *BrokerUnpause) (event.Subscription, error) {
 
 	logs, sub, err := _Broker.contract.WatchLogs(opts, "Unpause")
@@ -1375,7 +1363,7 @@ type BrokerVitaBidden struct {
 
 // FilterVitaBidden is a free log retrieval operation binding the contract event 0x79a65306bcf4df035a08de81edeed738ecd4ed22db73a8ec95d953b82e1611dd.
 //
-// Solidity: event VitaBidden(uint256 indexed round, address indexed sender, uint256 collateral)
+// Solidity: e VitaBidden(round indexed uint256, sender indexed address, collateral uint256)
 func (_Broker *BrokerFilterer) FilterVitaBidden(opts *bind.FilterOpts, round []*big.Int, sender []common.Address) (*BrokerVitaBiddenIterator, error) {
 
 	var roundRule []interface{}
@@ -1396,7 +1384,7 @@ func (_Broker *BrokerFilterer) FilterVitaBidden(opts *bind.FilterOpts, round []*
 
 // WatchVitaBidden is a free log subscription operation binding the contract event 0x79a65306bcf4df035a08de81edeed738ecd4ed22db73a8ec95d953b82e1611dd.
 //
-// Solidity: event VitaBidden(uint256 indexed round, address indexed sender, uint256 collateral)
+// Solidity: e VitaBidden(round indexed uint256, sender indexed address, collateral uint256)
 func (_Broker *BrokerFilterer) WatchVitaBidden(opts *bind.WatchOpts, sink chan<- *BrokerVitaBidden, round []*big.Int, sender []common.Address) (event.Subscription, error) {
 
 	var roundRule []interface{}
@@ -1515,7 +1503,7 @@ type BrokerVitaBidsSettled struct {
 
 // FilterVitaBidsSettled is a free log retrieval operation binding the contract event 0x80fd533e8e20c803bc5ea74913bea6a24c31cf5d3c8773c55b35692291a4f95d.
 //
-// Solidity: event VitaBidsSettled(bool finished)
+// Solidity: e VitaBidsSettled(finished bool)
 func (_Broker *BrokerFilterer) FilterVitaBidsSettled(opts *bind.FilterOpts) (*BrokerVitaBidsSettledIterator, error) {
 
 	logs, sub, err := _Broker.contract.FilterLogs(opts, "VitaBidsSettled")
@@ -1527,7 +1515,7 @@ func (_Broker *BrokerFilterer) FilterVitaBidsSettled(opts *bind.FilterOpts) (*Br
 
 // WatchVitaBidsSettled is a free log subscription operation binding the contract event 0x80fd533e8e20c803bc5ea74913bea6a24c31cf5d3c8773c55b35692291a4f95d.
 //
-// Solidity: event VitaBidsSettled(bool finished)
+// Solidity: e VitaBidsSettled(finished bool)
 func (_Broker *BrokerFilterer) WatchVitaBidsSettled(opts *bind.WatchOpts, sink chan<- *BrokerVitaBidsSettled) (event.Subscription, error) {
 
 	logs, sub, err := _Broker.contract.WatchLogs(opts, "VitaBidsSettled")
@@ -1640,7 +1628,7 @@ type BrokerVitaBought struct {
 
 // FilterVitaBought is a free log retrieval operation binding the contract event 0x2788583a28c987267b8994b86aa4aca25db0bb25d1a742da84afd7845af92af6.
 //
-// Solidity: event VitaBought(uint256 indexed round, address indexed sender, uint256 collateral, uint256 vita)
+// Solidity: e VitaBought(round indexed uint256, sender indexed address, collateral uint256, vita uint256)
 func (_Broker *BrokerFilterer) FilterVitaBought(opts *bind.FilterOpts, round []*big.Int, sender []common.Address) (*BrokerVitaBoughtIterator, error) {
 
 	var roundRule []interface{}
@@ -1661,7 +1649,7 @@ func (_Broker *BrokerFilterer) FilterVitaBought(opts *bind.FilterOpts, round []*
 
 // WatchVitaBought is a free log subscription operation binding the contract event 0x2788583a28c987267b8994b86aa4aca25db0bb25d1a742da84afd7845af92af6.
 //
-// Solidity: event VitaBought(uint256 indexed round, address indexed sender, uint256 collateral, uint256 vita)
+// Solidity: e VitaBought(round indexed uint256, sender indexed address, collateral uint256, vita uint256)
 func (_Broker *BrokerFilterer) WatchVitaBought(opts *bind.WatchOpts, sink chan<- *BrokerVitaBought, round []*big.Int, sender []common.Address) (event.Subscription, error) {
 
 	var roundRule []interface{}
@@ -1780,7 +1768,7 @@ type BrokerWhitelistedAddressAdded struct {
 
 // FilterWhitelistedAddressAdded is a free log retrieval operation binding the contract event 0xd1bba68c128cc3f427e5831b3c6f99f480b6efa6b9e80c757768f6124158cc3f.
 //
-// Solidity: event WhitelistedAddressAdded(address addr)
+// Solidity: e WhitelistedAddressAdded(addr address)
 func (_Broker *BrokerFilterer) FilterWhitelistedAddressAdded(opts *bind.FilterOpts) (*BrokerWhitelistedAddressAddedIterator, error) {
 
 	logs, sub, err := _Broker.contract.FilterLogs(opts, "WhitelistedAddressAdded")
@@ -1792,7 +1780,7 @@ func (_Broker *BrokerFilterer) FilterWhitelistedAddressAdded(opts *bind.FilterOp
 
 // WatchWhitelistedAddressAdded is a free log subscription operation binding the contract event 0xd1bba68c128cc3f427e5831b3c6f99f480b6efa6b9e80c757768f6124158cc3f.
 //
-// Solidity: event WhitelistedAddressAdded(address addr)
+// Solidity: e WhitelistedAddressAdded(addr address)
 func (_Broker *BrokerFilterer) WatchWhitelistedAddressAdded(opts *bind.WatchOpts, sink chan<- *BrokerWhitelistedAddressAdded) (event.Subscription, error) {
 
 	logs, sub, err := _Broker.contract.WatchLogs(opts, "WhitelistedAddressAdded")
@@ -1902,7 +1890,7 @@ type BrokerWhitelistedAddressRemoved struct {
 
 // FilterWhitelistedAddressRemoved is a free log retrieval operation binding the contract event 0xf1abf01a1043b7c244d128e8595cf0c1d10743b022b03a02dffd8ca3bf729f5a.
 //
-// Solidity: event WhitelistedAddressRemoved(address addr)
+// Solidity: e WhitelistedAddressRemoved(addr address)
 func (_Broker *BrokerFilterer) FilterWhitelistedAddressRemoved(opts *bind.FilterOpts) (*BrokerWhitelistedAddressRemovedIterator, error) {
 
 	logs, sub, err := _Broker.contract.FilterLogs(opts, "WhitelistedAddressRemoved")
@@ -1914,7 +1902,7 @@ func (_Broker *BrokerFilterer) FilterWhitelistedAddressRemoved(opts *bind.Filter
 
 // WatchWhitelistedAddressRemoved is a free log subscription operation binding the contract event 0xf1abf01a1043b7c244d128e8595cf0c1d10743b022b03a02dffd8ca3bf729f5a.
 //
-// Solidity: event WhitelistedAddressRemoved(address addr)
+// Solidity: e WhitelistedAddressRemoved(addr address)
 func (_Broker *BrokerFilterer) WatchWhitelistedAddressRemoved(opts *bind.WatchOpts, sink chan<- *BrokerWhitelistedAddressRemoved) (event.Subscription, error) {
 
 	logs, sub, err := _Broker.contract.WatchLogs(opts, "WhitelistedAddressRemoved")

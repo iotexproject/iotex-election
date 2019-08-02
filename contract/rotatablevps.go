@@ -15,18 +15,6 @@ import (
 	"github.com/ethereum/go-ethereum/event"
 )
 
-// Reference imports to suppress errors if they are not otherwise used.
-var (
-	_ = big.NewInt
-	_ = strings.NewReader
-	_ = ethereum.NotFound
-	_ = abi.U256
-	_ = bind.Bind
-	_ = common.Big1
-	_ = types.BloomLookup
-	_ = event.NewSubscription
-)
-
 // RotatableVPSABI is the input ABI used to generate the binding from.
 const RotatableVPSABI = "[{\"constant\":false,\"inputs\":[{\"name\":\"_voters\",\"type\":\"address[]\"},{\"name\":\"_powers\",\"type\":\"uint256[]\"}],\"name\":\"updateVotingPowers\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_voter\",\"type\":\"address\"}],\"name\":\"powerOf\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"addrs\",\"type\":\"address[]\"}],\"name\":\"removeAddressesFromWhitelist\",\"outputs\":[{\"name\":\"success\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"removeAddressFromWhitelist\",\"outputs\":[{\"name\":\"success\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"newViewID\",\"type\":\"uint256\"}],\"name\":\"rotate\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"paused\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"inactiveViewID\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"addAddressToWhitelist\",\"outputs\":[{\"name\":\"success\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"viewID\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"activeVPS\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"address\"}],\"name\":\"whitelist\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"activeVPSIndex\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"inactiveVPS\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"totalPower\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"addrs\",\"type\":\"address[]\"}],\"name\":\"addAddressesToWhitelist\",\"outputs\":[{\"name\":\"success\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_offset\",\"type\":\"uint256\"},{\"name\":\"_limit\",\"type\":\"uint256\"}],\"name\":\"voters\",\"outputs\":[{\"name\":\"voters_\",\"type\":\"address[]\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_voters\",\"type\":\"address[]\"}],\"name\":\"powersOf\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256[]\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"name\":\"_addrs\",\"type\":\"address[]\"},{\"name\":\"_viewIDs\",\"type\":\"uint256[]\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"WhitelistedAddressAdded\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"WhitelistedAddressRemoved\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"voter\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"power\",\"type\":\"uint256\"}],\"name\":\"SetVotingPower\",\"type\":\"event\"}]"
 
@@ -330,7 +318,7 @@ func (_RotatableVPS *RotatableVPSCallerSession) Paused() (bool, error) {
 
 // PowerOf is a free data retrieval call binding the contract method 0x1ac84690.
 //
-// Solidity: function powerOf(address _voter) constant returns(uint256)
+// Solidity: function powerOf(_voter address) constant returns(uint256)
 func (_RotatableVPS *RotatableVPSCaller) PowerOf(opts *bind.CallOpts, _voter common.Address) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
@@ -342,21 +330,21 @@ func (_RotatableVPS *RotatableVPSCaller) PowerOf(opts *bind.CallOpts, _voter com
 
 // PowerOf is a free data retrieval call binding the contract method 0x1ac84690.
 //
-// Solidity: function powerOf(address _voter) constant returns(uint256)
+// Solidity: function powerOf(_voter address) constant returns(uint256)
 func (_RotatableVPS *RotatableVPSSession) PowerOf(_voter common.Address) (*big.Int, error) {
 	return _RotatableVPS.Contract.PowerOf(&_RotatableVPS.CallOpts, _voter)
 }
 
 // PowerOf is a free data retrieval call binding the contract method 0x1ac84690.
 //
-// Solidity: function powerOf(address _voter) constant returns(uint256)
+// Solidity: function powerOf(_voter address) constant returns(uint256)
 func (_RotatableVPS *RotatableVPSCallerSession) PowerOf(_voter common.Address) (*big.Int, error) {
 	return _RotatableVPS.Contract.PowerOf(&_RotatableVPS.CallOpts, _voter)
 }
 
 // PowersOf is a free data retrieval call binding the contract method 0xff82c4ca.
 //
-// Solidity: function powersOf(address[] _voters) constant returns(uint256[])
+// Solidity: function powersOf(_voters address[]) constant returns(uint256[])
 func (_RotatableVPS *RotatableVPSCaller) PowersOf(opts *bind.CallOpts, _voters []common.Address) ([]*big.Int, error) {
 	var (
 		ret0 = new([]*big.Int)
@@ -368,14 +356,14 @@ func (_RotatableVPS *RotatableVPSCaller) PowersOf(opts *bind.CallOpts, _voters [
 
 // PowersOf is a free data retrieval call binding the contract method 0xff82c4ca.
 //
-// Solidity: function powersOf(address[] _voters) constant returns(uint256[])
+// Solidity: function powersOf(_voters address[]) constant returns(uint256[])
 func (_RotatableVPS *RotatableVPSSession) PowersOf(_voters []common.Address) ([]*big.Int, error) {
 	return _RotatableVPS.Contract.PowersOf(&_RotatableVPS.CallOpts, _voters)
 }
 
 // PowersOf is a free data retrieval call binding the contract method 0xff82c4ca.
 //
-// Solidity: function powersOf(address[] _voters) constant returns(uint256[])
+// Solidity: function powersOf(_voters address[]) constant returns(uint256[])
 func (_RotatableVPS *RotatableVPSCallerSession) PowersOf(_voters []common.Address) ([]*big.Int, error) {
 	return _RotatableVPS.Contract.PowersOf(&_RotatableVPS.CallOpts, _voters)
 }
@@ -434,7 +422,7 @@ func (_RotatableVPS *RotatableVPSCallerSession) ViewID() (*big.Int, error) {
 
 // Voters is a free data retrieval call binding the contract method 0xfba00cbd.
 //
-// Solidity: function voters(uint256 _offset, uint256 _limit) constant returns(address[] voters_)
+// Solidity: function voters(_offset uint256, _limit uint256) constant returns(voters_ address[])
 func (_RotatableVPS *RotatableVPSCaller) Voters(opts *bind.CallOpts, _offset *big.Int, _limit *big.Int) ([]common.Address, error) {
 	var (
 		ret0 = new([]common.Address)
@@ -446,21 +434,21 @@ func (_RotatableVPS *RotatableVPSCaller) Voters(opts *bind.CallOpts, _offset *bi
 
 // Voters is a free data retrieval call binding the contract method 0xfba00cbd.
 //
-// Solidity: function voters(uint256 _offset, uint256 _limit) constant returns(address[] voters_)
+// Solidity: function voters(_offset uint256, _limit uint256) constant returns(voters_ address[])
 func (_RotatableVPS *RotatableVPSSession) Voters(_offset *big.Int, _limit *big.Int) ([]common.Address, error) {
 	return _RotatableVPS.Contract.Voters(&_RotatableVPS.CallOpts, _offset, _limit)
 }
 
 // Voters is a free data retrieval call binding the contract method 0xfba00cbd.
 //
-// Solidity: function voters(uint256 _offset, uint256 _limit) constant returns(address[] voters_)
+// Solidity: function voters(_offset uint256, _limit uint256) constant returns(voters_ address[])
 func (_RotatableVPS *RotatableVPSCallerSession) Voters(_offset *big.Int, _limit *big.Int) ([]common.Address, error) {
 	return _RotatableVPS.Contract.Voters(&_RotatableVPS.CallOpts, _offset, _limit)
 }
 
 // Whitelist is a free data retrieval call binding the contract method 0x9b19251a.
 //
-// Solidity: function whitelist(address ) constant returns(bool)
+// Solidity: function whitelist( address) constant returns(bool)
 func (_RotatableVPS *RotatableVPSCaller) Whitelist(opts *bind.CallOpts, arg0 common.Address) (bool, error) {
 	var (
 		ret0 = new(bool)
@@ -472,161 +460,161 @@ func (_RotatableVPS *RotatableVPSCaller) Whitelist(opts *bind.CallOpts, arg0 com
 
 // Whitelist is a free data retrieval call binding the contract method 0x9b19251a.
 //
-// Solidity: function whitelist(address ) constant returns(bool)
+// Solidity: function whitelist( address) constant returns(bool)
 func (_RotatableVPS *RotatableVPSSession) Whitelist(arg0 common.Address) (bool, error) {
 	return _RotatableVPS.Contract.Whitelist(&_RotatableVPS.CallOpts, arg0)
 }
 
 // Whitelist is a free data retrieval call binding the contract method 0x9b19251a.
 //
-// Solidity: function whitelist(address ) constant returns(bool)
+// Solidity: function whitelist( address) constant returns(bool)
 func (_RotatableVPS *RotatableVPSCallerSession) Whitelist(arg0 common.Address) (bool, error) {
 	return _RotatableVPS.Contract.Whitelist(&_RotatableVPS.CallOpts, arg0)
 }
 
 // AddAddressToWhitelist is a paid mutator transaction binding the contract method 0x7b9417c8.
 //
-// Solidity: function addAddressToWhitelist(address addr) returns(bool success)
+// Solidity: function addAddressToWhitelist(addr address) returns(success bool)
 func (_RotatableVPS *RotatableVPSTransactor) AddAddressToWhitelist(opts *bind.TransactOpts, addr common.Address) (*types.Transaction, error) {
 	return _RotatableVPS.contract.Transact(opts, "addAddressToWhitelist", addr)
 }
 
 // AddAddressToWhitelist is a paid mutator transaction binding the contract method 0x7b9417c8.
 //
-// Solidity: function addAddressToWhitelist(address addr) returns(bool success)
+// Solidity: function addAddressToWhitelist(addr address) returns(success bool)
 func (_RotatableVPS *RotatableVPSSession) AddAddressToWhitelist(addr common.Address) (*types.Transaction, error) {
 	return _RotatableVPS.Contract.AddAddressToWhitelist(&_RotatableVPS.TransactOpts, addr)
 }
 
 // AddAddressToWhitelist is a paid mutator transaction binding the contract method 0x7b9417c8.
 //
-// Solidity: function addAddressToWhitelist(address addr) returns(bool success)
+// Solidity: function addAddressToWhitelist(addr address) returns(success bool)
 func (_RotatableVPS *RotatableVPSTransactorSession) AddAddressToWhitelist(addr common.Address) (*types.Transaction, error) {
 	return _RotatableVPS.Contract.AddAddressToWhitelist(&_RotatableVPS.TransactOpts, addr)
 }
 
 // AddAddressesToWhitelist is a paid mutator transaction binding the contract method 0xe2ec6ec3.
 //
-// Solidity: function addAddressesToWhitelist(address[] addrs) returns(bool success)
+// Solidity: function addAddressesToWhitelist(addrs address[]) returns(success bool)
 func (_RotatableVPS *RotatableVPSTransactor) AddAddressesToWhitelist(opts *bind.TransactOpts, addrs []common.Address) (*types.Transaction, error) {
 	return _RotatableVPS.contract.Transact(opts, "addAddressesToWhitelist", addrs)
 }
 
 // AddAddressesToWhitelist is a paid mutator transaction binding the contract method 0xe2ec6ec3.
 //
-// Solidity: function addAddressesToWhitelist(address[] addrs) returns(bool success)
+// Solidity: function addAddressesToWhitelist(addrs address[]) returns(success bool)
 func (_RotatableVPS *RotatableVPSSession) AddAddressesToWhitelist(addrs []common.Address) (*types.Transaction, error) {
 	return _RotatableVPS.Contract.AddAddressesToWhitelist(&_RotatableVPS.TransactOpts, addrs)
 }
 
 // AddAddressesToWhitelist is a paid mutator transaction binding the contract method 0xe2ec6ec3.
 //
-// Solidity: function addAddressesToWhitelist(address[] addrs) returns(bool success)
+// Solidity: function addAddressesToWhitelist(addrs address[]) returns(success bool)
 func (_RotatableVPS *RotatableVPSTransactorSession) AddAddressesToWhitelist(addrs []common.Address) (*types.Transaction, error) {
 	return _RotatableVPS.Contract.AddAddressesToWhitelist(&_RotatableVPS.TransactOpts, addrs)
 }
 
 // RemoveAddressFromWhitelist is a paid mutator transaction binding the contract method 0x286dd3f5.
 //
-// Solidity: function removeAddressFromWhitelist(address addr) returns(bool success)
+// Solidity: function removeAddressFromWhitelist(addr address) returns(success bool)
 func (_RotatableVPS *RotatableVPSTransactor) RemoveAddressFromWhitelist(opts *bind.TransactOpts, addr common.Address) (*types.Transaction, error) {
 	return _RotatableVPS.contract.Transact(opts, "removeAddressFromWhitelist", addr)
 }
 
 // RemoveAddressFromWhitelist is a paid mutator transaction binding the contract method 0x286dd3f5.
 //
-// Solidity: function removeAddressFromWhitelist(address addr) returns(bool success)
+// Solidity: function removeAddressFromWhitelist(addr address) returns(success bool)
 func (_RotatableVPS *RotatableVPSSession) RemoveAddressFromWhitelist(addr common.Address) (*types.Transaction, error) {
 	return _RotatableVPS.Contract.RemoveAddressFromWhitelist(&_RotatableVPS.TransactOpts, addr)
 }
 
 // RemoveAddressFromWhitelist is a paid mutator transaction binding the contract method 0x286dd3f5.
 //
-// Solidity: function removeAddressFromWhitelist(address addr) returns(bool success)
+// Solidity: function removeAddressFromWhitelist(addr address) returns(success bool)
 func (_RotatableVPS *RotatableVPSTransactorSession) RemoveAddressFromWhitelist(addr common.Address) (*types.Transaction, error) {
 	return _RotatableVPS.Contract.RemoveAddressFromWhitelist(&_RotatableVPS.TransactOpts, addr)
 }
 
 // RemoveAddressesFromWhitelist is a paid mutator transaction binding the contract method 0x24953eaa.
 //
-// Solidity: function removeAddressesFromWhitelist(address[] addrs) returns(bool success)
+// Solidity: function removeAddressesFromWhitelist(addrs address[]) returns(success bool)
 func (_RotatableVPS *RotatableVPSTransactor) RemoveAddressesFromWhitelist(opts *bind.TransactOpts, addrs []common.Address) (*types.Transaction, error) {
 	return _RotatableVPS.contract.Transact(opts, "removeAddressesFromWhitelist", addrs)
 }
 
 // RemoveAddressesFromWhitelist is a paid mutator transaction binding the contract method 0x24953eaa.
 //
-// Solidity: function removeAddressesFromWhitelist(address[] addrs) returns(bool success)
+// Solidity: function removeAddressesFromWhitelist(addrs address[]) returns(success bool)
 func (_RotatableVPS *RotatableVPSSession) RemoveAddressesFromWhitelist(addrs []common.Address) (*types.Transaction, error) {
 	return _RotatableVPS.Contract.RemoveAddressesFromWhitelist(&_RotatableVPS.TransactOpts, addrs)
 }
 
 // RemoveAddressesFromWhitelist is a paid mutator transaction binding the contract method 0x24953eaa.
 //
-// Solidity: function removeAddressesFromWhitelist(address[] addrs) returns(bool success)
+// Solidity: function removeAddressesFromWhitelist(addrs address[]) returns(success bool)
 func (_RotatableVPS *RotatableVPSTransactorSession) RemoveAddressesFromWhitelist(addrs []common.Address) (*types.Transaction, error) {
 	return _RotatableVPS.Contract.RemoveAddressesFromWhitelist(&_RotatableVPS.TransactOpts, addrs)
 }
 
 // Rotate is a paid mutator transaction binding the contract method 0x3852f4b0.
 //
-// Solidity: function rotate(uint256 newViewID) returns()
+// Solidity: function rotate(newViewID uint256) returns()
 func (_RotatableVPS *RotatableVPSTransactor) Rotate(opts *bind.TransactOpts, newViewID *big.Int) (*types.Transaction, error) {
 	return _RotatableVPS.contract.Transact(opts, "rotate", newViewID)
 }
 
 // Rotate is a paid mutator transaction binding the contract method 0x3852f4b0.
 //
-// Solidity: function rotate(uint256 newViewID) returns()
+// Solidity: function rotate(newViewID uint256) returns()
 func (_RotatableVPS *RotatableVPSSession) Rotate(newViewID *big.Int) (*types.Transaction, error) {
 	return _RotatableVPS.Contract.Rotate(&_RotatableVPS.TransactOpts, newViewID)
 }
 
 // Rotate is a paid mutator transaction binding the contract method 0x3852f4b0.
 //
-// Solidity: function rotate(uint256 newViewID) returns()
+// Solidity: function rotate(newViewID uint256) returns()
 func (_RotatableVPS *RotatableVPSTransactorSession) Rotate(newViewID *big.Int) (*types.Transaction, error) {
 	return _RotatableVPS.Contract.Rotate(&_RotatableVPS.TransactOpts, newViewID)
 }
 
 // TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
 //
-// Solidity: function transferOwnership(address newOwner) returns()
+// Solidity: function transferOwnership(newOwner address) returns()
 func (_RotatableVPS *RotatableVPSTransactor) TransferOwnership(opts *bind.TransactOpts, newOwner common.Address) (*types.Transaction, error) {
 	return _RotatableVPS.contract.Transact(opts, "transferOwnership", newOwner)
 }
 
 // TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
 //
-// Solidity: function transferOwnership(address newOwner) returns()
+// Solidity: function transferOwnership(newOwner address) returns()
 func (_RotatableVPS *RotatableVPSSession) TransferOwnership(newOwner common.Address) (*types.Transaction, error) {
 	return _RotatableVPS.Contract.TransferOwnership(&_RotatableVPS.TransactOpts, newOwner)
 }
 
 // TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
 //
-// Solidity: function transferOwnership(address newOwner) returns()
+// Solidity: function transferOwnership(newOwner address) returns()
 func (_RotatableVPS *RotatableVPSTransactorSession) TransferOwnership(newOwner common.Address) (*types.Transaction, error) {
 	return _RotatableVPS.Contract.TransferOwnership(&_RotatableVPS.TransactOpts, newOwner)
 }
 
 // UpdateVotingPowers is a paid mutator transaction binding the contract method 0x03083dcf.
 //
-// Solidity: function updateVotingPowers(address[] _voters, uint256[] _powers) returns()
+// Solidity: function updateVotingPowers(_voters address[], _powers uint256[]) returns()
 func (_RotatableVPS *RotatableVPSTransactor) UpdateVotingPowers(opts *bind.TransactOpts, _voters []common.Address, _powers []*big.Int) (*types.Transaction, error) {
 	return _RotatableVPS.contract.Transact(opts, "updateVotingPowers", _voters, _powers)
 }
 
 // UpdateVotingPowers is a paid mutator transaction binding the contract method 0x03083dcf.
 //
-// Solidity: function updateVotingPowers(address[] _voters, uint256[] _powers) returns()
+// Solidity: function updateVotingPowers(_voters address[], _powers uint256[]) returns()
 func (_RotatableVPS *RotatableVPSSession) UpdateVotingPowers(_voters []common.Address, _powers []*big.Int) (*types.Transaction, error) {
 	return _RotatableVPS.Contract.UpdateVotingPowers(&_RotatableVPS.TransactOpts, _voters, _powers)
 }
 
 // UpdateVotingPowers is a paid mutator transaction binding the contract method 0x03083dcf.
 //
-// Solidity: function updateVotingPowers(address[] _voters, uint256[] _powers) returns()
+// Solidity: function updateVotingPowers(_voters address[], _powers uint256[]) returns()
 func (_RotatableVPS *RotatableVPSTransactorSession) UpdateVotingPowers(_voters []common.Address, _powers []*big.Int) (*types.Transaction, error) {
 	return _RotatableVPS.Contract.UpdateVotingPowers(&_RotatableVPS.TransactOpts, _voters, _powers)
 }
@@ -707,7 +695,7 @@ type RotatableVPSOwnershipTransferred struct {
 
 // FilterOwnershipTransferred is a free log retrieval operation binding the contract event 0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0.
 //
-// Solidity: event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)
+// Solidity: e OwnershipTransferred(previousOwner indexed address, newOwner indexed address)
 func (_RotatableVPS *RotatableVPSFilterer) FilterOwnershipTransferred(opts *bind.FilterOpts, previousOwner []common.Address, newOwner []common.Address) (*RotatableVPSOwnershipTransferredIterator, error) {
 
 	var previousOwnerRule []interface{}
@@ -728,7 +716,7 @@ func (_RotatableVPS *RotatableVPSFilterer) FilterOwnershipTransferred(opts *bind
 
 // WatchOwnershipTransferred is a free log subscription operation binding the contract event 0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0.
 //
-// Solidity: event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)
+// Solidity: e OwnershipTransferred(previousOwner indexed address, newOwner indexed address)
 func (_RotatableVPS *RotatableVPSFilterer) WatchOwnershipTransferred(opts *bind.WatchOpts, sink chan<- *RotatableVPSOwnershipTransferred, previousOwner []common.Address, newOwner []common.Address) (event.Subscription, error) {
 
 	var previousOwnerRule []interface{}
@@ -848,7 +836,7 @@ type RotatableVPSSetVotingPower struct {
 
 // FilterSetVotingPower is a free log retrieval operation binding the contract event 0x048ebfbc43eddab7a7a576fb6a22551fb89c9fa0bb520948a32ec8b1546640d3.
 //
-// Solidity: event SetVotingPower(address voter, uint256 power)
+// Solidity: e SetVotingPower(voter address, power uint256)
 func (_RotatableVPS *RotatableVPSFilterer) FilterSetVotingPower(opts *bind.FilterOpts) (*RotatableVPSSetVotingPowerIterator, error) {
 
 	logs, sub, err := _RotatableVPS.contract.FilterLogs(opts, "SetVotingPower")
@@ -860,7 +848,7 @@ func (_RotatableVPS *RotatableVPSFilterer) FilterSetVotingPower(opts *bind.Filte
 
 // WatchSetVotingPower is a free log subscription operation binding the contract event 0x048ebfbc43eddab7a7a576fb6a22551fb89c9fa0bb520948a32ec8b1546640d3.
 //
-// Solidity: event SetVotingPower(address voter, uint256 power)
+// Solidity: e SetVotingPower(voter address, power uint256)
 func (_RotatableVPS *RotatableVPSFilterer) WatchSetVotingPower(opts *bind.WatchOpts, sink chan<- *RotatableVPSSetVotingPower) (event.Subscription, error) {
 
 	logs, sub, err := _RotatableVPS.contract.WatchLogs(opts, "SetVotingPower")
@@ -970,7 +958,7 @@ type RotatableVPSWhitelistedAddressAdded struct {
 
 // FilterWhitelistedAddressAdded is a free log retrieval operation binding the contract event 0xd1bba68c128cc3f427e5831b3c6f99f480b6efa6b9e80c757768f6124158cc3f.
 //
-// Solidity: event WhitelistedAddressAdded(address addr)
+// Solidity: e WhitelistedAddressAdded(addr address)
 func (_RotatableVPS *RotatableVPSFilterer) FilterWhitelistedAddressAdded(opts *bind.FilterOpts) (*RotatableVPSWhitelistedAddressAddedIterator, error) {
 
 	logs, sub, err := _RotatableVPS.contract.FilterLogs(opts, "WhitelistedAddressAdded")
@@ -982,7 +970,7 @@ func (_RotatableVPS *RotatableVPSFilterer) FilterWhitelistedAddressAdded(opts *b
 
 // WatchWhitelistedAddressAdded is a free log subscription operation binding the contract event 0xd1bba68c128cc3f427e5831b3c6f99f480b6efa6b9e80c757768f6124158cc3f.
 //
-// Solidity: event WhitelistedAddressAdded(address addr)
+// Solidity: e WhitelistedAddressAdded(addr address)
 func (_RotatableVPS *RotatableVPSFilterer) WatchWhitelistedAddressAdded(opts *bind.WatchOpts, sink chan<- *RotatableVPSWhitelistedAddressAdded) (event.Subscription, error) {
 
 	logs, sub, err := _RotatableVPS.contract.WatchLogs(opts, "WhitelistedAddressAdded")
@@ -1092,7 +1080,7 @@ type RotatableVPSWhitelistedAddressRemoved struct {
 
 // FilterWhitelistedAddressRemoved is a free log retrieval operation binding the contract event 0xf1abf01a1043b7c244d128e8595cf0c1d10743b022b03a02dffd8ca3bf729f5a.
 //
-// Solidity: event WhitelistedAddressRemoved(address addr)
+// Solidity: e WhitelistedAddressRemoved(addr address)
 func (_RotatableVPS *RotatableVPSFilterer) FilterWhitelistedAddressRemoved(opts *bind.FilterOpts) (*RotatableVPSWhitelistedAddressRemovedIterator, error) {
 
 	logs, sub, err := _RotatableVPS.contract.FilterLogs(opts, "WhitelistedAddressRemoved")
@@ -1104,7 +1092,7 @@ func (_RotatableVPS *RotatableVPSFilterer) FilterWhitelistedAddressRemoved(opts 
 
 // WatchWhitelistedAddressRemoved is a free log subscription operation binding the contract event 0xf1abf01a1043b7c244d128e8595cf0c1d10743b022b03a02dffd8ca3bf729f5a.
 //
-// Solidity: event WhitelistedAddressRemoved(address addr)
+// Solidity: e WhitelistedAddressRemoved(addr address)
 func (_RotatableVPS *RotatableVPSFilterer) WatchWhitelistedAddressRemoved(opts *bind.WatchOpts, sink chan<- *RotatableVPSWhitelistedAddressRemoved) (event.Subscription, error) {
 
 	logs, sub, err := _RotatableVPS.contract.WatchLogs(opts, "WhitelistedAddressRemoved")

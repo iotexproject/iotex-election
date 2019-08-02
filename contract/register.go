@@ -15,18 +15,6 @@ import (
 	"github.com/ethereum/go-ethereum/event"
 )
 
-// Reference imports to suppress errors if they are not otherwise used.
-var (
-	_ = big.NewInt
-	_ = strings.NewReader
-	_ = ethereum.NotFound
-	_ = abi.U256
-	_ = bind.Bind
-	_ = common.Big1
-	_ = types.BloomLookup
-	_ = event.NewSubscription
-)
-
 // RegisterABI is the input ABI used to generate the binding from.
 const RegisterABI = "[{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"bytes32\"},{\"name\":\"\",\"type\":\"bytes32\"}],\"name\":\"ioAddrToIdx\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_address\",\"type\":\"address\"}],\"name\":\"isOwner\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_name\",\"type\":\"bytes12\"},{\"name\":\"_weight\",\"type\":\"uint256\"}],\"name\":\"setWeight\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"candidates\",\"outputs\":[{\"name\":\"name\",\"type\":\"bytes12\"},{\"name\":\"addr\",\"type\":\"address\"},{\"name\":\"ioOperatorAddr\",\"type\":\"string\"},{\"name\":\"ioRewardAddr\",\"type\":\"string\"},{\"name\":\"weight\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"unpause\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"nameRegistrationFee\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"paused\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_startIndex\",\"type\":\"uint256\"},{\"name\":\"_limit\",\"type\":\"uint256\"}],\"name\":\"getAllCandidates\",\"outputs\":[{\"name\":\"names\",\"type\":\"bytes12[]\"},{\"name\":\"addresses\",\"type\":\"address[]\"},{\"name\":\"ioOperatorAddr\",\"type\":\"bytes32[]\"},{\"name\":\"ioRewardAddr\",\"type\":\"bytes32[]\"},{\"name\":\"weights\",\"type\":\"uint256[]\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"address\"}],\"name\":\"addrToIdx\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_name\",\"type\":\"bytes12\"},{\"name\":\"_ioOperatorAddr\",\"type\":\"string\"},{\"name\":\"_ioRewardAddr\",\"type\":\"string\"},{\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"register\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_fee\",\"type\":\"uint256\"}],\"name\":\"setNameRegistrationFee\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"pause\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_addr\",\"type\":\"address\"}],\"name\":\"setFeeCollector\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"candidateCount\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"feeCollector\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"bytes12\"}],\"name\":\"nameToIdx\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_name\",\"type\":\"bytes12\"},{\"name\":\"_addr\",\"type\":\"address\"}],\"name\":\"setNameAddress\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"token\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"name\":\"_tokenAddr\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"idx\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"name\",\"type\":\"bytes12\"},{\"indexed\":false,\"name\":\"addr\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"ioOperatorAddr\",\"type\":\"string\"},{\"indexed\":false,\"name\":\"ioRewardAddr\",\"type\":\"string\"},{\"indexed\":false,\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"Registered\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"Pause\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"Unpause\",\"type\":\"event\"}]"
 
@@ -174,7 +162,7 @@ func (_Register *RegisterTransactorRaw) Transact(opts *bind.TransactOpts, method
 
 // AddrToIdx is a free data retrieval call binding the contract method 0x5f609695.
 //
-// Solidity: function addrToIdx(address ) constant returns(uint256)
+// Solidity: function addrToIdx( address) constant returns(uint256)
 func (_Register *RegisterCaller) AddrToIdx(opts *bind.CallOpts, arg0 common.Address) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
@@ -186,14 +174,14 @@ func (_Register *RegisterCaller) AddrToIdx(opts *bind.CallOpts, arg0 common.Addr
 
 // AddrToIdx is a free data retrieval call binding the contract method 0x5f609695.
 //
-// Solidity: function addrToIdx(address ) constant returns(uint256)
+// Solidity: function addrToIdx( address) constant returns(uint256)
 func (_Register *RegisterSession) AddrToIdx(arg0 common.Address) (*big.Int, error) {
 	return _Register.Contract.AddrToIdx(&_Register.CallOpts, arg0)
 }
 
 // AddrToIdx is a free data retrieval call binding the contract method 0x5f609695.
 //
-// Solidity: function addrToIdx(address ) constant returns(uint256)
+// Solidity: function addrToIdx( address) constant returns(uint256)
 func (_Register *RegisterCallerSession) AddrToIdx(arg0 common.Address) (*big.Int, error) {
 	return _Register.Contract.AddrToIdx(&_Register.CallOpts, arg0)
 }
@@ -226,7 +214,7 @@ func (_Register *RegisterCallerSession) CandidateCount() (*big.Int, error) {
 
 // Candidates is a free data retrieval call binding the contract method 0x3477ee2e.
 //
-// Solidity: function candidates(uint256 ) constant returns(bytes12 name, address addr, string ioOperatorAddr, string ioRewardAddr, uint256 weight)
+// Solidity: function candidates( uint256) constant returns(name bytes12, addr address, ioOperatorAddr string, ioRewardAddr string, weight uint256)
 func (_Register *RegisterCaller) Candidates(opts *bind.CallOpts, arg0 *big.Int) (struct {
 	Name           [12]byte
 	Addr           common.Address
@@ -248,7 +236,7 @@ func (_Register *RegisterCaller) Candidates(opts *bind.CallOpts, arg0 *big.Int) 
 
 // Candidates is a free data retrieval call binding the contract method 0x3477ee2e.
 //
-// Solidity: function candidates(uint256 ) constant returns(bytes12 name, address addr, string ioOperatorAddr, string ioRewardAddr, uint256 weight)
+// Solidity: function candidates( uint256) constant returns(name bytes12, addr address, ioOperatorAddr string, ioRewardAddr string, weight uint256)
 func (_Register *RegisterSession) Candidates(arg0 *big.Int) (struct {
 	Name           [12]byte
 	Addr           common.Address
@@ -261,7 +249,7 @@ func (_Register *RegisterSession) Candidates(arg0 *big.Int) (struct {
 
 // Candidates is a free data retrieval call binding the contract method 0x3477ee2e.
 //
-// Solidity: function candidates(uint256 ) constant returns(bytes12 name, address addr, string ioOperatorAddr, string ioRewardAddr, uint256 weight)
+// Solidity: function candidates( uint256) constant returns(name bytes12, addr address, ioOperatorAddr string, ioRewardAddr string, weight uint256)
 func (_Register *RegisterCallerSession) Candidates(arg0 *big.Int) (struct {
 	Name           [12]byte
 	Addr           common.Address
@@ -300,7 +288,7 @@ func (_Register *RegisterCallerSession) FeeCollector() (common.Address, error) {
 
 // GetAllCandidates is a free data retrieval call binding the contract method 0x5e924246.
 //
-// Solidity: function getAllCandidates(uint256 _startIndex, uint256 _limit) constant returns(bytes12[] names, address[] addresses, bytes32[] ioOperatorAddr, bytes32[] ioRewardAddr, uint256[] weights)
+// Solidity: function getAllCandidates(_startIndex uint256, _limit uint256) constant returns(names bytes12[], addresses address[], ioOperatorAddr bytes32[], ioRewardAddr bytes32[], weights uint256[])
 func (_Register *RegisterCaller) GetAllCandidates(opts *bind.CallOpts, _startIndex *big.Int, _limit *big.Int) (struct {
 	Names          [][12]byte
 	Addresses      []common.Address
@@ -322,7 +310,7 @@ func (_Register *RegisterCaller) GetAllCandidates(opts *bind.CallOpts, _startInd
 
 // GetAllCandidates is a free data retrieval call binding the contract method 0x5e924246.
 //
-// Solidity: function getAllCandidates(uint256 _startIndex, uint256 _limit) constant returns(bytes12[] names, address[] addresses, bytes32[] ioOperatorAddr, bytes32[] ioRewardAddr, uint256[] weights)
+// Solidity: function getAllCandidates(_startIndex uint256, _limit uint256) constant returns(names bytes12[], addresses address[], ioOperatorAddr bytes32[], ioRewardAddr bytes32[], weights uint256[])
 func (_Register *RegisterSession) GetAllCandidates(_startIndex *big.Int, _limit *big.Int) (struct {
 	Names          [][12]byte
 	Addresses      []common.Address
@@ -335,7 +323,7 @@ func (_Register *RegisterSession) GetAllCandidates(_startIndex *big.Int, _limit 
 
 // GetAllCandidates is a free data retrieval call binding the contract method 0x5e924246.
 //
-// Solidity: function getAllCandidates(uint256 _startIndex, uint256 _limit) constant returns(bytes12[] names, address[] addresses, bytes32[] ioOperatorAddr, bytes32[] ioRewardAddr, uint256[] weights)
+// Solidity: function getAllCandidates(_startIndex uint256, _limit uint256) constant returns(names bytes12[], addresses address[], ioOperatorAddr bytes32[], ioRewardAddr bytes32[], weights uint256[])
 func (_Register *RegisterCallerSession) GetAllCandidates(_startIndex *big.Int, _limit *big.Int) (struct {
 	Names          [][12]byte
 	Addresses      []common.Address
@@ -348,7 +336,7 @@ func (_Register *RegisterCallerSession) GetAllCandidates(_startIndex *big.Int, _
 
 // IoAddrToIdx is a free data retrieval call binding the contract method 0x12f2a2a9.
 //
-// Solidity: function ioAddrToIdx(bytes32 , bytes32 ) constant returns(uint256)
+// Solidity: function ioAddrToIdx( bytes32,  bytes32) constant returns(uint256)
 func (_Register *RegisterCaller) IoAddrToIdx(opts *bind.CallOpts, arg0 [32]byte, arg1 [32]byte) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
@@ -360,21 +348,21 @@ func (_Register *RegisterCaller) IoAddrToIdx(opts *bind.CallOpts, arg0 [32]byte,
 
 // IoAddrToIdx is a free data retrieval call binding the contract method 0x12f2a2a9.
 //
-// Solidity: function ioAddrToIdx(bytes32 , bytes32 ) constant returns(uint256)
+// Solidity: function ioAddrToIdx( bytes32,  bytes32) constant returns(uint256)
 func (_Register *RegisterSession) IoAddrToIdx(arg0 [32]byte, arg1 [32]byte) (*big.Int, error) {
 	return _Register.Contract.IoAddrToIdx(&_Register.CallOpts, arg0, arg1)
 }
 
 // IoAddrToIdx is a free data retrieval call binding the contract method 0x12f2a2a9.
 //
-// Solidity: function ioAddrToIdx(bytes32 , bytes32 ) constant returns(uint256)
+// Solidity: function ioAddrToIdx( bytes32,  bytes32) constant returns(uint256)
 func (_Register *RegisterCallerSession) IoAddrToIdx(arg0 [32]byte, arg1 [32]byte) (*big.Int, error) {
 	return _Register.Contract.IoAddrToIdx(&_Register.CallOpts, arg0, arg1)
 }
 
 // IsOwner is a free data retrieval call binding the contract method 0x2f54bf6e.
 //
-// Solidity: function isOwner(address _address) constant returns(bool)
+// Solidity: function isOwner(_address address) constant returns(bool)
 func (_Register *RegisterCaller) IsOwner(opts *bind.CallOpts, _address common.Address) (bool, error) {
 	var (
 		ret0 = new(bool)
@@ -386,14 +374,14 @@ func (_Register *RegisterCaller) IsOwner(opts *bind.CallOpts, _address common.Ad
 
 // IsOwner is a free data retrieval call binding the contract method 0x2f54bf6e.
 //
-// Solidity: function isOwner(address _address) constant returns(bool)
+// Solidity: function isOwner(_address address) constant returns(bool)
 func (_Register *RegisterSession) IsOwner(_address common.Address) (bool, error) {
 	return _Register.Contract.IsOwner(&_Register.CallOpts, _address)
 }
 
 // IsOwner is a free data retrieval call binding the contract method 0x2f54bf6e.
 //
-// Solidity: function isOwner(address _address) constant returns(bool)
+// Solidity: function isOwner(_address address) constant returns(bool)
 func (_Register *RegisterCallerSession) IsOwner(_address common.Address) (bool, error) {
 	return _Register.Contract.IsOwner(&_Register.CallOpts, _address)
 }
@@ -426,7 +414,7 @@ func (_Register *RegisterCallerSession) NameRegistrationFee() (*big.Int, error) 
 
 // NameToIdx is a free data retrieval call binding the contract method 0xd64ac4a6.
 //
-// Solidity: function nameToIdx(bytes12 ) constant returns(uint256)
+// Solidity: function nameToIdx( bytes12) constant returns(uint256)
 func (_Register *RegisterCaller) NameToIdx(opts *bind.CallOpts, arg0 [12]byte) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
@@ -438,14 +426,14 @@ func (_Register *RegisterCaller) NameToIdx(opts *bind.CallOpts, arg0 [12]byte) (
 
 // NameToIdx is a free data retrieval call binding the contract method 0xd64ac4a6.
 //
-// Solidity: function nameToIdx(bytes12 ) constant returns(uint256)
+// Solidity: function nameToIdx( bytes12) constant returns(uint256)
 func (_Register *RegisterSession) NameToIdx(arg0 [12]byte) (*big.Int, error) {
 	return _Register.Contract.NameToIdx(&_Register.CallOpts, arg0)
 }
 
 // NameToIdx is a free data retrieval call binding the contract method 0xd64ac4a6.
 //
-// Solidity: function nameToIdx(bytes12 ) constant returns(uint256)
+// Solidity: function nameToIdx( bytes12) constant returns(uint256)
 func (_Register *RegisterCallerSession) NameToIdx(arg0 [12]byte) (*big.Int, error) {
 	return _Register.Contract.NameToIdx(&_Register.CallOpts, arg0)
 }
@@ -551,126 +539,126 @@ func (_Register *RegisterTransactorSession) Pause() (*types.Transaction, error) 
 
 // Register is a paid mutator transaction binding the contract method 0x690c1f22.
 //
-// Solidity: function register(bytes12 _name, string _ioOperatorAddr, string _ioRewardAddr, bytes _data) returns()
+// Solidity: function register(_name bytes12, _ioOperatorAddr string, _ioRewardAddr string, _data bytes) returns()
 func (_Register *RegisterTransactor) Register(opts *bind.TransactOpts, _name [12]byte, _ioOperatorAddr string, _ioRewardAddr string, _data []byte) (*types.Transaction, error) {
 	return _Register.contract.Transact(opts, "register", _name, _ioOperatorAddr, _ioRewardAddr, _data)
 }
 
 // Register is a paid mutator transaction binding the contract method 0x690c1f22.
 //
-// Solidity: function register(bytes12 _name, string _ioOperatorAddr, string _ioRewardAddr, bytes _data) returns()
+// Solidity: function register(_name bytes12, _ioOperatorAddr string, _ioRewardAddr string, _data bytes) returns()
 func (_Register *RegisterSession) Register(_name [12]byte, _ioOperatorAddr string, _ioRewardAddr string, _data []byte) (*types.Transaction, error) {
 	return _Register.Contract.Register(&_Register.TransactOpts, _name, _ioOperatorAddr, _ioRewardAddr, _data)
 }
 
 // Register is a paid mutator transaction binding the contract method 0x690c1f22.
 //
-// Solidity: function register(bytes12 _name, string _ioOperatorAddr, string _ioRewardAddr, bytes _data) returns()
+// Solidity: function register(_name bytes12, _ioOperatorAddr string, _ioRewardAddr string, _data bytes) returns()
 func (_Register *RegisterTransactorSession) Register(_name [12]byte, _ioOperatorAddr string, _ioRewardAddr string, _data []byte) (*types.Transaction, error) {
 	return _Register.Contract.Register(&_Register.TransactOpts, _name, _ioOperatorAddr, _ioRewardAddr, _data)
 }
 
 // SetFeeCollector is a paid mutator transaction binding the contract method 0xa42dce80.
 //
-// Solidity: function setFeeCollector(address _addr) returns()
+// Solidity: function setFeeCollector(_addr address) returns()
 func (_Register *RegisterTransactor) SetFeeCollector(opts *bind.TransactOpts, _addr common.Address) (*types.Transaction, error) {
 	return _Register.contract.Transact(opts, "setFeeCollector", _addr)
 }
 
 // SetFeeCollector is a paid mutator transaction binding the contract method 0xa42dce80.
 //
-// Solidity: function setFeeCollector(address _addr) returns()
+// Solidity: function setFeeCollector(_addr address) returns()
 func (_Register *RegisterSession) SetFeeCollector(_addr common.Address) (*types.Transaction, error) {
 	return _Register.Contract.SetFeeCollector(&_Register.TransactOpts, _addr)
 }
 
 // SetFeeCollector is a paid mutator transaction binding the contract method 0xa42dce80.
 //
-// Solidity: function setFeeCollector(address _addr) returns()
+// Solidity: function setFeeCollector(_addr address) returns()
 func (_Register *RegisterTransactorSession) SetFeeCollector(_addr common.Address) (*types.Transaction, error) {
 	return _Register.Contract.SetFeeCollector(&_Register.TransactOpts, _addr)
 }
 
 // SetNameAddress is a paid mutator transaction binding the contract method 0xebfd4148.
 //
-// Solidity: function setNameAddress(bytes12 _name, address _addr) returns()
+// Solidity: function setNameAddress(_name bytes12, _addr address) returns()
 func (_Register *RegisterTransactor) SetNameAddress(opts *bind.TransactOpts, _name [12]byte, _addr common.Address) (*types.Transaction, error) {
 	return _Register.contract.Transact(opts, "setNameAddress", _name, _addr)
 }
 
 // SetNameAddress is a paid mutator transaction binding the contract method 0xebfd4148.
 //
-// Solidity: function setNameAddress(bytes12 _name, address _addr) returns()
+// Solidity: function setNameAddress(_name bytes12, _addr address) returns()
 func (_Register *RegisterSession) SetNameAddress(_name [12]byte, _addr common.Address) (*types.Transaction, error) {
 	return _Register.Contract.SetNameAddress(&_Register.TransactOpts, _name, _addr)
 }
 
 // SetNameAddress is a paid mutator transaction binding the contract method 0xebfd4148.
 //
-// Solidity: function setNameAddress(bytes12 _name, address _addr) returns()
+// Solidity: function setNameAddress(_name bytes12, _addr address) returns()
 func (_Register *RegisterTransactorSession) SetNameAddress(_name [12]byte, _addr common.Address) (*types.Transaction, error) {
 	return _Register.Contract.SetNameAddress(&_Register.TransactOpts, _name, _addr)
 }
 
 // SetNameRegistrationFee is a paid mutator transaction binding the contract method 0x6afee780.
 //
-// Solidity: function setNameRegistrationFee(uint256 _fee) returns()
+// Solidity: function setNameRegistrationFee(_fee uint256) returns()
 func (_Register *RegisterTransactor) SetNameRegistrationFee(opts *bind.TransactOpts, _fee *big.Int) (*types.Transaction, error) {
 	return _Register.contract.Transact(opts, "setNameRegistrationFee", _fee)
 }
 
 // SetNameRegistrationFee is a paid mutator transaction binding the contract method 0x6afee780.
 //
-// Solidity: function setNameRegistrationFee(uint256 _fee) returns()
+// Solidity: function setNameRegistrationFee(_fee uint256) returns()
 func (_Register *RegisterSession) SetNameRegistrationFee(_fee *big.Int) (*types.Transaction, error) {
 	return _Register.Contract.SetNameRegistrationFee(&_Register.TransactOpts, _fee)
 }
 
 // SetNameRegistrationFee is a paid mutator transaction binding the contract method 0x6afee780.
 //
-// Solidity: function setNameRegistrationFee(uint256 _fee) returns()
+// Solidity: function setNameRegistrationFee(_fee uint256) returns()
 func (_Register *RegisterTransactorSession) SetNameRegistrationFee(_fee *big.Int) (*types.Transaction, error) {
 	return _Register.Contract.SetNameRegistrationFee(&_Register.TransactOpts, _fee)
 }
 
 // SetWeight is a paid mutator transaction binding the contract method 0x3207bcf0.
 //
-// Solidity: function setWeight(bytes12 _name, uint256 _weight) returns()
+// Solidity: function setWeight(_name bytes12, _weight uint256) returns()
 func (_Register *RegisterTransactor) SetWeight(opts *bind.TransactOpts, _name [12]byte, _weight *big.Int) (*types.Transaction, error) {
 	return _Register.contract.Transact(opts, "setWeight", _name, _weight)
 }
 
 // SetWeight is a paid mutator transaction binding the contract method 0x3207bcf0.
 //
-// Solidity: function setWeight(bytes12 _name, uint256 _weight) returns()
+// Solidity: function setWeight(_name bytes12, _weight uint256) returns()
 func (_Register *RegisterSession) SetWeight(_name [12]byte, _weight *big.Int) (*types.Transaction, error) {
 	return _Register.Contract.SetWeight(&_Register.TransactOpts, _name, _weight)
 }
 
 // SetWeight is a paid mutator transaction binding the contract method 0x3207bcf0.
 //
-// Solidity: function setWeight(bytes12 _name, uint256 _weight) returns()
+// Solidity: function setWeight(_name bytes12, _weight uint256) returns()
 func (_Register *RegisterTransactorSession) SetWeight(_name [12]byte, _weight *big.Int) (*types.Transaction, error) {
 	return _Register.Contract.SetWeight(&_Register.TransactOpts, _name, _weight)
 }
 
 // TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
 //
-// Solidity: function transferOwnership(address _newOwner) returns()
+// Solidity: function transferOwnership(_newOwner address) returns()
 func (_Register *RegisterTransactor) TransferOwnership(opts *bind.TransactOpts, _newOwner common.Address) (*types.Transaction, error) {
 	return _Register.contract.Transact(opts, "transferOwnership", _newOwner)
 }
 
 // TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
 //
-// Solidity: function transferOwnership(address _newOwner) returns()
+// Solidity: function transferOwnership(_newOwner address) returns()
 func (_Register *RegisterSession) TransferOwnership(_newOwner common.Address) (*types.Transaction, error) {
 	return _Register.Contract.TransferOwnership(&_Register.TransactOpts, _newOwner)
 }
 
 // TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
 //
-// Solidity: function transferOwnership(address _newOwner) returns()
+// Solidity: function transferOwnership(_newOwner address) returns()
 func (_Register *RegisterTransactorSession) TransferOwnership(_newOwner common.Address) (*types.Transaction, error) {
 	return _Register.Contract.TransferOwnership(&_Register.TransactOpts, _newOwner)
 }
@@ -770,7 +758,7 @@ type RegisterPause struct {
 
 // FilterPause is a free log retrieval operation binding the contract event 0x6985a02210a168e66602d3235cb6db0e70f92b3ba4d376a33c0f3d9434bff625.
 //
-// Solidity: event Pause()
+// Solidity: e Pause()
 func (_Register *RegisterFilterer) FilterPause(opts *bind.FilterOpts) (*RegisterPauseIterator, error) {
 
 	logs, sub, err := _Register.contract.FilterLogs(opts, "Pause")
@@ -782,7 +770,7 @@ func (_Register *RegisterFilterer) FilterPause(opts *bind.FilterOpts) (*Register
 
 // WatchPause is a free log subscription operation binding the contract event 0x6985a02210a168e66602d3235cb6db0e70f92b3ba4d376a33c0f3d9434bff625.
 //
-// Solidity: event Pause()
+// Solidity: e Pause()
 func (_Register *RegisterFilterer) WatchPause(opts *bind.WatchOpts, sink chan<- *RegisterPause) (event.Subscription, error) {
 
 	logs, sub, err := _Register.contract.WatchLogs(opts, "Pause")
@@ -897,7 +885,7 @@ type RegisterRegistered struct {
 
 // FilterRegistered is a free log retrieval operation binding the contract event 0x3340640ab5b6f15b631e9400701305335845b74a8bd5054f7b268608b2b869d4.
 //
-// Solidity: event Registered(uint256 idx, bytes12 name, address addr, string ioOperatorAddr, string ioRewardAddr, bytes data)
+// Solidity: e Registered(idx uint256, name bytes12, addr address, ioOperatorAddr string, ioRewardAddr string, data bytes)
 func (_Register *RegisterFilterer) FilterRegistered(opts *bind.FilterOpts) (*RegisterRegisteredIterator, error) {
 
 	logs, sub, err := _Register.contract.FilterLogs(opts, "Registered")
@@ -909,7 +897,7 @@ func (_Register *RegisterFilterer) FilterRegistered(opts *bind.FilterOpts) (*Reg
 
 // WatchRegistered is a free log subscription operation binding the contract event 0x3340640ab5b6f15b631e9400701305335845b74a8bd5054f7b268608b2b869d4.
 //
-// Solidity: event Registered(uint256 idx, bytes12 name, address addr, string ioOperatorAddr, string ioRewardAddr, bytes data)
+// Solidity: e Registered(idx uint256, name bytes12, addr address, ioOperatorAddr string, ioRewardAddr string, data bytes)
 func (_Register *RegisterFilterer) WatchRegistered(opts *bind.WatchOpts, sink chan<- *RegisterRegistered) (event.Subscription, error) {
 
 	logs, sub, err := _Register.contract.WatchLogs(opts, "Registered")
@@ -1018,7 +1006,7 @@ type RegisterUnpause struct {
 
 // FilterUnpause is a free log retrieval operation binding the contract event 0x7805862f689e2f13df9f062ff482ad3ad112aca9e0847911ed832e158c525b33.
 //
-// Solidity: event Unpause()
+// Solidity: e Unpause()
 func (_Register *RegisterFilterer) FilterUnpause(opts *bind.FilterOpts) (*RegisterUnpauseIterator, error) {
 
 	logs, sub, err := _Register.contract.FilterLogs(opts, "Unpause")
@@ -1030,7 +1018,7 @@ func (_Register *RegisterFilterer) FilterUnpause(opts *bind.FilterOpts) (*Regist
 
 // WatchUnpause is a free log subscription operation binding the contract event 0x7805862f689e2f13df9f062ff482ad3ad112aca9e0847911ed832e158c525b33.
 //
-// Solidity: event Unpause()
+// Solidity: e Unpause()
 func (_Register *RegisterFilterer) WatchUnpause(opts *bind.WatchOpts, sink chan<- *RegisterUnpause) (event.Subscription, error) {
 
 	logs, sub, err := _Register.contract.WatchLogs(opts, "Unpause")

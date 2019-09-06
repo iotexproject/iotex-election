@@ -93,9 +93,7 @@ type Committee interface {
 }
 
 type committee struct {
-	resultDB 			  db.KVStore
-	timeDB 				  db.KVStore 
-	//voteDB 	 	      db.KVStore
+	db  				  db.KVStoreWithNamespace
 	carrier               carrier.Carrier
 	retryLimit            uint8
 	paginationSize        uint8
@@ -119,7 +117,7 @@ type committee struct {
 }
 
 // NewCommittee creates a committee
-func NewCommittee(kvstore db.KVStoreWithNamespace, cfg Config) (Committee, error) {
+func NewCommittee(db db.KVStoreWithNamespace, cfg Config) (Committee, error) {
 	if !common.IsHexAddress(cfg.StakingContractAddress) {
 		return nil, errors.New("Invalid staking contract address")
 	}
@@ -157,9 +155,7 @@ func NewCommittee(kvstore db.KVStoreWithNamespace, cfg Config) (Committee, error
 		gravityChainBatchSize = cfg.GravityChainBatchSize
 	}
 	return &committee{
-		resultDB:			   db.NewKVStoreWithNamespaceWrapper(ResultNS, kvstore),
-		timeDB:				   db.NewKVStoreWithNamespaceWrapper(TimeNS, kvstore),
-		//voteDB:				db.NewKVStoreWithNamespaceWrapper(VoteNS, kvstore),
+		db: 				   db,
 		cache:                 newResultCache(cfg.CacheSize),
 		heightManager:         newHeightManager(),
 		carrier:               carrier,
@@ -182,22 +178,23 @@ func NewCommittee(kvstore db.KVStoreWithNamespace, cfg Config) (Committee, error
 func (ec *committee) Start(ctx context.Context) (err error) {
 	ec.mutex.Lock()
 	defer ec.mutex.Unlock()
-	if err := ec.resultDB.Start(ctx); err != nil {
+	if err := ec.db.Start(ctx); err != nil {
 		return errors.Wrap(err, "error when starting db")
 	}	
-	if startHeight, err := ec.timeDB.Get(db.NextHeightKey); err == nil {
+	if startHeight, err := ec.getTimeDB(db.NextHeightKey); err == nil {
 		zap.L().Info("restoring from db")
 		ec.nextHeight = util.BytesToUint64(startHeight)
 		for height := ec.startHeight; height < ec.nextHeight; height += ec.interval {
 			zap.L().Info("loading", zap.Uint64("height", height))
-			data, err := ec.timeDB.Get(ec.dbKey(height))
+			heightKey := ec.dbKey(height)
+			data, err := ec.getTimeDB(heightKey)
 			if err != nil {
-				return err
+				return err 
 			}
-			time, err := util.BytesToTime(data)
+			time, err := util.BytesToTime(data) 
 			if err != nil {
-				return err
-			}
+				return err 
+			}	
 			if err := ec.heightManager.add(height, time); err != nil {
 				return err
 			}
@@ -254,7 +251,7 @@ func (ec *committee) Stop(ctx context.Context) error {
 	ec.terminate <- true
 	ec.carrier.Close()
 
-	return ec.resultDB.Stop(ctx)
+	return ec.db.Stop(ctx)
 }
 
 func (ec *committee) Status() STATUS {
@@ -394,7 +391,8 @@ func (ec *committee) resultByHeight(height uint64) (*types.ElectionResult, error
 	if result != nil {
 		return result, nil
 	}
-	data, err := ec.resultDB.Get(ec.dbKey(height))
+	heightKey := ec.dbKey(height)
+	data, err := ec.getResultDB(heightKey)
 	if err != nil {
 		return nil, err
 	}
@@ -528,24 +526,40 @@ func (ec *committee) dbKey(height uint64) []byte {
 	return util.Uint64ToBytes(height) 
 }
 
+func (ec *committee) getTimeDB(key []byte) ([]byte, error) {
+	return ec.db.Get(TimeNS, key)
+}
+
+func (ec *committee) putTimeDB(key []byte, value []byte) error {
+	return ec.db.Put(TimeNS, key, value)
+}
+
+func (ec *committee) getResultDB(key []byte) ([]byte, error) {
+	return ec.db.Get(ResultNS, key)
+}
+
+func (ec *committee) putResultDB(key []byte, value []byte) error {
+	return ec.db.Put(ResultNS, key, value)
+}
 
 func (ec *committee) storeResult(height uint64, result *types.ElectionResult) error {
 	data, err := result.Serialize()
 	if err != nil {
 		return err
 	}
-	if err := ec.resultDB.Put(ec.dbKey(height), data); err != nil {
+	heightKey := ec.dbKey(height)
+	if err := ec.putResultDB(heightKey, data); err != nil {
 		return errors.Wrapf(err, "failed to put election result into db")
 	}
 
-	timeData , err := util.TimeToBytes(result.MintTime())
-	if err != nil{
+	timeData, err := util.TimeToBytes(result.MintTime())
+	if err != nil {
 		return err
 	}
-	if err := ec.timeDB.Put(ec.dbKey(height), timeData); err != nil {
+	if err := ec.putTimeDB(heightKey, timeData); err != nil {
 		return errors.Wrapf(err, "failed to put election time into db")
 	}
-	if err := ec.timeDB.Put(db.NextHeightKey, util.Uint64ToBytes(height+ec.interval)); err != nil {
+	if err := ec.putTimeDB(db.NextHeightKey, util.Uint64ToBytes(height+ec.interval)); err != nil {
 		return err
 	}
 	ec.cache.insert(height, result)

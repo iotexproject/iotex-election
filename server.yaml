@@ -7,7 +7,7 @@ port: 8089
 committee:
   numOfRetries: 8
   gravityChainAPIs:
-    - wss://kovan.infura.io/ws
+  - https://kovan.infura.io/v3/6af04e7e165d47faaa5ef375aaf60792
   gravityChainHeightInterval: 100
   gravityChainStartHeight: 10518000
   registerContractAddress: 0xb4ca6cf2fe760517a3f92120acbe577311252663
@@ -19,7 +19,7 @@ committee:
   cacheSize: 100
 
 
-enableVoteSync: true
+enableVoteSync: false
 voteSync:
   gravityChainAPIs:
   - https://mainnet.infura.io/v3/6af04e7e165d47faaa5ef375aaf60792

@@ -14,7 +14,7 @@ var cfg = Config{
 	OperatorPrivateKey:       "a000000000000000000000000000000000000000000000000000000000000000",
 	IoTeXAPI:                 "api.testnet.iotex.one:443",
 	VitaContractAddress:      "io1y9ndaezjrdlkw93hquqru7txh9jcsmtmrvt4yw",
-	GravityChainAPIs:         []string{"https://mainnet.infura.io/v3/b355cae6fafc4302b106b937ee6c15af"},
+	GravityChainAPIs:         []string{"https://mainnet.infura.io/v3/7c2ccaaba3974b4da11877322cdb721f"},
 	RegisterContractAddress:  "0x95724986563028deb58f15c5fac19fa09304f32d",
 	StakingContractAddress:   "0x87c9dbff0016af23f5b1ab9b8e072124ab729193",
 	PaginationSize:           100,

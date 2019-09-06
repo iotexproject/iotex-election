@@ -50,12 +50,13 @@ type memStore struct {
 
 // NewInMemKVStore creates a new in memory kv store
 func NewInMemKVStore() KVStore {
-	return &memStore{}
+	return &memStore{
+		kv : make(map[string][]byte),
+	}
 }
 
 // Start starts the in-memory store
 func (m *memStore) Start(_ context.Context) error {
-	m.kv = make(map[string][]byte)
 	return nil
 }
 
@@ -120,6 +121,60 @@ func (w *KVStoreWithNamespaceWrapper) Get(key []byte) ([]byte, error) {
 // Put puts key-value pair into kv store
 func (w *KVStoreWithNamespaceWrapper) Put(key []byte, value []byte) error {
 	return w.store.Put(w.namespace, key, value)
+}
+
+type memStoreWithNamespace struct {
+	kvs 		[]KVStore
+	namespaces	[]string
+}
+
+// NewInMemStoreWithNamespace defines a wrapper to convert memStore to KVStoreWithNamespace 
+func NewInMemStoreWithNamespace(_ Config) KVStoreWithNamespace {
+	return &memStoreWithNamespace{
+		kvs: []KVStore{},
+		namespaces: []string{},
+	}
+}
+
+// Start starts the memStoreWithNamespace
+func (m *memStoreWithNamespace) Start(_ context.Context) error {
+	return nil 
+}
+
+// Stop stops the memStoreWithNamespace 
+func (m *memStoreWithNamespace) Stop (_ context.Context) error {
+	m.kvs = nil 
+	m.namespaces = nil
+	return nil
+
+}
+
+// Get gets value by key from memStoreWithNamespace 
+func (m * memStoreWithNamespace) Get(namespace string, key []byte) ([]byte, error) {
+	for i, ns := range m.namespaces {
+		if ns == namespace {
+			kvStore := m.kvs[i]
+			return kvStore.Get(key)
+		}
+	}
+	//if the namespace doesn't exist, return error  
+	return nil, errors.New("Namespace doesn't exist")
+
+}
+
+// Put puts key and value to memStoreWithNamespace 
+func (m *memStoreWithNamespace) Put(namespace string, key []byte, value []byte) error {
+	for i, ns := range m.namespaces {
+		if ns == namespace {
+			kvStore := m.kvs[i]
+			return kvStore.Put(key, value)
+		}
+	}
+	//if the namespace doesn't exist, it makes new kvstore and namespace, and put the data 
+	m.namespaces = append(m.namespaces, namespace)
+	newkvStore := NewInMemKVStore() 
+	m.kvs = append(m.kvs, newkvStore)
+	return newkvStore.Put(key,value)
 }
 
 type boltDB struct {

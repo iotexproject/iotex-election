@@ -124,15 +124,13 @@ func (w *KVStoreWithNamespaceWrapper) Put(key []byte, value []byte) error {
 }
 
 type memStoreWithNamespace struct {
-	kvs 		[]KVStore
-	namespaces	[]string
+	kvs 		map[string]KVStore
 }
 
 // NewInMemStoreWithNamespace defines a wrapper to convert memStore to KVStoreWithNamespace 
 func NewInMemStoreWithNamespace(_ Config) KVStoreWithNamespace {
 	return &memStoreWithNamespace{
-		kvs: []KVStore{},
-		namespaces: []string{},
+		kvs: make(map[string]KVStore),
 	}
 }
 
@@ -144,37 +142,31 @@ func (m *memStoreWithNamespace) Start(_ context.Context) error {
 // Stop stops the memStoreWithNamespace 
 func (m *memStoreWithNamespace) Stop (_ context.Context) error {
 	m.kvs = nil 
-	m.namespaces = nil
 	return nil
 
 }
 
 // Get gets value by key from memStoreWithNamespace 
 func (m * memStoreWithNamespace) Get(namespace string, key []byte) ([]byte, error) {
-	for i, ns := range m.namespaces {
-		if ns == namespace {
-			kvStore := m.kvs[i]
-			return kvStore.Get(key)
-		}
+	if kvstore, ok := m.kvs[namespace]; ok {
+		return kvstore.Get(key)
 	}
 	//if the namespace doesn't exist, return error  
 	return nil, errors.New("Namespace doesn't exist")
-
 }
 
 // Put puts key and value to memStoreWithNamespace 
 func (m *memStoreWithNamespace) Put(namespace string, key []byte, value []byte) error {
-	for i, ns := range m.namespaces {
-		if ns == namespace {
-			kvStore := m.kvs[i]
-			return kvStore.Put(key, value)
-		}
+	if kvstore, ok := m.kvs[namespace]; ok {
+		return kvstore.Put(key, value)
 	}
 	//if the namespace doesn't exist, it makes new kvstore and namespace, and put the data 
-	m.namespaces = append(m.namespaces, namespace)
 	newkvStore := NewInMemKVStore() 
-	m.kvs = append(m.kvs, newkvStore)
-	return newkvStore.Put(key,value)
+	if err := newkvStore.Put(key,value); err != nil {
+		return err 
+	}
+	m.kvs[namespace] = newkvStore
+	return nil
 }
 
 type boltDB struct {

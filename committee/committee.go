@@ -190,7 +190,7 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 		ec.nextHeight = util.BytesToUint64(startHeight)
 		for height := ec.startHeight; height < ec.nextHeight; height += ec.interval {
 			zap.L().Info("loading", zap.Uint64("height", height))
-			data, err := ec.timeDB.Get(ec.DBKey(height))
+			data, err := ec.timeDB.Get(ec.dbKey(height))
 			if err != nil {
 				return err
 			}
@@ -394,7 +394,7 @@ func (ec *committee) resultByHeight(height uint64) (*types.ElectionResult, error
 	if result != nil {
 		return result, nil
 	}
-	data, err := ec.resultDB.Get(ec.DBKey(height))
+	data, err := ec.resultDB.Get(ec.dbKey(height))
 	if err != nil {
 		return nil, err
 	}
@@ -524,7 +524,7 @@ func (ec *committee) fetchResultByHeight(height uint64) (*types.ElectionResult, 
 	return calculator.Calculate()
 }
 
-func (ec *committee) DBKey(height uint64) []byte {
+func (ec *committee) dbKey(height uint64) []byte {
 	return util.Uint64ToBytes(height) 
 }
 
@@ -534,7 +534,7 @@ func (ec *committee) storeResult(height uint64, result *types.ElectionResult) er
 	if err != nil {
 		return err
 	}
-	if err := ec.resultDB.Put(ec.DBKey(height), data); err != nil {
+	if err := ec.resultDB.Put(ec.dbKey(height), data); err != nil {
 		return errors.Wrapf(err, "failed to put election result into db")
 	}
 
@@ -542,7 +542,7 @@ func (ec *committee) storeResult(height uint64, result *types.ElectionResult) er
 	if err != nil{
 		return err
 	}
-	if err := ec.timeDB.Put(ec.DBKey(height), timeData); err != nil {
+	if err := ec.timeDB.Put(ec.dbKey(height), timeData); err != nil {
 		return errors.Wrapf(err, "failed to put election time into db")
 	}
 	if err := ec.timeDB.Put(db.NextHeightKey, util.Uint64ToBytes(height+ec.interval)); err != nil {

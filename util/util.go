@@ -12,7 +12,21 @@ package util
 
 import (
 	"encoding/binary"
+	"time"
 )
+
+
+func TimeToBytes(t time.Time) ([]byte, error) {
+	return t.MarshalBinary()
+}
+
+func BytesToTime(b []byte) (time.Time, error) {
+	var t time.Time
+	if err := t.UnmarshalBinary(b); err != nil {
+		return t, err
+	}
+	return t, nil
+}
 
 func Uint64ToBytes(u uint64) []byte {
 	retval := make([]byte, 8)

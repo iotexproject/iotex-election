@@ -30,8 +30,15 @@ import (
 	"github.com/iotexproject/iotex-election/util"
 )
 
-// Namespace to store the result in db
-const Namespace = "electionNS"
+const (
+	//ResultNS is the bucket name for election Result 
+	ResultNS = "ElectionResultNS"
+
+	//TimeNS is the bucket name for elction Time 
+	TimeNS = "ElectionBlkTimeNS"
+	
+	//VoteNS = "VoteNS"
+)
 
 // CalcGravityChainHeight calculates the corresponding gravity chain height for an epoch
 type CalcGravityChainHeight func(uint64) (uint64, error)
@@ -86,7 +93,9 @@ type Committee interface {
 }
 
 type committee struct {
-	db                    db.KVStore
+	resultDB 			  db.KVStore
+	timeDB 				  db.KVStore 
+	//voteDB 	 	      db.KVStore
 	carrier               carrier.Carrier
 	retryLimit            uint8
 	paginationSize        uint8
@@ -109,13 +118,8 @@ type committee struct {
 	gravityChainBatchSize uint64
 }
 
-// NewCommitteeWithKVStoreWithNamespace creates a committee with kvstore with namespace
-func NewCommitteeWithKVStoreWithNamespace(kvstore db.KVStoreWithNamespace, cfg Config) (Committee, error) {
-	return NewCommittee(db.NewKVStoreWithNamespaceWrapper(Namespace, kvstore), cfg)
-}
-
 // NewCommittee creates a committee
-func NewCommittee(kvstore db.KVStore, cfg Config) (Committee, error) {
+func NewCommittee(kvstore db.KVStoreWithNamespace, cfg Config) (Committee, error) {
 	if !common.IsHexAddress(cfg.StakingContractAddress) {
 		return nil, errors.New("Invalid staking contract address")
 	}
@@ -153,7 +157,9 @@ func NewCommittee(kvstore db.KVStore, cfg Config) (Committee, error) {
 		gravityChainBatchSize = cfg.GravityChainBatchSize
 	}
 	return &committee{
-		db:                    kvstore,
+		resultDB:			   db.NewKVStoreWithNamespaceWrapper(ResultNS, kvstore),
+		timeDB:				   db.NewKVStoreWithNamespaceWrapper(TimeNS, kvstore),
+		//voteDB:				db.NewKVStoreWithNamespaceWrapper(VoteNS, kvstore),
 		cache:                 newResultCache(cfg.CacheSize),
 		heightManager:         newHeightManager(),
 		carrier:               carrier,
@@ -176,24 +182,23 @@ func NewCommittee(kvstore db.KVStore, cfg Config) (Committee, error) {
 func (ec *committee) Start(ctx context.Context) (err error) {
 	ec.mutex.Lock()
 	defer ec.mutex.Unlock()
-	if err := ec.db.Start(ctx); err != nil {
+	if err := ec.resultDB.Start(ctx); err != nil {
 		return errors.Wrap(err, "error when starting db")
-	}
-	if startHeight, err := ec.db.Get(db.NextHeightKey); err == nil {
+	}	
+	if startHeight, err := ec.timeDB.Get(db.NextHeightKey); err == nil {
 		zap.L().Info("restoring from db")
 		ec.nextHeight = util.BytesToUint64(startHeight)
 		for height := ec.startHeight; height < ec.nextHeight; height += ec.interval {
 			zap.L().Info("loading", zap.Uint64("height", height))
-			data, err := ec.db.Get(ec.dbKey(height))
+			data, err := ec.timeDB.Get(ec.DBKey(height))
 			if err != nil {
 				return err
 			}
-			r := &types.ElectionResult{}
-			if err := r.Deserialize(data); err != nil {
+			time, err := util.BytesToTime(data)
+			if err != nil {
 				return err
 			}
-			ec.cache.insert(height, r)
-			if err := ec.heightManager.add(height, r.MintTime()); err != nil {
+			if err := ec.heightManager.add(height, time); err != nil {
 				return err
 			}
 		}
@@ -249,7 +254,7 @@ func (ec *committee) Stop(ctx context.Context) error {
 	ec.terminate <- true
 	ec.carrier.Close()
 
-	return ec.db.Stop(ctx)
+	return ec.resultDB.Stop(ctx)
 }
 
 func (ec *committee) Status() STATUS {
@@ -389,7 +394,7 @@ func (ec *committee) resultByHeight(height uint64) (*types.ElectionResult, error
 	if result != nil {
 		return result, nil
 	}
-	data, err := ec.db.Get(ec.dbKey(height))
+	data, err := ec.resultDB.Get(ec.DBKey(height))
 	if err != nil {
 		return nil, err
 	}
@@ -519,19 +524,28 @@ func (ec *committee) fetchResultByHeight(height uint64) (*types.ElectionResult, 
 	return calculator.Calculate()
 }
 
-func (ec *committee) dbKey(height uint64) []byte {
-	return util.Uint64ToBytes(height)
+func (ec *committee) DBKey(height uint64) []byte {
+	return util.Uint64ToBytes(height) 
 }
+
 
 func (ec *committee) storeResult(height uint64, result *types.ElectionResult) error {
 	data, err := result.Serialize()
 	if err != nil {
 		return err
 	}
-	if err := ec.db.Put(ec.dbKey(height), data); err != nil {
+	if err := ec.resultDB.Put(ec.DBKey(height), data); err != nil {
 		return errors.Wrapf(err, "failed to put election result into db")
 	}
-	if err := ec.db.Put(db.NextHeightKey, ec.dbKey(height+ec.interval)); err != nil {
+
+	timeData , err := util.TimeToBytes(result.MintTime())
+	if err != nil{
+		return err
+	}
+	if err := ec.timeDB.Put(ec.DBKey(height), timeData); err != nil {
+		return errors.Wrapf(err, "failed to put election time into db")
+	}
+	if err := ec.timeDB.Put(db.NextHeightKey, util.Uint64ToBytes(height+ec.interval)); err != nil {
 		return err
 	}
 	ec.cache.insert(height, result)

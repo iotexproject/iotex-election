@@ -76,9 +76,9 @@ func NewServer(cfg *Config) (Server, error) {
 
 	var c committee.Committee
 	if cfg.DB.DBPath != "" {
-		c, err = committee.NewCommitteeWithKVStoreWithNamespace(db.NewBoltDB(cfg.DB), cfg.Committee)
+		c, err = committee.NewCommittee(db.NewBoltDB(cfg.DB), cfg.Committee)
 	} else {
-		c, err = committee.NewCommittee(db.NewInMemKVStore(), cfg.Committee)
+		c, err = committee.NewCommittee(db.NewInMemStoreWithNamespace(cfg.DB), cfg.Committee)
 	}
 	if err != nil {
 		return nil, err

@@ -51,7 +51,7 @@ type Config struct {
 	CacheSize                  uint32   `yaml:"cacheSize"`
 	NumOfFetchInParallel       uint8    `yaml:"numOfFetchInParallel"`
 	SkipManifiedCandidate      bool     `yaml:"skipManifiedCandidate"`
-	GravityChainBatchSize           uint64   `yaml:"gravityChainBatchSize"`
+	GravityChainBatchSize      uint64   `yaml:"gravityChainBatchSize"`
 }
 
 // STATUS represents the status of committee
@@ -100,13 +100,13 @@ type committee struct {
 	cache         *resultCache
 	heightManager *heightManager
 
-	startHeight         uint64
-	nextHeight          uint64
-	currentHeight       uint64
-	lastUpdateTimestamp int64
-	terminate           chan bool
-	mutex               sync.RWMutex
-	gravityChainBatchSize    uint64
+	startHeight           uint64
+	nextHeight            uint64
+	currentHeight         uint64
+	lastUpdateTimestamp   int64
+	terminate             chan bool
+	mutex                 sync.RWMutex
+	gravityChainBatchSize uint64
 }
 
 // NewCommitteeWithKVStoreWithNamespace creates a committee with kvstore with namespace
@@ -169,7 +169,7 @@ func NewCommittee(kvstore db.KVStore, cfg Config) (Committee, error) {
 		interval:              cfg.GravityChainHeightInterval,
 		currentHeight:         0,
 		nextHeight:            cfg.GravityChainStartHeight,
-		gravityChainBatchSize:      gravityChainBatchSize,
+		gravityChainBatchSize: gravityChainBatchSize,
 	}, nil
 }
 
@@ -280,6 +280,7 @@ func (ec *committee) fetchInBatch(tipHeight uint64) (
 		ec.currentHeight = tipHeight
 	}
 	var wg sync.WaitGroup
+	var lock sync.RWMutex
 	limiter := make(chan bool, ec.fetchInParallel)
 	results := map[uint64]*types.ElectionResult{}
 	errs := map[uint64]error{}
@@ -291,7 +292,11 @@ func (ec *committee) fetchInBatch(tipHeight uint64) (
 				wg.Done()
 			}()
 			limiter <- true
-			results[height], errs[height] = ec.retryFetchResultByHeight(height)
+			r, e := ec.retryFetchResultByHeight(height)
+			lock.Lock()
+			defer lock.Unlock()
+			results[height] = r
+			errs[height] = e
 		}(nextHeight)
 	}
 	wg.Wait()

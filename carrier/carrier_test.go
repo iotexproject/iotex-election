@@ -26,7 +26,7 @@ func TestVoteCarrier(t *testing.T) {
 	require := require.New(t)
 	// TODO: update contract address once finalize it
 	carrier, err := NewEthereumVoteCarrier(
-		[]string{"wss://kovan.infura.io/ws/v3/b355cae6fafc4302b106b937ee6c15af"},
+		[]string{"https://kovan.infura.io/v3/7c2ccaaba3974b4da11877322cdb721f"},
 		common.HexToAddress("0xb4ca6cf2fe760517a3f92120acbe577311252663"),
 		common.HexToAddress("0xdedf0c1610d8a75ca896d8c93a0dc39abf7daff4"),
 	)
@@ -34,8 +34,8 @@ func TestVoteCarrier(t *testing.T) {
 	defer carrier.Close()
 	t.Run("Candidates", func(t *testing.T) {
 		nextIndex, candidates, err := carrier.Candidates(uint64(10454030), big.NewInt(1), uint8(10))
-		require.Equal(0, big.NewInt(10).Cmp(nextIndex))
 		require.NoError(err)
+		require.Equal(0, big.NewInt(10).Cmp(nextIndex))
 		require.Equal(9, len(candidates))
 		names := []string{
 			"323233343536373839306131", "323233343536373839306134", "323233343536373839306139",

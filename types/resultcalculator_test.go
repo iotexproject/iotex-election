@@ -203,7 +203,7 @@ func TestResultCalculator(t *testing.T) {
 		for i, d := range delegates {
 			require.NotNil(expectedDelegates[i])
 			require.NotNil(expectedVotes[i])
-			require.True(expectedDelegates[i].equal(d))
+			require.True(expectedDelegates[i].Equal(d))
 			for j, v := range result.VotesByDelegate(d.Name()) {
 				require.NotNil(expectedVotes[i][j])
 				require.Equal(0, expectedVotes[i][j].Cmp(v.WeightedAmount()))

@@ -167,8 +167,6 @@ func (c *Candidate) ToProtoMsg() (*pb.CandidateCore, error) {
 		Address:           c.Address(),
 		OperatorAddress:   c.OperatorAddress(),
 		RewardAddress:     c.RewardAddress(),
-		//Score:             c.score.Bytes(),
-		//SelfStakingTokens: c.selfStakingTokens.Bytes(),
 		SelfStakingWeight: c.selfStakingWeight,
 	}, nil
 }
@@ -190,8 +188,6 @@ func (c *Candidate) FromProtoMsg(msg *pb.CandidateCore) error {
 	c.rewardAddress = util.CopyBytes(msg.GetRewardAddress())
 	c.score = big.NewInt(0)
 	c.selfStakingTokens = big.NewInt(0)
-	//c.score = new(big.Int).SetBytes(msg.GetScore())
-	//c.selfStakingTokens = new(big.Int).SetBytes(msg.GetSelfStakingTokens())
 	c.selfStakingWeight = msg.GetSelfStakingWeight()
 
 	return nil

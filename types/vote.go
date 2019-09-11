@@ -158,7 +158,6 @@ func (v *Vote) ToProtoMsg() (*pb.VoteCore, error) {
 		Voter:          v.Voter(),
 		Candidate:      v.Candidate(),
 		Amount:         v.amount.Bytes(),
-		//WeightedAmount: v.weighted.Bytes(),
 		StartTime:      startTime,
 		Duration:       ptypes.DurationProto(v.duration),
 		Decay:          v.decay,
@@ -184,7 +183,6 @@ func (v *Vote) FromProtoMsg(vPb *pb.VoteCore) (err error) {
 	v.candidate = candidate
 	v.amount = big.NewInt(0).SetBytes(vPb.Amount)
 	v.weighted = big.NewInt(0)
-	//v.weighted = new(big.Int).SetBytes(vPb.WeightedAmount)
 	if v.startTime, err = ptypes.Timestamp(vPb.StartTime); err != nil {
 		return err
 	}

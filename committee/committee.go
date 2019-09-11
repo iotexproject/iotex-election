@@ -30,8 +30,6 @@ import (
 	"github.com/iotexproject/iotex-election/types"
 	"github.com/iotexproject/iotex-election/util"
 
-	//"go.etcd.io/bbolt"
-
 )
 
 const (
@@ -228,22 +226,23 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 			if err := ec.storeInBatch(results, errs, t); err != nil {
 				zap.L().Error("failed to catch up via network", zap.Uint64("height", h), zap.Error(err))
 			}
-			
+			/*
+			//for testing 
 			height := ec.nextHeight - ec.interval
 			precalculated, err := ec.FetchResultByHeight(height)
 			if err != nil {
 				zap.L().Error("failed to fetch result by height", zap.Uint64("height", height), zap.Error(err))
-
 			}
 			aftercalculated, err := ec.ResultByHeight(height)
 			if err != nil {
-				zap.L().Error("failed to get result by height(DB)", zap.Error(err))
+				zap.L().Error("failed to get result by height(DB)", zap.Uint64("height", height), zap.Error(err))
 			}
 			if !aftercalculated.Equal(precalculated) {
-				zap.L().Error("the result is different")
+				zap.L().Error("The result is different")
 			}else {
-				zap.L().Info("the result is same")
+				zap.L().Info("The result is same")
 			}
+			*/
 
 		}
 		results, errs := ec.fetchInBatch(tip.Height)
@@ -439,7 +438,6 @@ func (ec *committee) resultByHeight(height uint64) (*types.ElectionResult, error
 	if err != nil {
 		return nil, err
 	}
-
 	if err := calculator.AddCandidates(candidates); err != nil {
 		return nil, err
 	}
@@ -448,7 +446,6 @@ func (ec *committee) resultByHeight(height uint64) (*types.ElectionResult, error
 	if err != nil {
 		return nil, err
 	}
-
 	if err := calculator.AddVotes(votes); err != nil {
 		return nil, err
 	}
@@ -495,7 +492,7 @@ func (ec *committee) fetchVotesByHeight(height uint64) ([]*types.Vote, error) {
 			break
 		}
 	}
-	zap.L().Info("Fetching Votes by height", zap.Int("number of votes", len(allVotes)))
+	zap.L().Info("fetch votes by height from ethereum", zap.Int("number of votes", len(allVotes)))
 	return allVotes, nil
 }
 func (ec *committee) voteFilter(v *types.Vote) bool {
@@ -551,7 +548,7 @@ func (ec *committee) fetchCandidatesByHeight(height uint64) ([]*types.Candidate,
 			break
 		}
 	}
-	zap.L().Info("Fetching Candidates by height", zap.Int("number of candidates", len(allCandidates)))
+	zap.L().Info("fetch candidates by height from ethereum", zap.Int("number of candidates", len(allCandidates)))
 	return allCandidates, nil
 }
 
@@ -655,30 +652,28 @@ func (ec *committee) putCandidateDB(key []byte, value []byte) error {
 }
 
 func (ec *committee) storeResult(height uint64, result *types.ElectionResultMeta) error {
+	batchForResult := db.NewBatch()
 	data, err := result.Serialize()
 	if err != nil {
 		return err
 	}
 	heightKey := ec.dbKey(height)
-	if err := ec.putResultDB(heightKey, data); err != nil {
-		return errors.Wrapf(err, "failed to put election result into db")
-	}
+	batchForResult.Put(ResultNS,heightKey, data, "failed to put election result into db")
 
 	timeData, err := util.TimeToBytes(result.MintTime())
 	if err != nil {
 		return err
 	}
-	if err := ec.putTimeDB(heightKey, timeData); err != nil {
-		return errors.Wrapf(err, "failed to put election time into db")
-	}
-	if err := ec.putTimeDB(db.NextHeightKey, util.Uint64ToBytes(height+ec.interval)); err != nil {
+	batchForResult.Put(TimeNS, heightKey, timeData, "failed to put election time into db")
+	batchForResult.Put(TimeNS, db.NextHeightKey, util.Uint64ToBytes(height + ec.interval), "failed to put next height into db")
+	if err := ec.db.Commit(batchForResult); err != nil {
 		return err
 	}
-
 	return ec.heightManager.add(height, result.MintTime())
 }
 
 func (ec *committee) storeVotes(votes []*types.Vote) ([][]byte, error) {
+	batchForVote := db.NewBatch()
 	hashes := make([][]byte, len(votes))
 	for i, v := range votes {
 		data, err := v.Serialize()
@@ -689,20 +684,17 @@ func (ec *committee) storeVotes(votes []*types.Vote) ([][]byte, error) {
 		hashbytes := hashval[:]
 
 		if _, err := ec.getVoteDB(hashbytes); err != nil { 
-			zap.L().Info("put vote into DB", zap.Int("index", i))
-			putErr := ec.putVoteDB(hashbytes, data)
-			if putErr != nil{
-				return nil, putErr
-			}
+			//zap.L().Info("put vote into DB", zap.Int("index", i))
+			batchForVote.Put(VoteNS, hashbytes, data, "Failed to put a vote into DB")
 		}
 		hashes[i] = hashbytes
 	}
-	return hashes, nil
+	return hashes, ec.db.Commit(batchForVote)
 }
 
 
 func (ec *committee) storeCandidates(candidates []*types.Candidate)([][]byte, error) {
-
+	batchForCandidate := db.NewBatch()
 	hashes := make([][]byte, len(candidates))
 	for i, c := range candidates {
 		data, err := c.Serialize()
@@ -712,21 +704,16 @@ func (ec *committee) storeCandidates(candidates []*types.Candidate)([][]byte, er
 		hashval := sha256.Sum256(data)
 		hashbytes := hashval[:]
 		if _, err := ec.getCandidateDB(hashbytes); err != nil {
-			zap.L().Info("put Candidates into DB", zap.Int("index", i))
-			putErr := ec.putCandidateDB(hashbytes, data)
-			if putErr != nil{
-				return nil, putErr
-			}
+			//zap.L().Info("put Candidates into DB", zap.Int("index", i))
+			batchForCandidate.Put(CandidateNS, hashbytes, data, "Failed to put a candidate into DB")
 		}
 		hashes[i] = hashbytes
 	}
-	return hashes, nil
+	return hashes, ec.db.Commit(batchForCandidate)
 }
 
 func (ec *committee) getVotesByResult(result *types.ElectionResultMeta) ([]*types.Vote, error) {
 	var votes []*types.Vote
-	zap.L().Info("number of votes", zap.Int("number of votes when meta", len(result.Votes())))
-
 	for _, hash := range result.Votes() {
 		if len(hash) != 32 {
 			zap.L().Error("The length of the hash value should be 32")
@@ -746,8 +733,6 @@ func (ec *committee) getVotesByResult(result *types.ElectionResultMeta) ([]*type
 
 func (ec * committee) getCandidatesByResult(result *types.ElectionResultMeta) ([]*types.Candidate, error) {
 	var cands []*types.Candidate	
-	zap.L().Info("number of candidates", zap.Int("number of cands when meta", len(result.Candidates())))
-
 	for _, hash := range result.Candidates() {
 		if len(hash) != 32 {
 			zap.L().Error("The length of the hash value should be 32")

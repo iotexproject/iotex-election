@@ -31,11 +31,11 @@ func TestCandidate(t *testing.T) {
 		require.NoError(err)
 		cc := &Candidate{}
 		require.NoError(cc.FromProtoMsg(cPb))
-		require.True(c.equal(cc))
+		require.True(c.Equal(cc))
 	})
 	t.Run("clone", func(t *testing.T) {
 		cc := c.Clone()
-		require.True(c.equal(cc))
+		require.True(c.Equal(cc))
 	})
 	t.Run("add-scores", func(t *testing.T) {
 		require.Error(c.addScore(big.NewInt(-1)))

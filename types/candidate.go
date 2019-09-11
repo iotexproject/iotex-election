@@ -15,6 +15,9 @@ import (
 	"errors"
 	"math/big"
 
+	"github.com/golang/protobuf/proto"
+
+
 	pb "github.com/iotexproject/iotex-election/pb/election"
 	"github.com/iotexproject/iotex-election/util"
 )
@@ -62,7 +65,7 @@ func (c *Candidate) Clone() *Candidate {
 	}
 }
 
-func (c *Candidate) equal(candidate *Candidate) bool {
+func (c *Candidate) Equal(candidate *Candidate) bool {
 	if c == candidate {
 		return true
 	}
@@ -157,28 +160,51 @@ func (c *Candidate) SelfStakingWeight() uint64 {
 	return c.selfStakingWeight
 }
 
-// ToProtoMsg converts the instance to a protobuf message
-func (c *Candidate) ToProtoMsg() (*pb.Candidate, error) {
-	return &pb.Candidate{
+// ToProtoMsg converts the instance to a protobuf message (CandidateCore)
+func (c *Candidate) ToProtoMsg() (*pb.CandidateCore, error) {
+	return &pb.CandidateCore{
 		Name:              c.Name(),
 		Address:           c.Address(),
 		OperatorAddress:   c.OperatorAddress(),
 		RewardAddress:     c.RewardAddress(),
-		Score:             c.score.Bytes(),
-		SelfStakingTokens: c.selfStakingTokens.Bytes(),
+		//Score:             c.score.Bytes(),
+		//SelfStakingTokens: c.selfStakingTokens.Bytes(),
 		SelfStakingWeight: c.selfStakingWeight,
 	}, nil
 }
 
-// FromProtoMsg fills the instance with a protobuf message
-func (c *Candidate) FromProtoMsg(msg *pb.Candidate) error {
+// Serialize serializes the candidate to bytes
+func (c * Candidate) Serialize() ([]byte, error) {
+	cPb, err := c.ToProtoMsg()
+	if err != nil {
+		return nil, err
+	}
+	return proto.Marshal(cPb)
+}
+
+// FromProtoMsg fills the instance with a protobuf message (CandidateCore)
+func (c *Candidate) FromProtoMsg(msg *pb.CandidateCore) error {
 	c.name = util.CopyBytes(msg.GetName())
 	c.address = util.CopyBytes(msg.GetAddress())
 	c.operatorAddress = util.CopyBytes(msg.GetOperatorAddress())
 	c.rewardAddress = util.CopyBytes(msg.GetRewardAddress())
-	c.score = new(big.Int).SetBytes(msg.GetScore())
-	c.selfStakingTokens = new(big.Int).SetBytes(msg.GetSelfStakingTokens())
+	c.score = big.NewInt(0)
+	c.selfStakingTokens = big.NewInt(0)
+	//c.score = new(big.Int).SetBytes(msg.GetScore())
+	//c.selfStakingTokens = new(big.Int).SetBytes(msg.GetSelfStakingTokens())
 	c.selfStakingWeight = msg.GetSelfStakingWeight()
 
 	return nil
 }
+
+
+// Deserialize deserializes a byte array to candidate 
+func (c *Candidate) Deserialize(data []byte) error {
+	cPb := &pb.CandidateCore{}
+	if err := proto.Unmarshal(data, cPb); err != nil {
+		return err
+	}
+
+	return c.FromProtoMsg(cPb)
+}
+

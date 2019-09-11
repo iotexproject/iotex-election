@@ -220,7 +220,7 @@ func (b *boltDB) Get(namespace string, key []byte) ([]byte, error) {
 	if value == nil {
 		err = errors.Wrapf(ErrNotExist, "key = %s", string(key))
 	}
-	return value, nil
+	return value, err
 }
 
 // Put stores key and value to boltDB

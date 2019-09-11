@@ -148,17 +148,17 @@ func (v *Vote) RemainingTime(now time.Time) time.Duration {
 	return v.duration
 }
 
-// ToProtoMsg converts the vote to protobuf
-func (v *Vote) ToProtoMsg() (*pb.Vote, error) {
+// ToProtoMsg converts the vote to protobuf (voteCore)
+func (v *Vote) ToProtoMsg() (*pb.VoteCore, error) {
 	startTime, err := ptypes.TimestampProto(v.startTime)
 	if err != nil {
 		return nil, err
 	}
-	return &pb.Vote{
+	return &pb.VoteCore{
 		Voter:          v.Voter(),
 		Candidate:      v.Candidate(),
 		Amount:         v.amount.Bytes(),
-		WeightedAmount: v.weighted.Bytes(),
+		//WeightedAmount: v.weighted.Bytes(),
 		StartTime:      startTime,
 		Duration:       ptypes.DurationProto(v.duration),
 		Decay:          v.decay,
@@ -174,8 +174,8 @@ func (v *Vote) Serialize() ([]byte, error) {
 	return proto.Marshal(vPb)
 }
 
-// FromProtoMsg extracts vote details from protobuf message
-func (v *Vote) FromProtoMsg(vPb *pb.Vote) (err error) {
+// FromProtoMsg extracts vote details from protobuf message (voteCore)
+func (v *Vote) FromProtoMsg(vPb *pb.VoteCore) (err error) {
 	voter := make([]byte, len(vPb.Voter))
 	copy(voter, vPb.Voter)
 	v.voter = voter
@@ -183,7 +183,8 @@ func (v *Vote) FromProtoMsg(vPb *pb.Vote) (err error) {
 	copy(candidate, vPb.Candidate)
 	v.candidate = candidate
 	v.amount = big.NewInt(0).SetBytes(vPb.Amount)
-	v.weighted = new(big.Int).SetBytes(vPb.WeightedAmount)
+	v.weighted = big.NewInt(0)
+	//v.weighted = new(big.Int).SetBytes(vPb.WeightedAmount)
 	if v.startTime, err = ptypes.Timestamp(vPb.StartTime); err != nil {
 		return err
 	}
@@ -200,7 +201,7 @@ func (v *Vote) FromProtoMsg(vPb *pb.Vote) (err error) {
 
 // Deserialize deserializes a byte array to vote
 func (v *Vote) Deserialize(data []byte) error {
-	vPb := &pb.Vote{}
+	vPb := &pb.VoteCore{}
 	if err := proto.Unmarshal(data, vPb); err != nil {
 		return err
 	}

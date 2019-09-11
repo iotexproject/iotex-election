@@ -65,7 +65,7 @@ func TestNewVote(t *testing.T) {
 			startTime,
 			24*7*time.Hour,
 			big.NewInt(3),
-			big.NewInt(3),
+			big.NewInt(0),
 			[]byte("Voter"),
 			[]byte("Candidate"),
 			true,

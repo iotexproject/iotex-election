@@ -11,8 +11,8 @@
 package types
 
 import (
-	"encoding/hex"
-	"math/big"
+ 	"crypto/sha256"
+ 	"math/big"
 	"math/rand"
 	"testing"
 	"time"
@@ -20,27 +20,25 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestElectionResult(t *testing.T) {
+func TestElectionResultMeta(t *testing.T) {
 	require := require.New(t)
 	t.Run("without-data", func(t *testing.T) {
-		result := &ElectionResult{
+		result := &ElectionResultMeta{
 			mintTime:         time.Now(),
-			delegates:        []*Candidate{},
-			votes:            map[string][]*Vote{},
-			totalVotes:       new(big.Int),
-			totalVotedStakes: new(big.Int),
+			candidates:       [][]byte{},
+			votes:            [][]byte{},
 		}
 		b, err := result.Serialize()
 		require.NoError(err)
-		clone := &ElectionResult{}
+		clone := &ElectionResultMeta{}
 		require.NoError(clone.Deserialize(b))
 		require.True(result.mintTime.Equal(clone.mintTime))
-		require.Equal(0, len(clone.delegates))
+		require.Equal(0, len(clone.candidates))
 		require.Equal(0, len(clone.votes))
 	})
 	t.Run("with-data", func(t *testing.T) {
 		candidates := genTestCandidates()
-		votes := map[string][]*Vote{}
+		votes := []*Vote{}
 		for _, c := range candidates {
 			v1, err := NewVote(
 				time.Now(),
@@ -62,33 +60,48 @@ func TestElectionResult(t *testing.T) {
 				true,
 			)
 			require.NoError(err)
-			votes[hex.EncodeToString(c.name)] = []*Vote{v1, v2}
+			votes = append(votes, v1)
+			votes = append(votes, v2)
 		}
-		result := &ElectionResult{
+
+		votesKey := [][]byte{}
+		for _, v := range votes {
+			data, err := v.Serialize()
+			require.NoError(err)
+			hashval := sha256.Sum256(data)
+			hashbytes := make([]byte, 32)
+			for _, num := range hashval {
+				hashbytes = append(hashbytes, num)
+			}
+			votesKey = append(votesKey, hashbytes)
+		}
+		candidatesKey := [][]byte{}
+		for _, c := range candidates {
+			data, err := c.Serialize()
+			require.NoError(err)
+			hashval := sha256.Sum256(data)
+			hashbytes := make([]byte, 32)
+			for _, num := range hashval {
+				hashbytes = append(hashbytes, num)
+			}
+			candidatesKey = append(candidatesKey, hashbytes)
+		}
+
+		result := &ElectionResultMeta{
 			mintTime:         time.Now(),
-			delegates:        candidates,
-			votes:            votes,
-			totalVotes:       new(big.Int),
-			totalVotedStakes: new(big.Int),
+			candidates:       candidatesKey,
+			votes:            votesKey,
 		}
 		b, err := result.Serialize()
 		require.NoError(err)
-		clone := &ElectionResult{}
+		clone := &ElectionResultMeta{}
 		require.NoError(clone.Deserialize(b))
 		require.True(result.mintTime.Equal(clone.mintTime))
-		cs := result.Delegates()
-		ccs := clone.Delegates()
-		require.Equal(len(cs), len(ccs))
-		require.Equal(len(result.votes), len(clone.votes))
-		for i, c := range cs {
-			require.True(c.equal(ccs[i]))
-			vs := result.VotesByDelegate(c.Name())
-			cvs := clone.VotesByDelegate(c.Name())
-			require.Equal(len(vs), len(cvs))
-			for j, v := range vs {
-				require.True(v.equal(cvs[j]))
-			}
-		}
+		require.Equal(len(result.Candidates()), 4)
+		require.Equal(len(clone.Candidates()), 4)
+		require.Equal(len(result.Votes()), 8)
+		require.Equal(len(clone.Votes()), 8)
+
 	})
 }
 

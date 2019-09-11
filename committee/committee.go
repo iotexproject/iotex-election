@@ -12,6 +12,7 @@ package committee
 
 import (
 	"context"
+	"crypto/sha256"
 	"math"
 	"math/big"
 	"sort"
@@ -28,6 +29,9 @@ import (
 	"github.com/iotexproject/iotex-election/db"
 	"github.com/iotexproject/iotex-election/types"
 	"github.com/iotexproject/iotex-election/util"
+
+	//"go.etcd.io/bbolt"
+
 )
 
 const (
@@ -37,7 +41,11 @@ const (
 	//TimeNS is the bucket name for elction Time 
 	TimeNS = "ElectionBlkTimeNS"
 	
-	//VoteNS = "VoteNS"
+	//VoteNS is the bucket name for Vote
+	VoteNS = "VoteNS"
+
+	//CandidateNS is the bucket name for Candidate
+	CandidateNS = "CandidateNS"
 )
 
 // CalcGravityChainHeight calculates the corresponding gravity chain height for an epoch
@@ -220,6 +228,23 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 			if err := ec.storeInBatch(results, errs, t); err != nil {
 				zap.L().Error("failed to catch up via network", zap.Uint64("height", h), zap.Error(err))
 			}
+			
+			height := ec.nextHeight - ec.interval
+			precalculated, err := ec.FetchResultByHeight(height)
+			if err != nil {
+				zap.L().Error("failed to fetch result by height", zap.Uint64("height", height), zap.Error(err))
+
+			}
+			aftercalculated, err := ec.ResultByHeight(height)
+			if err != nil {
+				zap.L().Error("failed to get result by height(DB)", zap.Error(err))
+			}
+			if !aftercalculated.Equal(precalculated) {
+				zap.L().Error("the result is different")
+			}else {
+				zap.L().Info("the result is same")
+			}
+
 		}
 		results, errs := ec.fetchInBatch(tip.Height)
 		if err := ec.storeInBatch(results, errs, tip.BlockTime); err != nil {
@@ -275,7 +300,7 @@ func (ec *committee) Sync(tipHeight uint64, tipTime time.Time) error {
 }
 
 func (ec *committee) fetchInBatch(tipHeight uint64) (
-	map[uint64]*types.ElectionResult,
+	map[uint64]*types.ElectionResultMeta,
 	map[uint64]error,
 ) {
 	if ec.currentHeight < tipHeight {
@@ -284,7 +309,7 @@ func (ec *committee) fetchInBatch(tipHeight uint64) (
 	var wg sync.WaitGroup
 	var lock sync.RWMutex
 	limiter := make(chan bool, ec.fetchInParallel)
-	results := map[uint64]*types.ElectionResult{}
+	results := map[uint64]*types.ElectionResultMeta{}
 	errs := map[uint64]error{}
 	for nextHeight := ec.nextHeight; nextHeight <= ec.currentHeight-12; nextHeight += ec.interval {
 		wg.Add(1)
@@ -307,7 +332,7 @@ func (ec *committee) fetchInBatch(tipHeight uint64) (
 }
 
 func (ec *committee) storeInBatch(
-	results map[uint64]*types.ElectionResult,
+	results map[uint64]*types.ElectionResultMeta,
 	errs map[uint64]error,
 	tipTime time.Time,
 ) error {
@@ -391,6 +416,8 @@ func (ec *committee) resultByHeight(height uint64) (*types.ElectionResult, error
 	if result != nil {
 		return result, nil
 	}
+
+	// if cache doesn't have corresponding result, read the resultMeta from db 
 	heightKey := ec.dbKey(height)
 	data, err := ec.getResultDB(heightKey)
 	if err != nil {
@@ -399,9 +426,40 @@ func (ec *committee) resultByHeight(height uint64) (*types.ElectionResult, error
 	if data == nil {
 		return nil, db.ErrNotExist
 	}
-	result = &types.ElectionResult{}
+	resultMeta := &types.ElectionResultMeta{}
+	resultMeta.Deserialize(data)
 
-	return result, result.Deserialize(data)
+	//calculate the result from resultMeta 
+	calculator, err := ec.calculator(height)
+	if err != nil {
+		return nil, err
+	}
+
+	candidates, err := ec.getCandidatesByResult(resultMeta)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := calculator.AddCandidates(candidates); err != nil {
+		return nil, err
+	}
+
+	votes, err := ec.getVotesByResult(resultMeta)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := calculator.AddVotes(votes); err != nil {
+		return nil, err
+	}
+
+	result, err = calculator.Calculate()
+	if err != nil {
+		return nil, err 
+	}
+
+	ec.cache.insert(height, result)
+	return result, nil
 }
 
 func (ec *committee) calcWeightedVotes(v *types.Vote, now time.Time) *big.Int {
@@ -437,7 +495,7 @@ func (ec *committee) fetchVotesByHeight(height uint64) ([]*types.Vote, error) {
 			break
 		}
 	}
-
+	zap.L().Info("Fetching Votes by height", zap.Int("number of votes", len(allVotes)))
 	return allVotes, nil
 }
 func (ec *committee) voteFilter(v *types.Vote) bool {
@@ -447,18 +505,27 @@ func (ec *committee) candidateFilter(c *types.Candidate) bool {
 	return ec.selfStakingThreshold.Cmp(c.SelfStakingTokens()) > 0 ||
 		ec.scoreThreshold.Cmp(c.Score()) > 0
 }
-func (ec *committee) calculator(height uint64) (*types.ResultCalculator, error) {
+
+func (ec *committee) getMintTimeByHeight(height uint64) (time.Time, error) {
 	mintTime, err := ec.carrier.BlockTimestamp(height)
 	switch errors.Cause(err) {
 	case nil:
 		break
 	case ethereum.NotFound:
-		return nil, db.ErrNotExist
+		return mintTime, db.ErrNotExist
 	default:
-		return nil, err
+		return mintTime, err
+	}	
+	return mintTime, nil
+}
+
+func (ec *committee) calculator(height uint64) (*types.ResultCalculator, error) {
+	timestamp, err := ec.getMintTimeByHeight(height)
+	if err != nil {
+		return nil, err 
 	}
 	return types.NewResultCalculator(
-		mintTime,
+		timestamp,
 		ec.skipManifiedCandidate,
 		ec.voteFilter,
 		ec.calcWeightedVotes,
@@ -484,6 +551,7 @@ func (ec *committee) fetchCandidatesByHeight(height uint64) ([]*types.Candidate,
 			break
 		}
 	}
+	zap.L().Info("Fetching Candidates by height", zap.Int("number of candidates", len(allCandidates)))
 	return allCandidates, nil
 }
 
@@ -522,6 +590,34 @@ func (ec *committee) fetchResultByHeight(height uint64) (*types.ElectionResult, 
 	return calculator.Calculate()
 }
 
+func (ec *committee) fetchResultMetaByHeight(height uint64) (*types.ElectionResultMeta, error) {
+	zap.L().Info("fetch resultMeta from ethereum", zap.Uint64("height", height))
+	timestamp, err := ec.getMintTimeByHeight(height)
+	if err != nil {
+		return nil, err 
+	}
+	candidates, err := ec.fetchCandidatesByHeight(height)
+	if err != nil {
+		return nil, err
+	}
+	//store candidates into DB 
+	candidatesH, err := ec.storeCandidates(candidates)
+	if err != nil {
+		return nil, err
+	}
+	votes, err := ec.fetchVotesByHeight(height)
+	if err != nil {
+		return nil, err
+	}
+	//store votes into DB 
+	votesH, err := ec.storeVotes(votes)
+	if err != nil {
+		return nil, err
+	}
+	return types.NewElectionResultMeta(timestamp, candidatesH, votesH), nil
+} 
+
+
 func (ec *committee) dbKey(height uint64) []byte {
 	return util.Uint64ToBytes(height) 
 }
@@ -542,7 +638,23 @@ func (ec *committee) putResultDB(key []byte, value []byte) error {
 	return ec.db.Put(ResultNS, key, value)
 }
 
-func (ec *committee) storeResult(height uint64, result *types.ElectionResult) error {
+func (ec *committee) getVoteDB(key []byte) ([]byte, error) {
+	return ec.db.Get(VoteNS, key)
+}
+
+func (ec *committee) putVoteDB(key []byte, value []byte) error {
+	return ec.db.Put(VoteNS, key, value)
+}
+
+func (ec *committee) getCandidateDB(key []byte) ([]byte, error) {
+	return ec.db.Get(CandidateNS, key)
+}
+
+func (ec *committee) putCandidateDB(key []byte, value []byte) error {
+	return ec.db.Put(CandidateNS, key, value)
+}
+
+func (ec *committee) storeResult(height uint64, result *types.ElectionResultMeta) error {
 	data, err := result.Serialize()
 	if err != nil {
 		return err
@@ -562,16 +674,102 @@ func (ec *committee) storeResult(height uint64, result *types.ElectionResult) er
 	if err := ec.putTimeDB(db.NextHeightKey, util.Uint64ToBytes(height+ec.interval)); err != nil {
 		return err
 	}
-	ec.cache.insert(height, result)
 
 	return ec.heightManager.add(height, result.MintTime())
 }
 
-func (ec *committee) retryFetchResultByHeight(height uint64) (*types.ElectionResult, error) {
-	var result *types.ElectionResult
+func (ec *committee) storeVotes(votes []*types.Vote) ([][]byte, error) {
+	hashes := make([][]byte, len(votes))
+	for i, v := range votes {
+		data, err := v.Serialize()
+		if err != nil {
+			return nil, err
+		}
+		hashval := sha256.Sum256(data)
+		hashbytes := hashval[:]
+
+		if _, err := ec.getVoteDB(hashbytes); err != nil { 
+			zap.L().Info("put vote into DB", zap.Int("index", i))
+			putErr := ec.putVoteDB(hashbytes, data)
+			if putErr != nil{
+				return nil, putErr
+			}
+		}
+		hashes[i] = hashbytes
+	}
+	return hashes, nil
+}
+
+
+func (ec *committee) storeCandidates(candidates []*types.Candidate)([][]byte, error) {
+
+	hashes := make([][]byte, len(candidates))
+	for i, c := range candidates {
+		data, err := c.Serialize()
+		if err != nil {
+			return nil, err
+		}
+		hashval := sha256.Sum256(data)
+		hashbytes := hashval[:]
+		if _, err := ec.getCandidateDB(hashbytes); err != nil {
+			zap.L().Info("put Candidates into DB", zap.Int("index", i))
+			putErr := ec.putCandidateDB(hashbytes, data)
+			if putErr != nil{
+				return nil, putErr
+			}
+		}
+		hashes[i] = hashbytes
+	}
+	return hashes, nil
+}
+
+func (ec *committee) getVotesByResult(result *types.ElectionResultMeta) ([]*types.Vote, error) {
+	var votes []*types.Vote
+	zap.L().Info("number of votes", zap.Int("number of votes when meta", len(result.Votes())))
+
+	for _, hash := range result.Votes() {
+		if len(hash) != 32 {
+			zap.L().Error("The length of the hash value should be 32")
+		}
+		data, err := ec.getVoteDB(hash)
+		if err != nil {
+			return nil, err
+		}
+		vote := &types.Vote{}
+		if err := vote.Deserialize(data); err != nil {
+			return nil, err
+		}
+		votes = append(votes, vote)
+	}
+	return votes, nil 
+}
+
+func (ec * committee) getCandidatesByResult(result *types.ElectionResultMeta) ([]*types.Candidate, error) {
+	var cands []*types.Candidate	
+	zap.L().Info("number of candidates", zap.Int("number of cands when meta", len(result.Candidates())))
+
+	for _, hash := range result.Candidates() {
+		if len(hash) != 32 {
+			zap.L().Error("The length of the hash value should be 32")
+		}
+		data, err := ec.getCandidateDB(hash)
+		if err != nil {
+			return nil, err
+		}
+		cand := &types.Candidate{}
+		if err := cand.Deserialize(data); err != nil {
+			return nil, err
+		}
+		cands = append(cands, cand)
+	}
+	return cands, nil 
+}
+
+func (ec *committee) retryFetchResultByHeight(height uint64) (*types.ElectionResultMeta, error) {
+	var result *types.ElectionResultMeta
 	var err error
 	for i := uint8(0); i < ec.retryLimit; i++ {
-		if result, err = ec.fetchResultByHeight(height); err == nil {
+		if result, err = ec.fetchResultMetaByHeight(height); err == nil {
 			return result, nil
 		}
 		zap.L().Error(

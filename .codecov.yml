@@ -9,3 +9,6 @@ coverage:
       default:
         enabled: yes
         target: auto
+ignore:
+  - "**/*_test.go" # all test files
+  - "contract" # auto generated files

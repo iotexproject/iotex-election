@@ -479,7 +479,7 @@ func (ec *committee) fetchBucketsByHeight(height uint64) ([]*types.Bucket, error
 			break
 		}
 	}
-	zap.L().Info("fetch votes by height from ethereum", zap.Int("number of votes", len(allVotes)))
+	zap.L().Debug("fetch buckets by height from ethereum", zap.Int("number of buckets", len(allVotes)))
 	return allVotes, nil
 }
 
@@ -537,7 +537,7 @@ func (ec *committee) fetchRegistrationsByHeight(height uint64) ([]*types.Registr
 			break
 		}
 	}
-	zap.L().Info("fetch candidates by height from ethereum", zap.Int("number of candidates", len(allCandidates)))
+	zap.L().Debug("fetch registrations by height from ethereum", zap.Int("number of registrations", len(allCandidates)))
 	return allCandidates, nil
 }
 
@@ -618,24 +618,12 @@ func (ec *committee) getResultDB(key []byte) ([]byte, error) {
 	return ec.db.Get(PollNamespace, key)
 }
 
-func (ec *committee) putResultDB(key []byte, value []byte) error {
-	return ec.db.Put(PollNamespace, key, value)
-}
-
 func (ec *committee) getVoteDB(key []byte) ([]byte, error) {
 	return ec.db.Get(BucketNamespace, key)
 }
 
-func (ec *committee) putVoteDB(key []byte, value []byte) error {
-	return ec.db.Put(BucketNamespace, key, value)
-}
-
 func (ec *committee) getCandidateDB(key []byte) ([]byte, error) {
 	return ec.db.Get(RegistrationNamespace, key)
-}
-
-func (ec *committee) putCandidateDB(key []byte, value []byte) error {
-	return ec.db.Put(RegistrationNamespace, key, value)
 }
 
 func (ec *committee) storeData(height uint64, data *rawData) error {
@@ -676,7 +664,6 @@ func (ec *committee) storeBuckets(buckets []*types.Bucket) ([][]byte, error) {
 		hashbytes := hashval[:]
 
 		if _, err := ec.getVoteDB(hashbytes); err != nil {
-			//zap.L().Info("put vote into DB", zap.Int("index", i))
 			batchForVote.Put(BucketNamespace, hashbytes, data, "Failed to put a vote into DB")
 		}
 		hashes[i] = hashbytes
@@ -695,7 +682,6 @@ func (ec *committee) storeRegistrations(registrations []*types.Registration) ([]
 		hashval := sha256.Sum256(data)
 		hashbytes := hashval[:]
 		if _, err := ec.getCandidateDB(hashbytes); err != nil {
-			//zap.L().Info("put Candidates into DB", zap.Int("index", i))
 			batchForCandidate.Put(RegistrationNamespace, hashbytes, data, "Failed to put a candidate into DB")
 		}
 		hashes[i] = hashbytes

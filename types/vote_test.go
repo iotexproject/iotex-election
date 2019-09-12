@@ -22,24 +22,22 @@ func TestNewVote(t *testing.T) {
 	require := require.New(t)
 	startTime := time.Now()
 	t.Run("failed-to-new-with-negative-duration", func(t *testing.T) {
-		vote, err := NewVote(
+		bucket, err := NewBucket(
 			startTime,
 			-24*7*time.Hour,
-			big.NewInt(3),
 			big.NewInt(3),
 			[]byte{},
 			[]byte{},
 			true,
 		)
 		require.Error(err)
-		require.Nil(vote)
+		require.Nil(bucket)
 	})
 	t.Run("failed-to-new-with-negative-amount", func(t *testing.T) {
-		vote, err := NewVote(
+		vote, err := NewBucket(
 			startTime,
 			24*7*time.Hour,
 			big.NewInt(-3),
-			big.NewInt(3),
 			[]byte{},
 			[]byte{},
 			true,
@@ -48,23 +46,23 @@ func TestNewVote(t *testing.T) {
 		require.Nil(vote)
 	})
 	t.Run("failed-to-new-with-negative-weighted-amount", func(t *testing.T) {
-		vote, err := NewVote(
+		bucket, err := NewBucket(
 			startTime,
 			24*7*time.Hour,
 			big.NewInt(3),
-			big.NewInt(-3),
 			[]byte{},
 			[]byte{},
 			true,
 		)
+		require.NoError(err)
+		vote, err := NewVote(bucket, big.NewInt(-3))
 		require.Error(err)
 		require.Nil(vote)
 	})
 	t.Run("success-new-a-vote", func(t *testing.T) {
-		vote, err := NewVote(
+		vote, err := NewBucket(
 			startTime,
 			24*7*time.Hour,
-			big.NewInt(3),
 			big.NewInt(3),
 			[]byte("Voter"),
 			[]byte("Candidate"),
@@ -75,7 +73,7 @@ func TestNewVote(t *testing.T) {
 		t.Run("serialize", func(t *testing.T) {
 			b, err := vote.Serialize()
 			require.NoError(err)
-			clone := &Vote{}
+			clone := &Bucket{}
 			require.NoError(clone.Deserialize(b))
 			require.True(vote.equal(clone))
 		})
@@ -87,10 +85,9 @@ func TestRemainingTime(t *testing.T) {
 	startTime := time.Now()
 	stakingDuration := 24 * 7 * time.Hour
 	t.Run("decay-vote", func(t *testing.T) {
-		vote, err := NewVote(
+		vote, err := NewBucket(
 			startTime,
 			stakingDuration,
-			big.NewInt(3),
 			big.NewInt(3),
 			[]byte{},
 			[]byte{},
@@ -109,10 +106,9 @@ func TestRemainingTime(t *testing.T) {
 		})
 	})
 	t.Run("non-decay-vote", func(t *testing.T) {
-		vote, err := NewVote(
+		vote, err := NewBucket(
 			startTime,
 			stakingDuration,
-			big.NewInt(3),
 			big.NewInt(3),
 			[]byte{},
 			[]byte{},

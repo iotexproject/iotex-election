@@ -40,10 +40,10 @@ type Carrier interface {
 	SubscribeNewBlock(chan *TipInfo, chan error, chan bool)
 	// Tip returns the latest height and its timestamp
 	Tip() (*TipInfo, error)
-	// Candidates returns the candidates on height
-	Candidates(uint64, *big.Int, uint8) (*big.Int, []*types.Candidate, error)
-	// Votes returns the votes on height
-	Votes(uint64, *big.Int, uint8) (*big.Int, []*types.Vote, error)
+	// Registrations returns the candidate registrations on height
+	Registrations(uint64, *big.Int, uint8) (*big.Int, []*types.Registration, error)
+	// Buckets returns the buckets on height
+	Buckets(uint64, *big.Int, uint8) (*big.Int, []*types.Bucket, error)
 	// Close closes carrier
 	Close()
 }
@@ -235,11 +235,11 @@ func (evc *ethereumCarrier) candidates(
 	return
 }
 
-func (evc *ethereumCarrier) Candidates(
+func (evc *ethereumCarrier) Registrations(
 	height uint64,
 	startIndex *big.Int,
 	count uint8,
-) (*big.Int, []*types.Candidate, error) {
+) (*big.Int, []*types.Registration, error) {
 	if startIndex == nil || startIndex.Cmp(big.NewInt(1)) < 0 {
 		startIndex = big.NewInt(1)
 	}
@@ -263,9 +263,9 @@ func (evc *ethereumCarrier) Candidates(
 	if err != nil {
 		return nil, nil, err
 	}
-	candidates := make([]*types.Candidate, num)
+	registrations := make([]*types.Registration, num)
 	for i := 0; i < num; i++ {
-		candidates[i] = types.NewCandidate(
+		registrations[i] = types.NewRegistration(
 			retval.Names[i][:],
 			retval.Addresses[i][:],
 			operatorPubKeys[i],
@@ -273,7 +273,7 @@ func (evc *ethereumCarrier) Candidates(
 			retval.Weights[i].Uint64(),
 		)
 	}
-	return new(big.Int).Add(startIndex, big.NewInt(int64(num))), candidates, nil
+	return new(big.Int).Add(startIndex, big.NewInt(int64(num))), registrations, nil
 }
 
 // EthereumBucketsResult defines the data structure the buckets api returns
@@ -323,11 +323,11 @@ func (evc *ethereumCarrier) buckets(
 	return
 }
 
-func (evc *ethereumCarrier) Votes(
+func (evc *ethereumCarrier) Buckets(
 	height uint64,
 	previousIndex *big.Int,
 	count uint8,
-) (*big.Int, []*types.Vote, error) {
+) (*big.Int, []*types.Bucket, error) {
 	if previousIndex == nil || previousIndex.Cmp(big.NewInt(0)) < 0 {
 		previousIndex = big.NewInt(0)
 	}
@@ -339,19 +339,18 @@ func (evc *ethereumCarrier) Votes(
 	if err != nil {
 		return nil, nil, err
 	}
-	votes := []*types.Vote{}
+	bs := []*types.Bucket{}
 	if buckets.Count == nil || buckets.Count.Cmp(big.NewInt(0)) == 0 || len(buckets.Indexes) == 0 {
-		return previousIndex, votes, nil
+		return previousIndex, bs, nil
 	}
 	for i, index := range buckets.Indexes {
 		if big.NewInt(0).Cmp(index) == 0 { // back to start, this is a redundant condition
 			break
 		}
-		v, err := types.NewVote(
+		v, err := types.NewBucket(
 			time.Unix(buckets.StakeStartTimes[i].Int64(), 0),
 			time.Duration(buckets.StakeDurations[i].Uint64()*24)*time.Hour,
 			buckets.StakedAmounts[i],
-			big.NewInt(0),
 			buckets.Owners[i].Bytes(),
 			buckets.CanNames[i][:],
 			buckets.Decays[i],
@@ -359,13 +358,13 @@ func (evc *ethereumCarrier) Votes(
 		if err != nil {
 			return nil, nil, err
 		}
-		votes = append(votes, v)
+		bs = append(bs, v)
 		if index.Cmp(previousIndex) > 0 {
 			previousIndex = index
 		}
 	}
 
-	return previousIndex, votes, nil
+	return previousIndex, bs, nil
 }
 
 func decodeAddress(data [][32]byte, num int) ([][]byte, error) {

@@ -17,16 +17,7 @@ import (
 	"math/big"
 	"strings"
 	"time"
-
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes"
-	"github.com/pkg/errors"
-
-	pb "github.com/iotexproject/iotex-election/pb/election"
 )
-
-// ErrInvalidProto indicates a format error of an election proto
-var ErrInvalidProto = errors.New("Invalid election proto")
 
 // ElectionResult defines the collection of voting result on a height
 type ElectionResult struct {
@@ -81,105 +72,6 @@ func (r *ElectionResult) TotalVotedStakes() *big.Int {
 	return new(big.Int).Set(r.totalVotedStakes)
 }
 
-// ToProtoMsg converts the vote to protobuf
-func (r *ElectionResult) ToProtoMsg() (*pb.ElectionResult, error) {
-	delegates := make([]*pb.Candidate, len(r.delegates))
-	delegateVotes := make([]*pb.VoteList, len(r.votes))
-	var err error
-	for i := 0; i < len(r.delegates); i++ {
-		delegate := r.delegates[i]
-		if delegates[i], err = delegate.ToProtoMsg(); err != nil {
-			return nil, err
-		}
-		name := hex.EncodeToString(delegate.Name())
-		votes, ok := r.votes[name]
-		if !ok {
-			return nil, errors.Errorf("Cannot find votes for delegate %s", name)
-		}
-		voteList := make([]*pb.Vote, len(votes))
-		for j := 0; j < len(votes); j++ {
-			if voteList[j], err = votes[j].ToProtoMsg(); err != nil {
-				return nil, err
-			}
-		}
-		delegateVotes[i] = &pb.VoteList{Votes: voteList}
-	}
-	t, err := ptypes.TimestampProto(r.mintTime)
-	if err != nil {
-		return nil, err
-	}
-
-	return &pb.ElectionResult{
-		Timestamp:        t,
-		Delegates:        delegates,
-		DelegateVotes:    delegateVotes,
-		TotalVotedStakes: r.totalVotedStakes.Bytes(),
-		TotalVotes:       r.totalVotes.Bytes(),
-	}, nil
-}
-
-// Serialize converts result to byte array
-func (r *ElectionResult) Serialize() ([]byte, error) {
-	rPb, err := r.ToProtoMsg()
-	if err != nil {
-		return nil, err
-	}
-	return proto.Marshal(rPb)
-}
-
-// FromProtoMsg extracts result details from protobuf message
-func (r *ElectionResult) FromProtoMsg(rPb *pb.ElectionResult) (err error) {
-	if len(rPb.Delegates) != len(rPb.DelegateVotes) {
-		return errors.Wrapf(
-			ErrInvalidProto,
-			"size of delegate list %d is different from score list %d",
-			len(rPb.Delegates),
-			len(rPb.DelegateVotes),
-		)
-	}
-	r.votes = map[string][]*Vote{}
-	r.delegates = make([]*Candidate, len(rPb.Delegates))
-	for i, cPb := range rPb.Delegates {
-		r.delegates[i] = &Candidate{}
-		if err := r.delegates[i].FromProtoMsg(cPb); err != nil {
-			return err
-		}
-		name := hex.EncodeToString(r.delegates[i].Name())
-		if _, ok := r.votes[name]; ok {
-			return errors.Wrapf(
-				ErrInvalidProto,
-				"duplicate delegate %s",
-				name,
-			)
-		}
-		voteList := rPb.DelegateVotes[i]
-		r.votes[name] = make([]*Vote, len(voteList.Votes))
-		for j, vPb := range voteList.Votes {
-			r.votes[name][j] = &Vote{}
-			if err := r.votes[name][j].FromProtoMsg(vPb); err != nil {
-				return err
-			}
-		}
-	}
-	if r.mintTime, err = ptypes.Timestamp(rPb.Timestamp); err != nil {
-		return err
-	}
-	r.totalVotedStakes = new(big.Int).SetBytes(rPb.TotalVotedStakes)
-	r.totalVotes = new(big.Int).SetBytes(rPb.TotalVotes)
-
-	return nil
-}
-
-// Deserialize converts a byte array to election result
-func (r *ElectionResult) Deserialize(data []byte) error {
-	pb := &pb.ElectionResult{}
-	if err := proto.Unmarshal(data, pb); err != nil {
-		return err
-	}
-
-	return r.FromProtoMsg(pb)
-}
-
 func (r *ElectionResult) String() string {
 	var builder strings.Builder
 	fmt.Fprintf(
@@ -204,6 +96,37 @@ func (r *ElectionResult) String() string {
 	return builder.String()
 }
 
+// Equal compares two results and returns true if they are identical
+func (r *ElectionResult) Equal(result *ElectionResult) bool {
+	if r == result {
+		return true
+	}
+	if r == nil || result == nil {
+		return false
+	}
+	if !r.mintTime.Equal(result.mintTime) {
+		return false
+	}
+	if r.totalVotedStakes.Cmp(result.totalVotedStakes) != 0 {
+		return false
+	}
+	if r.totalVotes.Cmp(result.totalVotes) != 0 {
+		return false
+	}
+	if len(r.delegates) != len(result.delegates) {
+		return false
+	}
+	if len(r.votes) != len(result.votes) {
+		return false
+	}
+	for i, delegate := range r.delegates {
+		if !delegate.Equal(result.delegates[i]) {
+			return false
+		}
+	}
+	return true
+}
+
 // NewElectionResultForTest creates an election result for test purpose only
 func NewElectionResultForTest(
 	mintTime time.Time,
@@ -212,18 +135,24 @@ func NewElectionResultForTest(
 		mintTime: mintTime,
 		delegates: []*Candidate{
 			&Candidate{
-				name:            []byte("name1"),
-				address:         []byte("address1"),
-				operatorAddress: []byte("io1kfpsvefk74cqxd245j2h5t2pld2wtxzyg6tqrt"),
-				rewardAddress:   []byte("io1kfpsvefk74cqxd245j2h5t2pld2wtxzyg6tqrt"),
-				score:           big.NewInt(15),
+				Registration{
+					name:            []byte("name1"),
+					address:         []byte("address1"),
+					operatorAddress: []byte("io1kfpsvefk74cqxd245j2h5t2pld2wtxzyg6tqrt"),
+					rewardAddress:   []byte("io1kfpsvefk74cqxd245j2h5t2pld2wtxzyg6tqrt"),
+				},
+				big.NewInt(15),
+				big.NewInt(0),
 			},
 			&Candidate{
-				name:            []byte("name2"),
-				address:         []byte("address2"),
-				operatorAddress: []byte("io1llr6zs37gxrwmvnczexpg35dptta2mdvjv6w2q"),
-				rewardAddress:   []byte("io1llr6zs37gxrwmvnczexpg35dptta2mdvjv6w2q"),
-				score:           big.NewInt(14),
+				Registration{
+					name:            []byte("name2"),
+					address:         []byte("address2"),
+					operatorAddress: []byte("io1llr6zs37gxrwmvnczexpg35dptta2mdvjv6w2q"),
+					rewardAddress:   []byte("io1llr6zs37gxrwmvnczexpg35dptta2mdvjv6w2q"),
+				},
+				big.NewInt(14),
+				big.NewInt(0),
 			},
 		},
 		votes: map[string][]*Vote{

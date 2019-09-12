@@ -3,11 +3,13 @@
 
 package election
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import duration "github.com/golang/protobuf/ptypes/duration"
-import timestamp "github.com/golang/protobuf/ptypes/timestamp"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	duration "github.com/golang/protobuf/ptypes/duration"
+	timestamp "github.com/golang/protobuf/ptypes/timestamp"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -18,13 +20,13 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
-type Vote struct {
-	Voter                []byte               `protobuf:"bytes,1,opt,name=voter,proto3" json:"voter,omitempty"`
-	Candidate            []byte               `protobuf:"bytes,2,opt,name=candidate,proto3" json:"candidate,omitempty"`
-	Amount               []byte               `protobuf:"bytes,3,opt,name=amount,proto3" json:"amount,omitempty"`
-	WeightedAmount       []byte               `protobuf:"bytes,4,opt,name=weightedAmount,proto3" json:"weightedAmount,omitempty"`
+type Bucket struct {
+	Index                uint64               `protobuf:"varint,1,opt,name=index,proto3" json:"index,omitempty"`
+	Voter                []byte               `protobuf:"bytes,2,opt,name=voter,proto3" json:"voter,omitempty"`
+	Candidate            []byte               `protobuf:"bytes,3,opt,name=candidate,proto3" json:"candidate,omitempty"`
+	Amount               []byte               `protobuf:"bytes,4,opt,name=amount,proto3" json:"amount,omitempty"`
 	StartTime            *timestamp.Timestamp `protobuf:"bytes,5,opt,name=startTime,proto3" json:"startTime,omitempty"`
 	Duration             *duration.Duration   `protobuf:"bytes,6,opt,name=duration,proto3" json:"duration,omitempty"`
 	Decay                bool                 `protobuf:"varint,7,opt,name=decay,proto3" json:"decay,omitempty"`
@@ -33,310 +35,228 @@ type Vote struct {
 	XXX_sizecache        int32                `json:"-"`
 }
 
-func (m *Vote) Reset()         { *m = Vote{} }
-func (m *Vote) String() string { return proto.CompactTextString(m) }
-func (*Vote) ProtoMessage()    {}
-func (*Vote) Descriptor() ([]byte, []int) {
-	return fileDescriptor_election_b0a13835e5dd684b, []int{0}
-}
-func (m *Vote) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_Vote.Unmarshal(m, b)
-}
-func (m *Vote) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_Vote.Marshal(b, m, deterministic)
-}
-func (dst *Vote) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Vote.Merge(dst, src)
-}
-func (m *Vote) XXX_Size() int {
-	return xxx_messageInfo_Vote.Size(m)
-}
-func (m *Vote) XXX_DiscardUnknown() {
-	xxx_messageInfo_Vote.DiscardUnknown(m)
+func (m *Bucket) Reset()         { *m = Bucket{} }
+func (m *Bucket) String() string { return proto.CompactTextString(m) }
+func (*Bucket) ProtoMessage()    {}
+func (*Bucket) Descriptor() ([]byte, []int) {
+	return fileDescriptor_64dbf621b3c93457, []int{0}
 }
 
-var xxx_messageInfo_Vote proto.InternalMessageInfo
+func (m *Bucket) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Bucket.Unmarshal(m, b)
+}
+func (m *Bucket) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Bucket.Marshal(b, m, deterministic)
+}
+func (m *Bucket) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Bucket.Merge(m, src)
+}
+func (m *Bucket) XXX_Size() int {
+	return xxx_messageInfo_Bucket.Size(m)
+}
+func (m *Bucket) XXX_DiscardUnknown() {
+	xxx_messageInfo_Bucket.DiscardUnknown(m)
+}
 
-func (m *Vote) GetVoter() []byte {
+var xxx_messageInfo_Bucket proto.InternalMessageInfo
+
+func (m *Bucket) GetIndex() uint64 {
+	if m != nil {
+		return m.Index
+	}
+	return 0
+}
+
+func (m *Bucket) GetVoter() []byte {
 	if m != nil {
 		return m.Voter
 	}
 	return nil
 }
 
-func (m *Vote) GetCandidate() []byte {
+func (m *Bucket) GetCandidate() []byte {
 	if m != nil {
 		return m.Candidate
 	}
 	return nil
 }
 
-func (m *Vote) GetAmount() []byte {
+func (m *Bucket) GetAmount() []byte {
 	if m != nil {
 		return m.Amount
 	}
 	return nil
 }
 
-func (m *Vote) GetWeightedAmount() []byte {
-	if m != nil {
-		return m.WeightedAmount
-	}
-	return nil
-}
-
-func (m *Vote) GetStartTime() *timestamp.Timestamp {
+func (m *Bucket) GetStartTime() *timestamp.Timestamp {
 	if m != nil {
 		return m.StartTime
 	}
 	return nil
 }
 
-func (m *Vote) GetDuration() *duration.Duration {
+func (m *Bucket) GetDuration() *duration.Duration {
 	if m != nil {
 		return m.Duration
 	}
 	return nil
 }
 
-func (m *Vote) GetDecay() bool {
+func (m *Bucket) GetDecay() bool {
 	if m != nil {
 		return m.Decay
 	}
 	return false
 }
 
-type VoteList struct {
-	Votes                []*Vote  `protobuf:"bytes,1,rep,name=votes,proto3" json:"votes,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *VoteList) Reset()         { *m = VoteList{} }
-func (m *VoteList) String() string { return proto.CompactTextString(m) }
-func (*VoteList) ProtoMessage()    {}
-func (*VoteList) Descriptor() ([]byte, []int) {
-	return fileDescriptor_election_b0a13835e5dd684b, []int{1}
-}
-func (m *VoteList) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_VoteList.Unmarshal(m, b)
-}
-func (m *VoteList) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_VoteList.Marshal(b, m, deterministic)
-}
-func (dst *VoteList) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_VoteList.Merge(dst, src)
-}
-func (m *VoteList) XXX_Size() int {
-	return xxx_messageInfo_VoteList.Size(m)
-}
-func (m *VoteList) XXX_DiscardUnknown() {
-	xxx_messageInfo_VoteList.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_VoteList proto.InternalMessageInfo
-
-func (m *VoteList) GetVotes() []*Vote {
-	if m != nil {
-		return m.Votes
-	}
-	return nil
-}
-
-type Candidate struct {
+type Registration struct {
 	Name                 []byte   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Address              []byte   `protobuf:"bytes,2,opt,name=address,proto3" json:"address,omitempty"`
 	OperatorAddress      []byte   `protobuf:"bytes,3,opt,name=operatorAddress,proto3" json:"operatorAddress,omitempty"`
 	RewardAddress        []byte   `protobuf:"bytes,4,opt,name=rewardAddress,proto3" json:"rewardAddress,omitempty"`
 	SelfStakingWeight    uint64   `protobuf:"varint,5,opt,name=selfStakingWeight,proto3" json:"selfStakingWeight,omitempty"`
-	Score                []byte   `protobuf:"bytes,6,opt,name=score,proto3" json:"score,omitempty"`
-	SelfStakingTokens    []byte   `protobuf:"bytes,7,opt,name=selfStakingTokens,proto3" json:"selfStakingTokens,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *Candidate) Reset()         { *m = Candidate{} }
-func (m *Candidate) String() string { return proto.CompactTextString(m) }
-func (*Candidate) ProtoMessage()    {}
-func (*Candidate) Descriptor() ([]byte, []int) {
-	return fileDescriptor_election_b0a13835e5dd684b, []int{2}
-}
-func (m *Candidate) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_Candidate.Unmarshal(m, b)
-}
-func (m *Candidate) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_Candidate.Marshal(b, m, deterministic)
-}
-func (dst *Candidate) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Candidate.Merge(dst, src)
-}
-func (m *Candidate) XXX_Size() int {
-	return xxx_messageInfo_Candidate.Size(m)
-}
-func (m *Candidate) XXX_DiscardUnknown() {
-	xxx_messageInfo_Candidate.DiscardUnknown(m)
+func (m *Registration) Reset()         { *m = Registration{} }
+func (m *Registration) String() string { return proto.CompactTextString(m) }
+func (*Registration) ProtoMessage()    {}
+func (*Registration) Descriptor() ([]byte, []int) {
+	return fileDescriptor_64dbf621b3c93457, []int{1}
 }
 
-var xxx_messageInfo_Candidate proto.InternalMessageInfo
+func (m *Registration) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Registration.Unmarshal(m, b)
+}
+func (m *Registration) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Registration.Marshal(b, m, deterministic)
+}
+func (m *Registration) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Registration.Merge(m, src)
+}
+func (m *Registration) XXX_Size() int {
+	return xxx_messageInfo_Registration.Size(m)
+}
+func (m *Registration) XXX_DiscardUnknown() {
+	xxx_messageInfo_Registration.DiscardUnknown(m)
+}
 
-func (m *Candidate) GetName() []byte {
+var xxx_messageInfo_Registration proto.InternalMessageInfo
+
+func (m *Registration) GetName() []byte {
 	if m != nil {
 		return m.Name
 	}
 	return nil
 }
 
-func (m *Candidate) GetAddress() []byte {
+func (m *Registration) GetAddress() []byte {
 	if m != nil {
 		return m.Address
 	}
 	return nil
 }
 
-func (m *Candidate) GetOperatorAddress() []byte {
+func (m *Registration) GetOperatorAddress() []byte {
 	if m != nil {
 		return m.OperatorAddress
 	}
 	return nil
 }
 
-func (m *Candidate) GetRewardAddress() []byte {
+func (m *Registration) GetRewardAddress() []byte {
 	if m != nil {
 		return m.RewardAddress
 	}
 	return nil
 }
 
-func (m *Candidate) GetSelfStakingWeight() uint64 {
+func (m *Registration) GetSelfStakingWeight() uint64 {
 	if m != nil {
 		return m.SelfStakingWeight
 	}
 	return 0
 }
 
-func (m *Candidate) GetScore() []byte {
+type Poll struct {
+	Registrations        [][]byte `protobuf:"bytes,1,rep,name=registrations,proto3" json:"registrations,omitempty"`
+	Buckets              [][]byte `protobuf:"bytes,2,rep,name=buckets,proto3" json:"buckets,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *Poll) Reset()         { *m = Poll{} }
+func (m *Poll) String() string { return proto.CompactTextString(m) }
+func (*Poll) ProtoMessage()    {}
+func (*Poll) Descriptor() ([]byte, []int) {
+	return fileDescriptor_64dbf621b3c93457, []int{2}
+}
+
+func (m *Poll) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Poll.Unmarshal(m, b)
+}
+func (m *Poll) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Poll.Marshal(b, m, deterministic)
+}
+func (m *Poll) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Poll.Merge(m, src)
+}
+func (m *Poll) XXX_Size() int {
+	return xxx_messageInfo_Poll.Size(m)
+}
+func (m *Poll) XXX_DiscardUnknown() {
+	xxx_messageInfo_Poll.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Poll proto.InternalMessageInfo
+
+func (m *Poll) GetRegistrations() [][]byte {
 	if m != nil {
-		return m.Score
+		return m.Registrations
 	}
 	return nil
 }
 
-func (m *Candidate) GetSelfStakingTokens() []byte {
+func (m *Poll) GetBuckets() [][]byte {
 	if m != nil {
-		return m.SelfStakingTokens
-	}
-	return nil
-}
-
-type ElectionResult struct {
-	Timestamp            *timestamp.Timestamp `protobuf:"bytes,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	Delegates            []*Candidate         `protobuf:"bytes,2,rep,name=delegates,proto3" json:"delegates,omitempty"`
-	DelegateVotes        []*VoteList          `protobuf:"bytes,3,rep,name=delegateVotes,proto3" json:"delegateVotes,omitempty"`
-	TotalVotedStakes     []byte               `protobuf:"bytes,4,opt,name=totalVotedStakes,proto3" json:"totalVotedStakes,omitempty"`
-	TotalVotes           []byte               `protobuf:"bytes,5,opt,name=totalVotes,proto3" json:"totalVotes,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
-	XXX_unrecognized     []byte               `json:"-"`
-	XXX_sizecache        int32                `json:"-"`
-}
-
-func (m *ElectionResult) Reset()         { *m = ElectionResult{} }
-func (m *ElectionResult) String() string { return proto.CompactTextString(m) }
-func (*ElectionResult) ProtoMessage()    {}
-func (*ElectionResult) Descriptor() ([]byte, []int) {
-	return fileDescriptor_election_b0a13835e5dd684b, []int{3}
-}
-func (m *ElectionResult) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_ElectionResult.Unmarshal(m, b)
-}
-func (m *ElectionResult) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_ElectionResult.Marshal(b, m, deterministic)
-}
-func (dst *ElectionResult) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ElectionResult.Merge(dst, src)
-}
-func (m *ElectionResult) XXX_Size() int {
-	return xxx_messageInfo_ElectionResult.Size(m)
-}
-func (m *ElectionResult) XXX_DiscardUnknown() {
-	xxx_messageInfo_ElectionResult.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ElectionResult proto.InternalMessageInfo
-
-func (m *ElectionResult) GetTimestamp() *timestamp.Timestamp {
-	if m != nil {
-		return m.Timestamp
-	}
-	return nil
-}
-
-func (m *ElectionResult) GetDelegates() []*Candidate {
-	if m != nil {
-		return m.Delegates
-	}
-	return nil
-}
-
-func (m *ElectionResult) GetDelegateVotes() []*VoteList {
-	if m != nil {
-		return m.DelegateVotes
-	}
-	return nil
-}
-
-func (m *ElectionResult) GetTotalVotedStakes() []byte {
-	if m != nil {
-		return m.TotalVotedStakes
-	}
-	return nil
-}
-
-func (m *ElectionResult) GetTotalVotes() []byte {
-	if m != nil {
-		return m.TotalVotes
+		return m.Buckets
 	}
 	return nil
 }
 
 func init() {
-	proto.RegisterType((*Vote)(nil), "election.Vote")
-	proto.RegisterType((*VoteList)(nil), "election.VoteList")
-	proto.RegisterType((*Candidate)(nil), "election.Candidate")
-	proto.RegisterType((*ElectionResult)(nil), "election.ElectionResult")
+	proto.RegisterType((*Bucket)(nil), "election.Bucket")
+	proto.RegisterType((*Registration)(nil), "election.Registration")
+	proto.RegisterType((*Poll)(nil), "election.Poll")
 }
 
-func init() { proto.RegisterFile("election.proto", fileDescriptor_election_b0a13835e5dd684b) }
+func init() { proto.RegisterFile("election.proto", fileDescriptor_64dbf621b3c93457) }
 
-var fileDescriptor_election_b0a13835e5dd684b = []byte{
-	// 447 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x92, 0x4d, 0x6f, 0xd3, 0x40,
-	0x10, 0x86, 0xe5, 0x24, 0x4d, 0x93, 0x69, 0x1a, 0x60, 0x40, 0xc8, 0x44, 0xa8, 0x44, 0x51, 0x85,
-	0x2c, 0x84, 0x5c, 0x28, 0x42, 0xea, 0xb5, 0x02, 0x6e, 0x9c, 0x96, 0xa8, 0x9c, 0xb7, 0xd9, 0xa9,
-	0xb1, 0x6a, 0x7b, 0xa3, 0xdd, 0x0d, 0x11, 0x47, 0xc4, 0xcf, 0xe6, 0x82, 0x3c, 0xeb, 0xb5, 0x49,
-	0x72, 0xe8, 0x2d, 0xef, 0xc7, 0x46, 0x33, 0xcf, 0x18, 0xa6, 0x54, 0xd0, 0xca, 0xe5, 0xba, 0x4a,
-	0xd7, 0x46, 0x3b, 0x8d, 0xa3, 0xa0, 0x67, 0x67, 0x99, 0xd6, 0x59, 0x41, 0x17, 0xec, 0xdf, 0x6e,
-	0xee, 0x2e, 0xd4, 0xc6, 0xc8, 0xae, 0x39, 0x7b, 0xb5, 0x9f, 0xbb, 0xbc, 0x24, 0xeb, 0x64, 0xb9,
-	0xf6, 0x85, 0xc5, 0xef, 0x1e, 0x0c, 0x6e, 0xb4, 0x23, 0x7c, 0x06, 0x47, 0x3f, 0xb5, 0x23, 0x13,
-	0x47, 0xf3, 0x28, 0x99, 0x08, 0x2f, 0xf0, 0x25, 0x8c, 0x57, 0xb2, 0x52, 0xb9, 0x92, 0x8e, 0xe2,
-	0x1e, 0x27, 0x9d, 0x81, 0xcf, 0x61, 0x28, 0x4b, 0xbd, 0xa9, 0x5c, 0xdc, 0xe7, 0xa8, 0x51, 0xf8,
-	0x1a, 0xa6, 0x5b, 0xca, 0xb3, 0x1f, 0x8e, 0xd4, 0xb5, 0xcf, 0x07, 0x9c, 0xef, 0xb9, 0x78, 0x05,
-	0x63, 0xeb, 0xa4, 0x71, 0xcb, 0xbc, 0xa4, 0xf8, 0x68, 0x1e, 0x25, 0x27, 0x97, 0xb3, 0xd4, 0x4f,
-	0x9c, 0x86, 0x89, 0xd3, 0x65, 0x98, 0x58, 0x74, 0x65, 0xfc, 0x08, 0xa3, 0xb0, 0x69, 0x3c, 0xe4,
-	0x87, 0x2f, 0x0e, 0x1e, 0x7e, 0x6e, 0x0a, 0xa2, 0xad, 0xd6, 0x4b, 0x2a, 0x5a, 0xc9, 0x5f, 0xf1,
-	0xf1, 0x3c, 0x4a, 0x46, 0xc2, 0x8b, 0xc5, 0x3b, 0x18, 0xd5, 0x08, 0xbe, 0xe6, 0xd6, 0xe1, 0xb9,
-	0xc7, 0x60, 0xe3, 0x68, 0xde, 0x4f, 0x4e, 0x2e, 0xa7, 0x69, 0x8b, 0xbe, 0xae, 0x78, 0x2c, 0x76,
-	0xf1, 0x37, 0x82, 0xf1, 0xa7, 0x16, 0x03, 0xc2, 0xa0, 0x92, 0x25, 0x35, 0xe4, 0xf8, 0x37, 0xc6,
-	0x70, 0x2c, 0x95, 0x32, 0x64, 0x6d, 0x83, 0x2d, 0x48, 0x4c, 0xe0, 0x91, 0x5e, 0x93, 0x91, 0x4e,
-	0x9b, 0xeb, 0xa6, 0xe1, 0xe9, 0xed, 0xdb, 0x78, 0x0e, 0xa7, 0x86, 0xb6, 0xd2, 0xa8, 0xd0, 0xf3,
-	0x14, 0x77, 0x4d, 0x7c, 0x0b, 0x4f, 0x2c, 0x15, 0x77, 0xdf, 0x9c, 0xbc, 0xcf, 0xab, 0xec, 0x3b,
-	0x13, 0x66, 0x98, 0x03, 0x71, 0x18, 0xd4, 0x04, 0xec, 0x4a, 0x1b, 0x62, 0x6a, 0x13, 0xe1, 0xc5,
-	0xde, 0x7f, 0x2c, 0xf5, 0x3d, 0x55, 0x96, 0x19, 0x4d, 0xc4, 0x61, 0xb0, 0xf8, 0xd3, 0x83, 0xe9,
-	0x97, 0x06, 0x8b, 0x20, 0xbb, 0x29, 0xf8, 0x92, 0xed, 0x97, 0xc5, 0x1c, 0x1e, 0xb8, 0x64, 0x5b,
-	0xc6, 0xf7, 0x30, 0x56, 0x54, 0x50, 0x26, 0x6b, 0xe8, 0x3d, 0x86, 0xfe, 0xb4, 0x83, 0xde, 0x42,
-	0x16, 0x5d, 0x0b, 0xaf, 0xe0, 0x34, 0x88, 0x1b, 0xbe, 0x55, 0x9f, 0x9f, 0xe1, 0xee, 0xad, 0xea,
-	0x73, 0x8a, 0xdd, 0x22, 0xbe, 0x81, 0xc7, 0x4e, 0x3b, 0x59, 0xd4, 0x4a, 0xd5, 0x4b, 0x51, 0x80,
-	0x7a, 0xe0, 0xe3, 0x19, 0x40, 0xeb, 0x59, 0x06, 0x3a, 0x11, 0xff, 0x39, 0xb7, 0x43, 0xde, 0xeb,
-	0xc3, 0xbf, 0x00, 0x00, 0x00, 0xff, 0xff, 0x9d, 0x9d, 0x91, 0xf1, 0x9d, 0x03, 0x00, 0x00,
+var fileDescriptor_64dbf621b3c93457 = []byte{
+	// 342 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x64, 0x91, 0x5f, 0x4b, 0xc3, 0x30,
+	0x14, 0xc5, 0x89, 0xeb, 0xba, 0x2d, 0x4e, 0xc5, 0x20, 0x12, 0x87, 0x68, 0x19, 0x3e, 0xf4, 0x41,
+	0x3a, 0x50, 0x04, 0x5f, 0x15, 0xf1, 0x59, 0xe2, 0xc0, 0xe7, 0xac, 0xb9, 0xab, 0x61, 0x6d, 0x33,
+	0xd2, 0xd4, 0x3f, 0x5f, 0xcd, 0x6f, 0xe5, 0x37, 0x90, 0x26, 0x8d, 0xd5, 0xed, 0xad, 0xe7, 0x9c,
+	0x5f, 0x2e, 0xf7, 0xdc, 0xe2, 0x7d, 0xc8, 0x21, 0x35, 0x52, 0x95, 0xc9, 0x5a, 0x2b, 0xa3, 0xc8,
+	0xd0, 0xeb, 0xc9, 0x59, 0xa6, 0x54, 0x96, 0xc3, 0xcc, 0xfa, 0x8b, 0x7a, 0x39, 0x13, 0xb5, 0xe6,
+	0x1d, 0x39, 0x39, 0xdf, 0xcc, 0x8d, 0x2c, 0xa0, 0x32, 0xbc, 0x58, 0x3b, 0x60, 0xfa, 0x8d, 0x70,
+	0x78, 0x5f, 0xa7, 0x2b, 0x30, 0xe4, 0x08, 0xf7, 0x65, 0x29, 0xe0, 0x83, 0xa2, 0x08, 0xc5, 0x01,
+	0x73, 0xa2, 0x71, 0xdf, 0x94, 0x01, 0x4d, 0x77, 0x22, 0x14, 0x8f, 0x99, 0x13, 0xe4, 0x14, 0x8f,
+	0x52, 0x5e, 0x0a, 0x29, 0xb8, 0x01, 0xda, 0xb3, 0x49, 0x67, 0x90, 0x63, 0x1c, 0xf2, 0x42, 0xd5,
+	0xa5, 0xa1, 0x81, 0x8d, 0x5a, 0x45, 0x6e, 0xf1, 0xa8, 0x32, 0x5c, 0x9b, 0xb9, 0x2c, 0x80, 0xf6,
+	0x23, 0x14, 0xef, 0x5e, 0x4d, 0x12, 0xb7, 0x61, 0xe2, 0x37, 0x4c, 0xe6, 0x7e, 0x43, 0xd6, 0xc1,
+	0xe4, 0x06, 0x0f, 0x7d, 0x33, 0x1a, 0xda, 0x87, 0x27, 0x5b, 0x0f, 0x1f, 0x5a, 0x80, 0xfd, 0xa2,
+	0xcd, 0xf2, 0x02, 0x52, 0xfe, 0x49, 0x07, 0x11, 0x8a, 0x87, 0xcc, 0x89, 0xe9, 0x17, 0xc2, 0x63,
+	0x06, 0x99, 0xac, 0x4c, 0x8b, 0x11, 0x1c, 0x94, 0xbc, 0x00, 0x5b, 0x7c, 0xcc, 0xec, 0x37, 0xa1,
+	0x78, 0xc0, 0x85, 0xd0, 0x50, 0x55, 0x6d, 0x73, 0x2f, 0x49, 0x8c, 0x0f, 0xd4, 0x1a, 0x34, 0x37,
+	0x4a, 0xdf, 0xb5, 0x84, 0xbb, 0xc0, 0xa6, 0x4d, 0x2e, 0xf0, 0x9e, 0x86, 0x77, 0xae, 0x85, 0xe7,
+	0xdc, 0x39, 0xfe, 0x9b, 0xe4, 0x12, 0x1f, 0x56, 0x90, 0x2f, 0x9f, 0x0d, 0x5f, 0xc9, 0x32, 0x7b,
+	0x01, 0x99, 0xbd, 0x1a, 0x7b, 0x9d, 0x80, 0x6d, 0x07, 0xd3, 0x47, 0x1c, 0x3c, 0xa9, 0x3c, 0x77,
+	0xb3, 0xbb, 0x0e, 0x15, 0x45, 0x51, 0xcf, 0xcd, 0xfe, 0x63, 0x36, 0x2d, 0x16, 0xf6, 0xef, 0x36,
+	0x2d, 0x9a, 0xdc, 0xcb, 0x45, 0x68, 0xef, 0x76, 0xfd, 0x13, 0x00, 0x00, 0xff, 0xff, 0xa8, 0x35,
+	0xfd, 0x55, 0x5c, 0x02, 0x00, 0x00,
 }

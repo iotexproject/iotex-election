@@ -87,6 +87,7 @@ type KVStoreWithNamespace interface {
 	Stop(context.Context) error
 	Get(string, []byte) ([]byte, error)
 	Put(string, []byte, []byte) error
+	Commit(KVStoreBatch) error
 }
 
 // KVStoreWithNamespaceWrapper defines a wrapper to convert KVStoreWithNamespace to KVStore
@@ -169,6 +170,38 @@ func (m *memStoreWithNamespace) Put(namespace string, key []byte, value []byte) 
 	return nil
 }
 
+
+// Commit commits a batch
+func (m *memStoreWithNamespace) Commit(b KVStoreBatch) (e error) {
+	succeed := false
+	b.Lock()
+	defer func() {
+		if succeed {
+			// clear the batch if commit succeeds
+			b.ClearAndUnlock()
+		} else {
+			b.Unlock()
+		}
+	}()
+	for i := 0; i < b.Size(); i++ {
+		write, err := b.Entry(i)
+		if err != nil {
+			return err
+		}
+		if write.writeType == Put {
+			if err := m.Put(write.namespace, write.key, write.value); err != nil {
+				e = err
+				break
+			}
+		}
+	}
+	if e == nil {
+		succeed = true
+	}
+
+	return e
+}
+
 type boltDB struct {
 	db         *bbolt.DB
 	path       string
@@ -220,7 +253,7 @@ func (b *boltDB) Get(namespace string, key []byte) ([]byte, error) {
 	if value == nil {
 		err = errors.Wrapf(ErrNotExist, "key = %s", string(key))
 	}
-	return value, nil
+	return value, err
 }
 
 // Put stores key and value to boltDB
@@ -238,6 +271,51 @@ func (b *boltDB) Put(namespace string, key []byte, value []byte) error {
 		if err == nil {
 			break
 		}
+	}
+	return err
+}
+
+
+// Commit commits a batch
+func (b *boltDB) Commit(batch KVStoreBatch) (err error) {
+	succeed := true
+	batch.Lock()
+	defer func() {
+		if succeed {
+			// clear the batch if commit succeeds
+			batch.ClearAndUnlock()
+		} else {
+			batch.Unlock()
+		}
+
+	}()
+
+	for c := uint8(0); c < b.numRetries; c++ {
+		if err = b.db.Update(func(tx *bbolt.Tx) error {
+			for i := 0; i < batch.Size(); i++ {
+				write, err := batch.Entry(i)
+				if err != nil {
+					return err
+				}
+				if write.writeType == Put {
+					bucket, err := tx.CreateBucketIfNotExists([]byte(write.namespace))
+					if err != nil {
+						return errors.Wrapf(err, write.errorFormat, write.errorArgs)
+					}
+					if err := bucket.Put(write.key, write.value); err != nil {
+						return errors.Wrapf(err, write.errorFormat, write.errorArgs)
+					}
+				}
+			}
+			return nil
+		}); err == nil {
+			break
+		}
+	}
+
+	if err != nil {
+		succeed = false
+		err = errors.Wrap(ErrIO, err.Error())
 	}
 	return err
 }

@@ -2,7 +2,7 @@
 // This program is free software: you can redistribute it and/or modify it under the terms of the
 // GNU General Public License as published by the Free Software Foundation, either version 3 of
 // the License, or (at your option) any later version.
-// This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+// This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 // without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See
 // the GNU General Public License for more details.
 // You should have received a copy of the GNU General Public License along with this program. If
@@ -11,74 +11,48 @@
 package types
 
 import (
-	"bytes"
 	"errors"
 	"math/big"
-
-	pb "github.com/iotexproject/iotex-election/pb/election"
-	"github.com/iotexproject/iotex-election/util"
 )
 
 // Candidate defines a delegate candidate
 type Candidate struct {
-	name              []byte
-	address           []byte
-	operatorAddress   []byte
-	rewardAddress     []byte
+	Registration
 	score             *big.Int
 	selfStakingTokens *big.Int
-	selfStakingWeight uint64
 }
 
 // NewCandidate creates a new candidate with scores as 0s
 func NewCandidate(
-	name []byte,
-	address []byte,
-	operatorAddress []byte,
-	rewardPubKey []byte,
-	selfStakingWeight uint64,
+	reg *Registration,
+	score *big.Int,
+	selfStakingTokens *big.Int,
 ) *Candidate {
 	return &Candidate{
-		name:              util.CopyBytes(name),
-		address:           util.CopyBytes(address),
-		operatorAddress:   util.CopyBytes(operatorAddress),
-		rewardAddress:     util.CopyBytes(rewardPubKey),
-		score:             big.NewInt(0),
-		selfStakingTokens: big.NewInt(0),
-		selfStakingWeight: selfStakingWeight,
+		*reg.Clone(),
+		score,
+		selfStakingTokens,
 	}
 }
 
 // Clone clones the candidate
 func (c *Candidate) Clone() *Candidate {
 	return &Candidate{
-		name:              c.Name(),
-		address:           c.Address(),
-		operatorAddress:   c.OperatorAddress(),
-		rewardAddress:     c.RewardAddress(),
-		score:             c.Score(),
-		selfStakingTokens: c.SelfStakingTokens(),
-		selfStakingWeight: c.SelfStakingWeight(),
+		*c.Registration.Clone(),
+		c.Score(),
+		c.SelfStakingTokens(),
 	}
 }
 
-func (c *Candidate) equal(candidate *Candidate) bool {
+// Equal returns true if two candidates are identical
+func (c *Candidate) Equal(candidate *Candidate) bool {
 	if c == candidate {
 		return true
 	}
 	if c == nil || candidate == nil {
 		return false
 	}
-	if !bytes.Equal(c.name, candidate.name) {
-		return false
-	}
-	if !bytes.Equal(c.address, candidate.address) {
-		return false
-	}
-	if !bytes.Equal(c.operatorAddress, candidate.operatorAddress) {
-		return false
-	}
-	if !bytes.Equal(c.rewardAddress, candidate.rewardAddress) {
+	if !c.Registration.Equal(&candidate.Registration) {
 		return false
 	}
 	if c.score.Cmp(candidate.score) != 0 {
@@ -112,26 +86,6 @@ func (c *Candidate) addSelfStakingTokens(s *big.Int) error {
 	return nil
 }
 
-// Name returns the name of this candidate
-func (c *Candidate) Name() []byte {
-	return util.CopyBytes(c.name)
-}
-
-// Address returns the address of this candidate on gravity chain
-func (c *Candidate) Address() []byte {
-	return util.CopyBytes(c.address)
-}
-
-// OperatorAddress returns the address of the assigned operator on chain
-func (c *Candidate) OperatorAddress() []byte {
-	return util.CopyBytes(c.operatorAddress)
-}
-
-// RewardAddress returns the address of the assigned benefiter on chain
-func (c *Candidate) RewardAddress() []byte {
-	return util.CopyBytes(c.rewardAddress)
-}
-
 // Score returns the total votes (weighted) of this candidate
 func (c *Candidate) Score() *big.Int {
 	return new(big.Int).Set(c.score)
@@ -150,35 +104,4 @@ func (c *Candidate) SelfStakingTokens() *big.Int {
 // SetSelfStakingTokens set selfStakingTokens value in Candidate
 func (c *Candidate) SetSelfStakingTokens(selfStakingTokens *big.Int) {
 	c.selfStakingTokens = selfStakingTokens
-}
-
-// SelfStakingWeight returns the extra weight for self staking
-func (c *Candidate) SelfStakingWeight() uint64 {
-	return c.selfStakingWeight
-}
-
-// ToProtoMsg converts the instance to a protobuf message
-func (c *Candidate) ToProtoMsg() (*pb.Candidate, error) {
-	return &pb.Candidate{
-		Name:              c.Name(),
-		Address:           c.Address(),
-		OperatorAddress:   c.OperatorAddress(),
-		RewardAddress:     c.RewardAddress(),
-		Score:             c.score.Bytes(),
-		SelfStakingTokens: c.selfStakingTokens.Bytes(),
-		SelfStakingWeight: c.selfStakingWeight,
-	}, nil
-}
-
-// FromProtoMsg fills the instance with a protobuf message
-func (c *Candidate) FromProtoMsg(msg *pb.Candidate) error {
-	c.name = util.CopyBytes(msg.GetName())
-	c.address = util.CopyBytes(msg.GetAddress())
-	c.operatorAddress = util.CopyBytes(msg.GetOperatorAddress())
-	c.rewardAddress = util.CopyBytes(msg.GetRewardAddress())
-	c.score = new(big.Int).SetBytes(msg.GetScore())
-	c.selfStakingTokens = new(big.Int).SetBytes(msg.GetSelfStakingTokens())
-	c.selfStakingWeight = msg.GetSelfStakingWeight()
-
-	return nil
 }

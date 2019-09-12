@@ -32,8 +32,8 @@ func TestVoteCarrier(t *testing.T) {
 	)
 	require.NoError(err)
 	defer carrier.Close()
-	t.Run("Candidates", func(t *testing.T) {
-		nextIndex, candidates, err := carrier.Candidates(uint64(10454030), big.NewInt(1), uint8(10))
+	t.Run("Registrations", func(t *testing.T) {
+		nextIndex, candidates, err := carrier.Registrations(uint64(10454030), big.NewInt(1), uint8(10))
 		require.NoError(err)
 		require.Equal(0, big.NewInt(10).Cmp(nextIndex))
 		require.Equal(9, len(candidates))
@@ -48,8 +48,8 @@ func TestVoteCarrier(t *testing.T) {
 			require.True(bytes.Equal(bname, candidates[i].Name()))
 		}
 	})
-	t.Run("Votes", func(t *testing.T) {
-		lastIndex, votes, err := carrier.Votes(uint64(10454030), big.NewInt(0), uint8(10))
+	t.Run("Buckets", func(t *testing.T) {
+		lastIndex, votes, err := carrier.Buckets(uint64(10454030), big.NewInt(0), uint8(10))
 		require.NoError(err)
 		require.Equal(0, big.NewInt(11).Cmp(lastIndex))
 		require.Equal(10, len(votes))

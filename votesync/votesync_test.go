@@ -26,7 +26,7 @@ func TestFetchVotesByHeight(t *testing.T) {
 	require := require.New(t)
 	vs, err := NewVoteSync(cfg)
 	require.NoError(err)
-	re, err := vs.fetchVotesByHeight(7858000)
+	re, err := vs.fetchBucketsByHeight(7858000)
 	require.NoError(err)
 	require.NotZero(len(re))
 }
@@ -63,20 +63,19 @@ func (*mockCarrier) SubscribeNewBlock(chan *carrier.TipInfo, chan error, chan bo
 
 func (*mockCarrier) Tip() (*carrier.TipInfo, error) { return &carrier.TipInfo{}, nil }
 
-func (*mockCarrier) Candidates(uint64, *big.Int, uint8) (*big.Int, []*types.Candidate, error) {
+func (*mockCarrier) Registrations(uint64, *big.Int, uint8) (*big.Int, []*types.Registration, error) {
 	return nil, nil, nil
 }
 
-func (*mockCarrier) Votes(h uint64, pidx *big.Int, count uint8) (*big.Int, []*types.Vote, error) {
+func (*mockCarrier) Buckets(h uint64, pidx *big.Int, count uint8) (*big.Int, []*types.Bucket, error) {
 	if pidx.Cmp(big.NewInt(1)) > 0 {
 		return nil, nil, nil
 	}
 
 	startTime := time.Unix(1559220700, 0)
-	v1, err := types.NewVote(
+	b1, err := types.NewBucket(
 		startTime,
 		24*7*time.Hour,
-		big.NewInt(3),
 		big.NewInt(3),
 		[]byte("Voter"),
 		[]byte("Candidate"),
@@ -85,19 +84,20 @@ func (*mockCarrier) Votes(h uint64, pidx *big.Int, count uint8) (*big.Int, []*ty
 	if err != nil {
 		return nil, nil, err
 	}
-	v2, err := types.NewVote(
+	b2, err := types.NewBucket(
 		startTime,
 		24*7*time.Hour,
-		big.NewInt(3),
 		big.NewInt(3),
 		[]byte("OldVoter"),
 		[]byte("Candidate"),
 		true,
 	)
-	v3, err := types.NewVote(
+	if err != nil {
+		return nil, nil, err
+	}
+	b3, err := types.NewBucket(
 		startTime,
 		24*7*time.Hour,
-		big.NewInt(3),
 		big.NewInt(3),
 		[]byte("OldVoter2"),
 		[]byte("Candidate"),
@@ -106,11 +106,9 @@ func (*mockCarrier) Votes(h uint64, pidx *big.Int, count uint8) (*big.Int, []*ty
 	if err != nil {
 		return nil, nil, err
 	}
-
-	v4, err := types.NewVote(
+	b4, err := types.NewBucket(
 		startTime,
 		24*7*time.Hour,
-		big.NewInt(3),
 		big.NewInt(3),
 		[]byte("Voter"),
 		[]byte("Candidate"),
@@ -119,10 +117,9 @@ func (*mockCarrier) Votes(h uint64, pidx *big.Int, count uint8) (*big.Int, []*ty
 	if err != nil {
 		return nil, nil, err
 	}
-	v5, err := types.NewVote(
+	b5, err := types.NewBucket(
 		startTime,
 		24*7*time.Hour,
-		big.NewInt(4),
 		big.NewInt(4),
 		[]byte("Voter"),
 		[]byte("Candidate"),
@@ -131,10 +128,9 @@ func (*mockCarrier) Votes(h uint64, pidx *big.Int, count uint8) (*big.Int, []*ty
 	if err != nil {
 		return nil, nil, err
 	}
-	v6, err := types.NewVote(
+	b6, err := types.NewBucket(
 		startTime,
 		24*7*time.Hour,
-		big.NewInt(3),
 		big.NewInt(3),
 		[]byte("NewVoter"),
 		[]byte("Candidate"),
@@ -143,10 +139,9 @@ func (*mockCarrier) Votes(h uint64, pidx *big.Int, count uint8) (*big.Int, []*ty
 	if err != nil {
 		return nil, nil, err
 	}
-	v7, err := types.NewVote(
+	b7, err := types.NewBucket(
 		startTime,
 		24*7*time.Hour,
-		big.NewInt(3),
 		big.NewInt(3),
 		[]byte("OldVoter2"),
 		[]byte("Candidate"),
@@ -158,10 +153,10 @@ func (*mockCarrier) Votes(h uint64, pidx *big.Int, count uint8) (*big.Int, []*ty
 
 	nidx := pidx.Add(pidx, big.NewInt(1))
 	if h == 1 {
-		return nidx, []*types.Vote{v1, v2, v3}, nil
+		return nidx, []*types.Bucket{b1, b2, b3}, nil
 	}
 	if h == 2 {
-		return nidx, []*types.Vote{v4, v5, v6, v7}, nil
+		return nidx, []*types.Bucket{b4, b5, b6, b7}, nil
 	}
 	return nil, nil, nil
 }

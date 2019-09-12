@@ -17,115 +17,7 @@ import (
 	"math/big"
 	"strings"
 	"time"
-
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes"
-	"github.com/pkg/errors"
-
-
-	pb "github.com/iotexproject/iotex-election/pb/election"
-	"github.com/iotexproject/iotex-election/util"
-
 )
-
-// ErrInvalidProto indicates a format error of an election proto
-var ErrInvalidProto = errors.New("Invalid election proto")
-
-
-type ElectionResultMeta struct {
-	mintTime 		time.Time
-	candidates 		[][]byte
-	votes 			[][]byte
-}
-
-
-// NewElectionResultMeta creates a new electionresultMeta 
-func NewElectionResultMeta(
-	mintTime time.Time,
-	candidates [][]byte,
-	votes [][]byte,
-) *ElectionResultMeta {
-	return &ElectionResultMeta{
-		mintTime:		mintTime,
-		candidates:     candidates,
-		votes:   		votes,
-	}
-}
-
-// MintTime returns the mint time of the corresponding gravity chain block
-func (m *ElectionResultMeta) MintTime() time.Time {
-	return m.mintTime
-}
-
-// Candidates returns a list of candidates
-func (m *ElectionResultMeta) Candidates() [][]byte {
-	return m.candidates
-}
-
-// Votes returns all votes
-func (m *ElectionResultMeta) Votes() [][]byte {
-	return m.votes
-}
-
-// ToProtoMsg converts the electionresultMeta to protobuf
-func (m *ElectionResultMeta) ToProtoMsg() (*pb.ElectionResultMeta, error) {
-	candidatesKey := make([][]byte, len(m.candidates))
-	votesKey := make([][]byte, len(m.votes))
-
-	for i, cand := range m.candidates {
-		candidatesKey[i] = util.CopyBytes(cand)
-	}
-	for i, vote := range m.votes {
-		votesKey[i] = util.CopyBytes(vote)
-	}
-	t, err := ptypes.TimestampProto(m.mintTime)
-	if err != nil {
-		return nil, err
-	}
-	return &pb.ElectionResultMeta{
-		Timestamp:				t,
-		CandidatesKey:			candidatesKey,
-		VotesKey:    			votesKey,
-	}, nil
-}
-
-// Serialize converts result to byte array
-func (m *ElectionResultMeta) Serialize() ([]byte, error) {
-	rPb, err := m.ToProtoMsg()
-	if err != nil {
-		return nil, err
-	}
-	return proto.Marshal(rPb)
-}
-
-
-
-// FromProtoMsg extracts result details from protobuf message
-func (m *ElectionResultMeta) FromProtoMsg(rPb *pb.ElectionResultMeta) (err error) {
-	if m.mintTime, err = ptypes.Timestamp(rPb.Timestamp); err != nil {
-		return err
-	}
-	m.votes = make([][]byte, len(rPb.VotesKey))
-	for i, vote := range rPb.VotesKey {
-		m.votes[i] = util.CopyBytes(vote)
-	}
-
-	m.candidates = make([][]byte, len(rPb.CandidatesKey))
-	for i, cand := range rPb.CandidatesKey {
-		m.candidates[i] = util.CopyBytes(cand)
-	}
-	return nil
-}
-
-// Deserialize converts a byte array to election result
-func (m *ElectionResultMeta) Deserialize(data []byte) error {
-	pb := &pb.ElectionResultMeta{}
-	if err := proto.Unmarshal(data, pb); err != nil {
-		return err
-	}
-	return m.FromProtoMsg(pb)
-}
-
 
 // ElectionResult defines the collection of voting result on a height
 type ElectionResult struct {
@@ -204,7 +96,7 @@ func (r *ElectionResult) String() string {
 	return builder.String()
 }
 
-
+// Equal compares two results and returns true if they are identical
 func (r *ElectionResult) Equal(result *ElectionResult) bool {
 	if r == result {
 		return true
@@ -221,7 +113,7 @@ func (r *ElectionResult) Equal(result *ElectionResult) bool {
 	if r.totalVotes.Cmp(result.totalVotes) != 0 {
 		return false
 	}
-	if len(r.delegates) != len(result.delegates){
+	if len(r.delegates) != len(result.delegates) {
 		return false
 	}
 	if len(r.votes) != len(result.votes) {
@@ -229,10 +121,10 @@ func (r *ElectionResult) Equal(result *ElectionResult) bool {
 	}
 	for i, delegate := range r.delegates {
 		if !delegate.Equal(result.delegates[i]) {
-			return false 
+			return false
 		}
 	}
-	return true 
+	return true
 }
 
 // NewElectionResultForTest creates an election result for test purpose only
@@ -243,18 +135,24 @@ func NewElectionResultForTest(
 		mintTime: mintTime,
 		delegates: []*Candidate{
 			&Candidate{
-				name:            []byte("name1"),
-				address:         []byte("address1"),
-				operatorAddress: []byte("io1kfpsvefk74cqxd245j2h5t2pld2wtxzyg6tqrt"),
-				rewardAddress:   []byte("io1kfpsvefk74cqxd245j2h5t2pld2wtxzyg6tqrt"),
-				score:           big.NewInt(15),
+				Registration{
+					name:            []byte("name1"),
+					address:         []byte("address1"),
+					operatorAddress: []byte("io1kfpsvefk74cqxd245j2h5t2pld2wtxzyg6tqrt"),
+					rewardAddress:   []byte("io1kfpsvefk74cqxd245j2h5t2pld2wtxzyg6tqrt"),
+				},
+				big.NewInt(15),
+				big.NewInt(0),
 			},
 			&Candidate{
-				name:            []byte("name2"),
-				address:         []byte("address2"),
-				operatorAddress: []byte("io1llr6zs37gxrwmvnczexpg35dptta2mdvjv6w2q"),
-				rewardAddress:   []byte("io1llr6zs37gxrwmvnczexpg35dptta2mdvjv6w2q"),
-				score:           big.NewInt(14),
+				Registration{
+					name:            []byte("name2"),
+					address:         []byte("address2"),
+					operatorAddress: []byte("io1llr6zs37gxrwmvnczexpg35dptta2mdvjv6w2q"),
+					rewardAddress:   []byte("io1llr6zs37gxrwmvnczexpg35dptta2mdvjv6w2q"),
+				},
+				big.NewInt(14),
+				big.NewInt(0),
 			},
 		},
 		votes: map[string][]*Vote{

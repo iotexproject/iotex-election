@@ -2,7 +2,7 @@
 // This program is free software: you can redistribute it and/or modify it under the terms of the
 // GNU General Public License as published by the Free Software Foundation, either version 3 of
 // the License, or (at your option) any later version.
-// This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+// This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 // without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See
 // the GNU General Public License for more details.
 // You should have received a copy of the GNU General Public License along with this program. If
@@ -54,17 +54,17 @@ func (p itemList) Less(i, j int) bool {
 
 const candidateZero = "000000000000000000000000"
 
-// VoteFilterFunc defines the function to filter vote
-type VoteFilterFunc func(*Vote) bool
+// BucketFilterFunc defines the function to filter vote
+type BucketFilterFunc func(*Bucket) bool
 
 // CandidateFilterFunc defines the function to filter candidate
 type CandidateFilterFunc func(*Candidate) bool
 
 // ResultCalculator defines a calculator for a set of votes
 type ResultCalculator struct {
-	calcScore        func(*Vote, time.Time) *big.Int
+	calcScore        func(*Bucket, time.Time) *big.Int
 	candidateFilter  func(*Candidate) bool
-	voteFilter       func(*Vote) bool
+	bucketFilter     func(*Bucket) bool
 	mintTime         time.Time
 	candidates       map[string]*Candidate
 	candidateVotes   map[string][]*Vote
@@ -79,14 +79,14 @@ type ResultCalculator struct {
 func NewResultCalculator(
 	mintTime time.Time,
 	skipManified bool,
-	voteFilter VoteFilterFunc, // filter votes before calculating
-	calcScore func(*Vote, time.Time) *big.Int,
+	bucketFilter BucketFilterFunc, // filter buckets before calculating
+	calcScore func(*Bucket, time.Time) *big.Int,
 	candidateFilter CandidateFilterFunc, // filter candidates during calculating
 ) *ResultCalculator {
 	return &ResultCalculator{
 		calcScore:        calcScore,
 		candidateFilter:  candidateFilter,
-		voteFilter:       voteFilter,
+		bucketFilter:     bucketFilter,
 		mintTime:         mintTime.UTC(),
 		candidates:       map[string]*Candidate{},
 		candidateVotes:   map[string][]*Vote{},
@@ -97,8 +97,8 @@ func NewResultCalculator(
 	}
 }
 
-// AddCandidates adds candidates to result
-func (calculator *ResultCalculator) AddCandidates(candidates []*Candidate) error {
+// AddRegistrations adds candidates to result
+func (calculator *ResultCalculator) AddRegistrations(candidates []*Registration) error {
 	calculator.mutex.Lock()
 	defer calculator.mutex.Unlock()
 	if calculator.calculated {
@@ -115,24 +115,24 @@ func (calculator *ResultCalculator) AddCandidates(candidates []*Candidate) error
 		if c.SelfStakingWeight() > uint64(1) && calculator.skipManified {
 			continue
 		}
-		calculator.candidates[name] = c.Clone().reset()
+		calculator.candidates[name] = NewCandidate(c, big.NewInt(0), big.NewInt(0))
 		calculator.candidateVotes[name] = []*Vote{}
 	}
 	return nil
 }
 
-// AddVotes adds votes to result
-func (calculator *ResultCalculator) AddVotes(votes []*Vote) error {
+// AddBuckets adds bucket to result
+func (calculator *ResultCalculator) AddBuckets(buckets []*Bucket) error {
 	calculator.mutex.Lock()
 	defer calculator.mutex.Unlock()
 	if calculator.calculated {
 		return errors.New("Cannot modify a calculated result")
 	}
-	for _, v := range votes {
-		if calculator.voteFilter(v) {
+	for _, bucket := range buckets {
+		if calculator.bucketFilter(bucket) {
 			continue
 		}
-		name := v.Candidate()
+		name := bucket.Candidate()
 		if name == nil {
 			continue
 		}
@@ -140,10 +140,10 @@ func (calculator *ResultCalculator) AddVotes(votes []*Vote) error {
 		if strings.Compare(nameHex, candidateZero) == 0 {
 			continue
 		}
-		amount := v.Amount()
-		score := calculator.calcScore(v, calculator.mintTime)
+		amount := bucket.Amount()
+		score := calculator.calcScore(bucket, calculator.mintTime)
 		if candidate, exists := calculator.candidates[nameHex]; exists {
-			if bytes.Equal(v.Voter(), candidate.address) {
+			if bytes.Equal(bucket.Voter(), candidate.address) {
 				selfStakingWeight := new(big.Int).SetUint64(candidate.selfStakingWeight)
 				amount.Mul(amount, selfStakingWeight)
 				if err := candidate.addSelfStakingTokens(amount); err != nil {
@@ -151,8 +151,8 @@ func (calculator *ResultCalculator) AddVotes(votes []*Vote) error {
 				}
 				score.Mul(score, selfStakingWeight)
 			}
-			cVote := v.Clone()
-			if err := cVote.SetWeightedAmount(score); err != nil {
+			cVote, err := NewVote(bucket, score)
+			if err != nil {
 				return err
 			}
 			if err := candidate.addScore(score); err != nil {

@@ -96,6 +96,7 @@ github.com/influxdata/influxdb v1.7.7 h1:UvNzAPfBrKMENVbQ4mr4ccA9sW+W1Ihl0Yh1s0B
 github.com/influxdata/influxdb v1.7.7/go.mod h1:qZna6X/4elxqT3yI9iZYdZrWWdeFOOprn86kgg4+IzY=
 github.com/iotexproject/go-ethereum v0.2.0 h1:vxdD/TueCxFsJijReJ4nMQiSiZRIdkcePhFIv4ZYlq4=
 github.com/iotexproject/go-ethereum v0.2.0/go.mod h1:0kgLtjZ8cxwjgFgxjsTPn1zxTeJkHXeUd77lcT4OqvU=
+<<<<<<< HEAD
 github.com/iotexproject/go-pkgs v0.1.1 h1:AyWJf8jqOg4aMSrxi+MInFFBZhTvSm0LCu1o08heijk=
 github.com/iotexproject/go-pkgs v0.1.1/go.mod h1:U3Mb0Wm6XtYpFRODg3pe34DEaWhFwqI2Q5xZK6hji2I=
 github.com/iotexproject/iotex-address v0.2.1 h1:ZJH2ajx5OBrbaRJ0ZWlWUo685zr5kjWijVjtmUrm42E=
@@ -104,6 +105,22 @@ github.com/iotexproject/iotex-antenna-go/v2 v2.3.1 h1:iNtR6FQkdyM4KGH+QX12Hoxn1S
 github.com/iotexproject/iotex-antenna-go/v2 v2.3.1/go.mod h1:a1RO4J126AOdQyfJMxLXCnQ6CBqzaDP9/8x9oVzA5zM=
 github.com/iotexproject/iotex-proto v0.2.1-0.20190814190638-f74c55ffedf5 h1:iHfM1nRVDpY8cvyp/Ixtawpt8VxfN9XnzleC9UWM2EE=
 github.com/iotexproject/iotex-proto v0.2.1-0.20190814190638-f74c55ffedf5/go.mod h1:962P5o0qlB5sqRT07TJBMX31i2u309kzDqqwCg+cGz0=
+=======
+github.com/iotexproject/go-pkgs v0.0.0-20190506171604-79e88c4045dc/go.mod h1:iYuhoHYa6mPEGouym3e44y2Co4MxU37ohiyTqAtNI4Q=
+github.com/iotexproject/go-pkgs v0.1.1-0.20190513193226-f065b9342b78 h1:ihJrCPx2blMHpHXJ0pAxoDGmU9EgbHiv2nCN7LtH+TY=
+github.com/iotexproject/go-pkgs v0.1.1-0.20190513193226-f065b9342b78/go.mod h1:N8FoO+8IhVzBbW1pQ91NrjebZeuyEeTXApFSnK+xwwg=
+github.com/iotexproject/iotex-address v0.1.0 h1:mzhWO/p2SW9dnEAKw0i/Hy+xDhKD5AfMuOh7rtKQGqg=
+github.com/iotexproject/iotex-address v0.1.0/go.mod h1:XX+4C9lYCSG0dt5kzinWbUs0Kq/5OL7Hnu2Stt+4q2E=
+github.com/iotexproject/iotex-address v0.2.0 h1:1yvIpjhqU2MnvfNQDRBBbekYor55N1OqxcuiRI7Sxfc=
+github.com/iotexproject/iotex-address v0.2.0/go.mod h1:ias6axlk8TFocZ2stKY7L0k5hnrLq6q/2qeCNJ1K8uA=
+github.com/iotexproject/iotex-antenna-go/v2 v2.2.0 h1:InybEHtwZddqF+W82hRqxnqrXztHpcpFR5v4l7kev5k=
+github.com/iotexproject/iotex-antenna-go/v2 v2.2.0/go.mod h1:sDCcRI0VQnF2jAB2bCzbyPpraRtVKtefbUI+JYBvU3g=
+github.com/iotexproject/iotex-core v0.5.1/go.mod h1:8nEaqyRRzZK6IAH8H/bB/hUCz2jpTsQ0DBuhSm+nBEk=
+github.com/iotexproject/iotex-proto v0.1.1-0.20190512055829-507894271007 h1:qbTF5GFT6xTSjuqtPLZu/l9X2k6sZnUPUXNtXF7O1Qg=
+github.com/iotexproject/iotex-proto v0.1.1-0.20190512055829-507894271007/go.mod h1:naxLKbcF6w9zlNp9MmNel0h5CrtT1bveVtNgicuZ7qg=
+github.com/iotexproject/iotex-proto v0.2.1-0.20190528210926-c48a31f9d016 h1:nmUMGwRDgpAJPO6M+ZzCzxf4p+0X/myYIlg6xtaoUQ8=
+github.com/iotexproject/iotex-proto v0.2.1-0.20190528210926-c48a31f9d016/go.mod h1:962P5o0qlB5sqRT07TJBMX31i2u309kzDqqwCg+cGz0=
+>>>>>>> introduce bucket, registration, and poll
 github.com/jackpal/go-nat-pmp v1.0.1 h1:i0LektDkO1QlrTm/cSuP+PyBCDnYvjPLGl4LdWEMiaA=
 github.com/jackpal/go-nat-pmp v1.0.1/go.mod h1:QPH045xvCAeXUZOxsnwmrtiCoxIr9eob+4orBN1SBKc=
 github.com/jessevdk/go-flags v0.0.0-20141203071132-1679536dcc89/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=

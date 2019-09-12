@@ -468,13 +468,13 @@ func (vc *VoteSync) fetchVotesUpdate(prevHeight, currHeight uint64, prevTs, curr
 	return ret, nil
 }
 
-func (vc *VoteSync) retryFetchResultByHeight(h uint64) ([]*types.Vote, error) {
+func (vc *VoteSync) retryFetchResultByHeight(h uint64) ([]*types.Bucket, error) {
 	var (
-		ret []*types.Vote
+		ret []*types.Bucket
 		err error
 	)
 	nerr := backoff.Retry(func() error {
-		ret, err = vc.fetchVotesByHeight(h)
+		ret, err = vc.fetchBucketsByHeight(h)
 		return err
 	}, backoff.NewExponentialBackOff())
 	if nerr != nil {
@@ -487,15 +487,15 @@ func (vc *VoteSync) retryFetchResultByHeight(h uint64) ([]*types.Vote, error) {
 	return ret, nerr
 }
 
-func (vc *VoteSync) fetchVotesByHeight(h uint64) ([]*types.Vote, error) {
-	var allVotes []*types.Vote
+func (vc *VoteSync) fetchBucketsByHeight(h uint64) ([]*types.Bucket, error) {
+	var allVotes []*types.Bucket
 	idx := big.NewInt(0)
 	for {
 		var (
-			votes []*types.Vote
+			votes []*types.Bucket
 			err   error
 		)
-		if idx, votes, err = vc.carrier.Votes(h, idx, vc.paginationSize); err != nil {
+		if idx, votes, err = vc.carrier.Buckets(h, idx, vc.paginationSize); err != nil {
 			return nil, err
 		}
 		allVotes = append(allVotes, votes...)
@@ -524,7 +524,7 @@ func (vc *VoteSync) sendDiscordMsg(msg string) error {
 	return err
 }
 
-func calWeightedVotes(curr []*types.Vote, currTs time.Time) map[string]*WeightedVote {
+func calWeightedVotes(curr []*types.Bucket, currTs time.Time) map[string]*WeightedVote {
 	n := make(map[string]*WeightedVote)
 	for _, v := range curr {
 		vs := types.CalcWeightedVotes(v, currTs)

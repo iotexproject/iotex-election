@@ -29,21 +29,20 @@ import (
 	"github.com/iotexproject/iotex-election/db"
 	"github.com/iotexproject/iotex-election/types"
 	"github.com/iotexproject/iotex-election/util"
-
 )
 
 const (
-	//ResultNS is the bucket name for election Result 
-	ResultNS = "ElectionResultNS"
+	// PollNamespace is the bucket name for election Result
+	PollNamespace = "Poll"
 
-	//TimeNS is the bucket name for elction Time 
-	TimeNS = "ElectionBlkTimeNS"
-	
-	//VoteNS is the bucket name for Vote
-	VoteNS = "VoteNS"
+	// BlockTimeNamespace is the bucket name for election Time
+	BlockTimeNamespace = "BlockTime"
 
-	//CandidateNS is the bucket name for Candidate
-	CandidateNS = "CandidateNS"
+	// BucketNamespace is the bucket name for Bucket
+	BucketNamespace = "Bucket"
+
+	// RegistrationNamespace is the bucket name for Registration
+	RegistrationNamespace = "Registration"
 )
 
 // CalcGravityChainHeight calculates the corresponding gravity chain height for an epoch
@@ -79,48 +78,56 @@ const (
 	INACTIVE
 )
 
-// Committee defines an interface of an election committee
-// It could be considered as a light state db of gravity chain, that
-type Committee interface {
-	// Start starts the committee service
-	Start(context.Context) error
-	// Stop stops the committee service
-	Stop(context.Context) error
-	// ResultByHeight returns the result on a specific ethereum height
-	ResultByHeight(height uint64) (*types.ElectionResult, error)
-	// FetchResultByHeight returns the votes
-	FetchResultByHeight(height uint64) (*types.ElectionResult, error)
-	// HeightByTime returns the nearest result before time
-	HeightByTime(timestamp time.Time) (uint64, error)
-	// LatestHeight returns the height with latest result
-	LatestHeight() uint64
-	// Status returns the committee status
-	Status() STATUS
-}
+type (
+	// Committee defines an interface of an election committee
+	// It could be considered as a light state db of gravity chain, that
+	Committee interface {
+		// Start starts the committee service
+		Start(context.Context) error
+		// Stop stops the committee service
+		Stop(context.Context) error
+		// ResultByHeight returns the result on a specific ethereum height
+		ResultByHeight(height uint64) (*types.ElectionResult, error)
+		// FetchResultByHeight returns the votes
+		FetchResultByHeight(height uint64) (*types.ElectionResult, error)
+		// HeightByTime returns the nearest result before time
+		HeightByTime(timestamp time.Time) (uint64, error)
+		// LatestHeight returns the height with latest result
+		LatestHeight() uint64
+		// Status returns the committee status
+		Status() STATUS
+	}
 
-type committee struct {
-	db  				  db.KVStoreWithNamespace
-	carrier               carrier.Carrier
-	retryLimit            uint8
-	paginationSize        uint8
-	fetchInParallel       uint8
-	skipManifiedCandidate bool
-	voteThreshold         *big.Int
-	scoreThreshold        *big.Int
-	selfStakingThreshold  *big.Int
-	interval              uint64
+	committee struct {
+		db                    db.KVStoreWithNamespace
+		carrier               carrier.Carrier
+		retryLimit            uint8
+		paginationSize        uint8
+		fetchInParallel       uint8
+		skipManifiedCandidate bool
+		voteThreshold         *big.Int
+		scoreThreshold        *big.Int
+		selfStakingThreshold  *big.Int
+		interval              uint64
 
-	cache         *resultCache
-	heightManager *heightManager
+		cache         *resultCache
+		heightManager *heightManager
 
-	startHeight           uint64
-	nextHeight            uint64
-	currentHeight         uint64
-	lastUpdateTimestamp   int64
-	terminate             chan bool
-	mutex                 sync.RWMutex
-	gravityChainBatchSize uint64
-}
+		startHeight           uint64
+		nextHeight            uint64
+		currentHeight         uint64
+		lastUpdateTimestamp   int64
+		terminate             chan bool
+		mutex                 sync.RWMutex
+		gravityChainBatchSize uint64
+	}
+
+	rawData struct {
+		mintTime   time.Time
+		candidates [][]byte
+		buckets    [][]byte
+	}
+)
 
 // NewCommittee creates a committee
 func NewCommittee(db db.KVStoreWithNamespace, cfg Config) (Committee, error) {
@@ -161,7 +168,7 @@ func NewCommittee(db db.KVStoreWithNamespace, cfg Config) (Committee, error) {
 		gravityChainBatchSize = cfg.GravityChainBatchSize
 	}
 	return &committee{
-		db: 				   db,
+		db:                    db,
 		cache:                 newResultCache(cfg.CacheSize),
 		heightManager:         newHeightManager(),
 		carrier:               carrier,
@@ -186,7 +193,7 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 	defer ec.mutex.Unlock()
 	if err := ec.db.Start(ctx); err != nil {
 		return errors.Wrap(err, "error when starting db")
-	}	
+	}
 	if startHeight, err := ec.getTimeDB(db.NextHeightKey); err == nil {
 		zap.L().Info("restoring from db")
 		ec.nextHeight = util.BytesToUint64(startHeight)
@@ -195,12 +202,12 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 			heightKey := ec.dbKey(height)
 			data, err := ec.getTimeDB(heightKey)
 			if err != nil {
-				return err 
+				return err
 			}
-			time, err := util.BytesToTime(data) 
+			time, err := util.BytesToTime(data)
 			if err != nil {
-				return err 
-			}	
+				return err
+			}
 			if err := ec.heightManager.add(height, time); err != nil {
 				return err
 			}
@@ -218,35 +225,23 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 		gap := ec.interval * ec.gravityChainBatchSize
 		for h := ec.nextHeight + gap; h < tip.Height; h += gap {
 			zap.L().Info("catching up to", zap.Uint64("height", h))
-			results, errs := ec.fetchInBatch(h)
+			data, err := ec.fetchInBatch(h)
+			if err != nil {
+				zap.L().Error("failed to fetch data", zap.Error(err))
+			}
 			t, err := ec.carrier.BlockTimestamp(h)
 			if err != nil {
 				zap.L().Error("failed to get block timestamp", zap.Uint64("height", h), zap.Error(err))
 			}
-			if err := ec.storeInBatch(results, errs, t); err != nil {
+			if err := ec.storeInBatch(data, t); err != nil {
 				zap.L().Error("failed to catch up via network", zap.Uint64("height", h), zap.Error(err))
 			}
-			/*
-			//for testing 
-			height := ec.nextHeight - ec.interval
-			precalculated, err := ec.FetchResultByHeight(height)
-			if err != nil {
-				zap.L().Error("failed to fetch result by height", zap.Uint64("height", height), zap.Error(err))
-			}
-			aftercalculated, err := ec.ResultByHeight(height)
-			if err != nil {
-				zap.L().Error("failed to get result by height(DB)", zap.Uint64("height", height), zap.Error(err))
-			}
-			if !aftercalculated.Equal(precalculated) {
-				zap.L().Error("The result is different")
-			}else {
-				zap.L().Info("The result is same")
-			}
-			*/
-
 		}
-		results, errs := ec.fetchInBatch(tip.Height)
-		if err := ec.storeInBatch(results, errs, tip.BlockTime); err != nil {
+		data, err := ec.fetchInBatch(tip.Height)
+		if err != nil {
+			zap.L().Error("failed to fetch data", zap.Error(err))
+		}
+		if err := ec.storeInBatch(data, tip.BlockTime); err != nil {
 			zap.L().Error("failed to catch up via network", zap.Error(err))
 		}
 		zap.L().Info("subscribing to new block")
@@ -291,25 +286,24 @@ func (ec *committee) Status() STATUS {
 }
 
 func (ec *committee) Sync(tipHeight uint64, tipTime time.Time) error {
-	results, errs := ec.fetchInBatch(tipHeight)
+	data, err := ec.fetchInBatch(tipHeight)
+	if err != nil {
+		return err
+	}
 	ec.mutex.Lock()
 	defer ec.mutex.Unlock()
 
-	return ec.storeInBatch(results, errs, tipTime)
+	return ec.storeInBatch(data, tipTime)
 }
 
-func (ec *committee) fetchInBatch(tipHeight uint64) (
-	map[uint64]*types.ElectionResultMeta,
-	map[uint64]error,
-) {
+func (ec *committee) fetchInBatch(tipHeight uint64) (retval map[uint64]*rawData, err error) {
 	if ec.currentHeight < tipHeight {
 		ec.currentHeight = tipHeight
 	}
+	retval = map[uint64]*rawData{}
 	var wg sync.WaitGroup
 	var lock sync.RWMutex
 	limiter := make(chan bool, ec.fetchInParallel)
-	results := map[uint64]*types.ElectionResultMeta{}
-	errs := map[uint64]error{}
 	for nextHeight := ec.nextHeight; nextHeight <= ec.currentHeight-12; nextHeight += ec.interval {
 		wg.Add(1)
 		go func(height uint64) {
@@ -318,42 +312,33 @@ func (ec *committee) fetchInBatch(tipHeight uint64) (
 				wg.Done()
 			}()
 			limiter <- true
-			r, e := ec.retryFetchResultByHeight(height)
+			data, e := ec.retryFetchDataByHeight(height)
 			lock.Lock()
 			defer lock.Unlock()
-			results[height] = r
-			errs[height] = e
+			retval[height] = data
+			if e != nil {
+				err = e
+			}
 		}(nextHeight)
 	}
 	wg.Wait()
 
-	return results, errs
+	return
 }
 
 func (ec *committee) storeInBatch(
-	results map[uint64]*types.ElectionResultMeta,
-	errs map[uint64]error,
+	data map[uint64]*rawData,
 	tipTime time.Time,
 ) error {
 	var heights []uint64
-	for height := range results {
+	for height := range data {
 		heights = append(heights, height)
 	}
 	sort.Slice(heights, func(i, j int) bool {
 		return heights[i] < heights[j]
 	})
 	for _, height := range heights {
-		result := results[height]
-		if err := errs[height]; err != nil {
-			return err
-		}
-		if err := ec.heightManager.validate(height, result.MintTime()); err != nil {
-			zap.L().Fatal(
-				"Unexpected status that the upcoming block height or time is invalid",
-				zap.Error(err),
-			)
-		}
-		if err := ec.storeResult(height, result); err != nil {
+		if err := ec.storeData(height, data[height]); err != nil {
 			return errors.Wrapf(err, "failed to store result of height %d", height)
 		}
 		ec.nextHeight = height + ec.interval
@@ -416,7 +401,7 @@ func (ec *committee) resultByHeight(height uint64) (*types.ElectionResult, error
 		return result, nil
 	}
 
-	// if cache doesn't have corresponding result, read the resultMeta from db 
+	// if cache doesn't have corresponding result, read the resultMeta from db
 	heightKey := ec.dbKey(height)
 	data, err := ec.getResultDB(heightKey)
 	if err != nil {
@@ -425,41 +410,43 @@ func (ec *committee) resultByHeight(height uint64) (*types.ElectionResult, error
 	if data == nil {
 		return nil, db.ErrNotExist
 	}
-	resultMeta := &types.ElectionResultMeta{}
-	resultMeta.Deserialize(data)
+	poll := &types.Poll{}
+	if err := poll.Deserialize(data); err != nil {
+		return nil, err
+	}
 
-	//calculate the result from resultMeta 
+	//calculate the result from resultMeta
 	calculator, err := ec.calculator(height)
 	if err != nil {
 		return nil, err
 	}
 
-	candidates, err := ec.getCandidatesByResult(resultMeta)
+	regs, err := ec.registrations(poll.Registrations())
 	if err != nil {
 		return nil, err
 	}
-	if err := calculator.AddCandidates(candidates); err != nil {
+	if err := calculator.AddRegistrations(regs); err != nil {
 		return nil, err
 	}
 
-	votes, err := ec.getVotesByResult(resultMeta)
+	buckets, err := ec.buckets(poll.Buckets())
 	if err != nil {
 		return nil, err
 	}
-	if err := calculator.AddVotes(votes); err != nil {
+	if err := calculator.AddBuckets(buckets); err != nil {
 		return nil, err
 	}
 
 	result, err = calculator.Calculate()
 	if err != nil {
-		return nil, err 
+		return nil, err
 	}
-
 	ec.cache.insert(height, result)
+
 	return result, nil
 }
 
-func (ec *committee) calcWeightedVotes(v *types.Vote, now time.Time) *big.Int {
+func (ec *committee) calcWeightedVotes(v *types.Bucket, now time.Time) *big.Int {
 	if now.Before(v.StartTime()) {
 		return big.NewInt(0)
 	}
@@ -474,13 +461,13 @@ func (ec *committee) calcWeightedVotes(v *types.Vote, now time.Time) *big.Int {
 	return weightedAmount
 }
 
-func (ec *committee) fetchVotesByHeight(height uint64) ([]*types.Vote, error) {
-	var allVotes []*types.Vote
+func (ec *committee) fetchBucketsByHeight(height uint64) ([]*types.Bucket, error) {
+	var allVotes []*types.Bucket
 	previousIndex := big.NewInt(0)
 	for {
-		var votes []*types.Vote
+		var votes []*types.Bucket
 		var err error
-		if previousIndex, votes, err = ec.carrier.Votes(
+		if previousIndex, votes, err = ec.carrier.Buckets(
 			height,
 			previousIndex,
 			ec.paginationSize,
@@ -495,9 +482,11 @@ func (ec *committee) fetchVotesByHeight(height uint64) ([]*types.Vote, error) {
 	zap.L().Info("fetch votes by height from ethereum", zap.Int("number of votes", len(allVotes)))
 	return allVotes, nil
 }
-func (ec *committee) voteFilter(v *types.Vote) bool {
+
+func (ec *committee) bucketFilter(v *types.Bucket) bool {
 	return ec.voteThreshold.Cmp(v.Amount()) > 0
 }
+
 func (ec *committee) candidateFilter(c *types.Candidate) bool {
 	return ec.selfStakingThreshold.Cmp(c.SelfStakingTokens()) > 0 ||
 		ec.scoreThreshold.Cmp(c.Score()) > 0
@@ -512,31 +501,31 @@ func (ec *committee) getMintTimeByHeight(height uint64) (time.Time, error) {
 		return mintTime, db.ErrNotExist
 	default:
 		return mintTime, err
-	}	
+	}
 	return mintTime, nil
 }
 
 func (ec *committee) calculator(height uint64) (*types.ResultCalculator, error) {
 	timestamp, err := ec.getMintTimeByHeight(height)
 	if err != nil {
-		return nil, err 
+		return nil, err
 	}
 	return types.NewResultCalculator(
 		timestamp,
 		ec.skipManifiedCandidate,
-		ec.voteFilter,
+		ec.bucketFilter,
 		ec.calcWeightedVotes,
 		ec.candidateFilter,
 	), nil
 }
 
-func (ec *committee) fetchCandidatesByHeight(height uint64) ([]*types.Candidate, error) {
-	var allCandidates []*types.Candidate
+func (ec *committee) fetchRegistrationsByHeight(height uint64) ([]*types.Registration, error) {
+	var allCandidates []*types.Registration
 	previousIndex := big.NewInt(1)
 	for {
-		var candidates []*types.Candidate
+		var candidates []*types.Registration
 		var err error
-		if previousIndex, candidates, err = ec.carrier.Candidates(
+		if previousIndex, candidates, err = ec.carrier.Registrations(
 			height,
 			previousIndex,
 			ec.paginationSize,
@@ -569,113 +558,116 @@ func (ec *committee) fetchResultByHeight(height uint64) (*types.ElectionResult, 
 	if err != nil {
 		return nil, err
 	}
-	candidates, err := ec.fetchCandidatesByHeight(height)
+	candidates, err := ec.fetchRegistrationsByHeight(height)
 	if err != nil {
 		return nil, err
 	}
-	if err := calculator.AddCandidates(candidates); err != nil {
+	if err := calculator.AddRegistrations(candidates); err != nil {
 		return nil, err
 	}
-	votes, err := ec.fetchVotesByHeight(height)
+	votes, err := ec.fetchBucketsByHeight(height)
 	if err != nil {
 		return nil, err
 	}
-	if err := calculator.AddVotes(votes); err != nil {
+	if err := calculator.AddBuckets(votes); err != nil {
 		return nil, err
 	}
 
 	return calculator.Calculate()
 }
 
-func (ec *committee) fetchResultMetaByHeight(height uint64) (*types.ElectionResultMeta, error) {
-	zap.L().Info("fetch resultMeta from ethereum", zap.Uint64("height", height))
-	timestamp, err := ec.getMintTimeByHeight(height)
-	if err != nil {
-		return nil, err 
-	}
-	candidates, err := ec.fetchCandidatesByHeight(height)
+func (ec *committee) fetchDataByHeight(height uint64) (*rawData, error) {
+	zap.L().Info("fetch from ethereum", zap.Uint64("height", height))
+	regs, err := ec.fetchRegistrationsByHeight(height)
 	if err != nil {
 		return nil, err
 	}
-	//store candidates into DB 
-	candidatesH, err := ec.storeCandidates(candidates)
+	rhs, err := ec.storeRegistrations(regs)
 	if err != nil {
 		return nil, err
 	}
-	votes, err := ec.fetchVotesByHeight(height)
+	buckets, err := ec.fetchBucketsByHeight(height)
 	if err != nil {
 		return nil, err
 	}
-	//store votes into DB 
-	votesH, err := ec.storeVotes(votes)
+	bhs, err := ec.storeBuckets(buckets)
 	if err != nil {
 		return nil, err
 	}
-	return types.NewElectionResultMeta(timestamp, candidatesH, votesH), nil
-} 
+	mintTime, err := ec.getMintTimeByHeight(height)
+	if err != nil {
+		return nil, err
+	}
 
+	return &rawData{mintTime, rhs, bhs}, nil
+}
 
 func (ec *committee) dbKey(height uint64) []byte {
-	return util.Uint64ToBytes(height) 
+	return util.Uint64ToBytes(height)
 }
 
 func (ec *committee) getTimeDB(key []byte) ([]byte, error) {
-	return ec.db.Get(TimeNS, key)
+	return ec.db.Get(BlockTimeNamespace, key)
 }
 
 func (ec *committee) putTimeDB(key []byte, value []byte) error {
-	return ec.db.Put(TimeNS, key, value)
+	return ec.db.Put(BlockTimeNamespace, key, value)
 }
 
 func (ec *committee) getResultDB(key []byte) ([]byte, error) {
-	return ec.db.Get(ResultNS, key)
+	return ec.db.Get(PollNamespace, key)
 }
 
 func (ec *committee) putResultDB(key []byte, value []byte) error {
-	return ec.db.Put(ResultNS, key, value)
+	return ec.db.Put(PollNamespace, key, value)
 }
 
 func (ec *committee) getVoteDB(key []byte) ([]byte, error) {
-	return ec.db.Get(VoteNS, key)
+	return ec.db.Get(BucketNamespace, key)
 }
 
 func (ec *committee) putVoteDB(key []byte, value []byte) error {
-	return ec.db.Put(VoteNS, key, value)
+	return ec.db.Put(BucketNamespace, key, value)
 }
 
 func (ec *committee) getCandidateDB(key []byte) ([]byte, error) {
-	return ec.db.Get(CandidateNS, key)
+	return ec.db.Get(RegistrationNamespace, key)
 }
 
 func (ec *committee) putCandidateDB(key []byte, value []byte) error {
-	return ec.db.Put(CandidateNS, key, value)
+	return ec.db.Put(RegistrationNamespace, key, value)
 }
 
-func (ec *committee) storeResult(height uint64, result *types.ElectionResultMeta) error {
-	batchForResult := db.NewBatch()
-	data, err := result.Serialize()
+func (ec *committee) storeData(height uint64, data *rawData) error {
+	if err := ec.heightManager.validate(height, data.mintTime); err != nil {
+		zap.L().Fatal(
+			"Unexpected status that the upcoming block height or time is invalid",
+			zap.Error(err),
+		)
+	}
+	ser, err := types.NewPoll(data.buckets, data.candidates).Serialize()
+	if err != nil {
+		return err
+	}
+	timeData, err := util.TimeToBytes(data.mintTime)
 	if err != nil {
 		return err
 	}
 	heightKey := ec.dbKey(height)
-	batchForResult.Put(ResultNS,heightKey, data, "failed to put election result into db")
-
-	timeData, err := util.TimeToBytes(result.MintTime())
-	if err != nil {
-		return err
-	}
-	batchForResult.Put(TimeNS, heightKey, timeData, "failed to put election time into db")
-	batchForResult.Put(TimeNS, db.NextHeightKey, util.Uint64ToBytes(height + ec.interval), "failed to put next height into db")
+	batchForResult := db.NewBatch()
+	batchForResult.Put(PollNamespace, heightKey, ser, "failed to put election result into db")
+	batchForResult.Put(BlockTimeNamespace, heightKey, timeData, "failed to put election time into db")
+	batchForResult.Put(BlockTimeNamespace, db.NextHeightKey, util.Uint64ToBytes(height+ec.interval), "failed to put next height into db")
 	if err := ec.db.Commit(batchForResult); err != nil {
 		return err
 	}
-	return ec.heightManager.add(height, result.MintTime())
+	return ec.heightManager.add(height, data.mintTime)
 }
 
-func (ec *committee) storeVotes(votes []*types.Vote) ([][]byte, error) {
+func (ec *committee) storeBuckets(buckets []*types.Bucket) ([][]byte, error) {
 	batchForVote := db.NewBatch()
-	hashes := make([][]byte, len(votes))
-	for i, v := range votes {
+	hashes := make([][]byte, len(buckets))
+	for i, v := range buckets {
 		data, err := v.Serialize()
 		if err != nil {
 			return nil, err
@@ -683,20 +675,19 @@ func (ec *committee) storeVotes(votes []*types.Vote) ([][]byte, error) {
 		hashval := sha256.Sum256(data)
 		hashbytes := hashval[:]
 
-		if _, err := ec.getVoteDB(hashbytes); err != nil { 
+		if _, err := ec.getVoteDB(hashbytes); err != nil {
 			//zap.L().Info("put vote into DB", zap.Int("index", i))
-			batchForVote.Put(VoteNS, hashbytes, data, "Failed to put a vote into DB")
+			batchForVote.Put(BucketNamespace, hashbytes, data, "Failed to put a vote into DB")
 		}
 		hashes[i] = hashbytes
 	}
 	return hashes, ec.db.Commit(batchForVote)
 }
 
-
-func (ec *committee) storeCandidates(candidates []*types.Candidate)([][]byte, error) {
+func (ec *committee) storeRegistrations(registrations []*types.Registration) ([][]byte, error) {
 	batchForCandidate := db.NewBatch()
-	hashes := make([][]byte, len(candidates))
-	for i, c := range candidates {
+	hashes := make([][]byte, len(registrations))
+	for i, c := range registrations {
 		data, err := c.Serialize()
 		if err != nil {
 			return nil, err
@@ -705,16 +696,16 @@ func (ec *committee) storeCandidates(candidates []*types.Candidate)([][]byte, er
 		hashbytes := hashval[:]
 		if _, err := ec.getCandidateDB(hashbytes); err != nil {
 			//zap.L().Info("put Candidates into DB", zap.Int("index", i))
-			batchForCandidate.Put(CandidateNS, hashbytes, data, "Failed to put a candidate into DB")
+			batchForCandidate.Put(RegistrationNamespace, hashbytes, data, "Failed to put a candidate into DB")
 		}
 		hashes[i] = hashbytes
 	}
 	return hashes, ec.db.Commit(batchForCandidate)
 }
 
-func (ec *committee) getVotesByResult(result *types.ElectionResultMeta) ([]*types.Vote, error) {
-	var votes []*types.Vote
-	for _, hash := range result.Votes() {
+func (ec *committee) buckets(keys [][]byte) ([]*types.Bucket, error) {
+	var votes []*types.Bucket
+	for _, hash := range keys {
 		if len(hash) != 32 {
 			zap.L().Error("The length of the hash value should be 32")
 		}
@@ -722,18 +713,18 @@ func (ec *committee) getVotesByResult(result *types.ElectionResultMeta) ([]*type
 		if err != nil {
 			return nil, err
 		}
-		vote := &types.Vote{}
+		vote := &types.Bucket{}
 		if err := vote.Deserialize(data); err != nil {
 			return nil, err
 		}
 		votes = append(votes, vote)
 	}
-	return votes, nil 
+	return votes, nil
 }
 
-func (ec * committee) getCandidatesByResult(result *types.ElectionResultMeta) ([]*types.Candidate, error) {
-	var cands []*types.Candidate	
-	for _, hash := range result.Candidates() {
+func (ec *committee) registrations(keys [][]byte) ([]*types.Registration, error) {
+	var cands []*types.Registration
+	for _, hash := range keys {
 		if len(hash) != 32 {
 			zap.L().Error("The length of the hash value should be 32")
 		}
@@ -741,21 +732,19 @@ func (ec * committee) getCandidatesByResult(result *types.ElectionResultMeta) ([
 		if err != nil {
 			return nil, err
 		}
-		cand := &types.Candidate{}
+		cand := &types.Registration{}
 		if err := cand.Deserialize(data); err != nil {
 			return nil, err
 		}
 		cands = append(cands, cand)
 	}
-	return cands, nil 
+	return cands, nil
 }
 
-func (ec *committee) retryFetchResultByHeight(height uint64) (*types.ElectionResultMeta, error) {
-	var result *types.ElectionResultMeta
-	var err error
+func (ec *committee) retryFetchDataByHeight(height uint64) (data *rawData, err error) {
 	for i := uint8(0); i < ec.retryLimit; i++ {
-		if result, err = ec.fetchResultMetaByHeight(height); err == nil {
-			return result, nil
+		if data, err = ec.fetchDataByHeight(height); err == nil {
+			break
 		}
 		zap.L().Error(
 			"failed to fetch result by height",
@@ -764,5 +753,5 @@ func (ec *committee) retryFetchResultByHeight(height uint64) (*types.ElectionRes
 			zap.Uint8("tried", i+1),
 		)
 	}
-	return result, err
+	return
 }

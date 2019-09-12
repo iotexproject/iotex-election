@@ -16,17 +16,17 @@ package election;
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 
-
-message VoteCore {
-	bytes voter = 1;
-	bytes candidate = 2;
-	bytes amount = 3;
-    google.protobuf.Timestamp startTime = 4;
-	google.protobuf.Duration duration = 5;
-	bool decay = 6;
+message Bucket {
+	uint64 index = 1;
+	bytes voter = 2;
+	bytes candidate = 3;
+	bytes amount = 4;
+    google.protobuf.Timestamp startTime = 5;
+	google.protobuf.Duration duration = 6;
+	bool decay = 7;
 }
 
-message CandidateCore {
+message Registration {
 	bytes name = 1;
 	bytes address = 2;
 	bytes operatorAddress = 3;
@@ -34,8 +34,7 @@ message CandidateCore {
 	uint64 selfStakingWeight = 5;
 }
 
-message ElectionResultMeta {
-	google.protobuf.Timestamp timestamp = 1;
-	repeated bytes candidatesKey = 2;
-	repeated bytes votesKey = 3;
+message Poll {
+	repeated bytes registrations = 1;
+	repeated bytes buckets = 2;
 }

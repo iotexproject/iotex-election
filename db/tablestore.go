@@ -15,21 +15,21 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-type tableDB struct {
+type TableDB struct {
 	db 			*sql.DB 
 	path 		string
 }
 
 
 // NewTableStore creates a new tablestore
-func NewTableDB(cfg Config) *tableDB {
-	return &tableDB{
+func NewTableDB(cfg Config) *TableDB {
+	return &TableDB{
 		path:       cfg.DBPath,
 	}
 }
 
 // Start starts the tableDB 
-func (t *tableDB) Start() error {
+func (t *TableDB) Start() error {
  	db, err := sql.Open("sqlite3", t.path)
  	if err != nil {
 		return err
@@ -39,7 +39,7 @@ func (t *tableDB) Start() error {
 }
 
 // InitializeTable initializes the tableDB 
-func (t *tableDB) InitializeTable () error {
+func (t *TableDB) InitializeTable () error {
 	if err := t.NewBucketTable(); err != nil {
 		return err 
 	}
@@ -58,41 +58,57 @@ func (t *tableDB) InitializeTable () error {
 	if err := t.NewNextHeightTable(); err != nil {
 		return err
 	}
+	if err := t.NewIdenticalBucketTable(); err != nil {
+		return err
+	}
+	if err := t.NewIdenticalRegTable(); err != nil {
+		return err
+	}
 	return	nil 
 }
 
 //NewBucketTable creates buckets table
-func (t *tableDB) NewBucketTable() error {
+func (t *TableDB) NewBucketTable() error {
 	_, err := t.db.Exec("CREATE TABLE IF NOT EXISTS buckets (id INTEGER PRIMARY KEY AUTOINCREMENT, hash BLOB, startTime TIMESTAMP, duration TEXT, amount BLOB, decay INTEGER, voter BLOB, candidate BLOB, bucketIndex BLOB)")
 	return err
 }
 //NewRegistrationTable creates registrations table 
-func (t *tableDB) NewRegistrationTable() error {
+func (t *TableDB) NewRegistrationTable() error {
 	_, err := t.db.Exec("CREATE TABLE IF NOT EXISTS registrations (id INTEGER PRIMARY KEY AUTOINCREMENT, hash BLOB, name BLOB, address BLOB, operatorAddress BLOB, rewardAddress BLOB, selfStakingWeight INTEGER)")
 	return err
 }
 //NewHeightToRegTable creates heightToReg table
-func (t *tableDB) NewHeightToRegTable() error {
+func (t *TableDB) NewHeightToRegTable() error {
 	_, err := t.db.Exec("CREATE TABLE IF NOT EXISTS heightToReg (height INTEGER, index INTEGER REFERENCES registrations(id), CONSTRAINT key PRIMARY KEY (height, index))")
 	return err
 }
 //NewHeightToBucketTable creates heightToBucket table
-func (t *tableDB) NewHeightToBucketTable() error {
+func (t *TableDB) NewHeightToBucketTable() error {
 	_, err := t.db.Exec("CREATE TABLE IF NOT EXISTS heightToBucket (id INTEGER PRIMARY KEY AUTOINCREMENT, height INTEGER, index INTEGER REFERENCES buckets(id), CONSTRAINT key PRIMARY KEY (height, index))")
 	return err
 }
 //NewHeightToTimeTable creates heightToTime table
-func (t *tableDB) NewHeightToTimeTable() error {
+func (t *TableDB) NewHeightToTimeTable() error {
 	_, err := t.db.Exec("CREATE TABLE IF NOT EXISTS heightToTime (height INTEGER PRIMARY KEY, time TIMESTAMP)")
 	return err
 }
 //NewNextHeightTable creates nextHeight table
-func (t *tableDB) NewNextHeightTable() error {
+func (t *TableDB) NewNextHeightTable() error {
 	_, err := t.db.Exec("CREATE TABLE IF NOT EXISTS nextHeight (key INTEGER PRIMARY KEY, height integer)")
+	return err
+}
+//NewIdenticalBucketTable creates identicalbucket table 
+func (t *TableDB) NewIdenticalBucketTable() error {
+	_, err := t.db.Exec("CREATE TABLE IF NOT EXISTS identicalBucket (height INTEGER PRIMARY KEY, identicalheight INTEGER)")
+	return err
+}
+//NewIdenticalRegTable creates identicalReg table
+func (t *TableDB) NewIdenticalRegTable() error {
+	_, err := t.db.Exec("CREATE TABLE IF NOT EXISTS identicalReg (height INTEGER PRIMARY KEY, identicalheight INTEGER)")
 	return err
 }
 
 //Stop closes the tableDB
-func (t *tableDB) Stop() error {
+func (t *TableDB) Stop() error {
 	return t.db.Close()
 }

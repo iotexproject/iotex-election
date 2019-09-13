@@ -60,7 +60,7 @@ func (t *tableDB) InitializeTable () error {
 
 //NewBucketTable creates buckets table
 func (t *tableDB) NewBucketTable() error {
-	_, err := t.db.Exec("CREATE TABLE IF NOT EXISTS buckets (id INTEGER PRIMARY KEY AUTOINCREMENT, hash BLOB, startTime BLOB, duration TEXT, amount BLOB, decay INTEGER, voter BLOB, candidate BLOB, bucketIndex BLOB)")
+	_, err := t.db.Exec("CREATE TABLE IF NOT EXISTS buckets (id INTEGER PRIMARY KEY AUTOINCREMENT, hash BLOB, startTime TIMESTAMP, duration TEXT, amount BLOB, decay INTEGER, voter BLOB, candidate BLOB, bucketIndex BLOB)")
 	return err
 }
 //NewRegistrationTable creates registrations table 
@@ -70,17 +70,17 @@ func (t *tableDB) NewRegistrationTable() error {
 }
 //NewHeightToRegTable creates heightToReg table
 func (t *tableDB) NewHeightToRegTable() error {
-	_, err := t.db.Exec("CREATE TABLE IF NOT EXISTS heightToReg (height BLOB, index INTEGER)")
+	_, err := t.db.Exec("CREATE TABLE IF NOT EXISTS heightToReg (id INTEGER PRIMARY KEY AUTOINCREMENT, height INTEGER, index INTEGER)")
 	return err
 }
 //NewHeightToBucketTable creates heightToBucket table
 func (t *tableDB) NewHeightToBucketTable() error {
-	_, err := t.db.Exec("CREATE TABLE IF NOT EXISTS heightToBucket (height BLOB, index INTEGER)")
+	_, err := t.db.Exec("CREATE TABLE IF NOT EXISTS heightToBucket (id INTEGER PRIMARY KEY AUTOINCREMENT, height INTEGER, index INTEGER)")
 	return err
 }
 //NewHeightToTimeTable creates heightToTime table
 func (t *tableDB) NewHeightToTimeTable() error {
-	_, err := t.db.Exec("CREATE TABLE IF NOT EXISTS heightToTime (height BLOB, time BLOB)")
+	_, err := t.db.Exec("CREATE TABLE IF NOT EXISTS heightToTime (height INTEGER PRIMARY KEY, time TIMESTAMP)")
 	return err
 }
 

@@ -83,6 +83,8 @@ func toIoAddress(addr common.Address) (address.Address, error) {
 func NewVoteSync(cfg Config) (*VoteSync, error) {
 	ctx := context.Background()
 	carrier, err := carrier.NewEthereumVoteCarrier(
+		12,
+		5*time.Minute,
 		cfg.GravityChainAPIs,
 		common.HexToAddress(cfg.RegisterContractAddress),
 		common.HexToAddress(cfg.StakingContractAddress),
@@ -239,7 +241,7 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 }
 
 func (vc *VoteSync) Start(ctx context.Context) {
-	tipChan := make(chan *carrier.TipInfo)
+	tipChan := make(chan uint64)
 	errChan := make(chan error)
 
 	zap.L().Info("Start VoteSync.",
@@ -255,8 +257,13 @@ func (vc *VoteSync) Start(ctx context.Context) {
 				vc.terminate <- true
 				return
 			case tip := <-tipChan:
-				if tip.BlockTime.After(vc.lastUpdateTimestamp.Add(vc.timeInternal)) {
-					if err := vc.sync(vc.lastViewHeight, tip.Height, vc.lastViewTimestamp, tip.BlockTime); err != nil {
+				blockTime, err := vc.carrier.BlockTimestamp(tip)
+				if err != nil {
+					zap.L().Error("failed to get block time", zap.Error(err))
+					continue
+				}
+				if blockTime.After(vc.lastUpdateTimestamp.Add(vc.timeInternal)) {
+					if err := vc.sync(vc.lastViewHeight, tip, vc.lastViewTimestamp, blockTime); err != nil {
 						zap.L().Error("failed to sync votes", zap.Error(err))
 						continue
 					}
@@ -265,7 +272,7 @@ func (vc *VoteSync) Start(ctx context.Context) {
 					}
 					vc.discordReminded = false
 				}
-				if tip.BlockTime.After(vc.lastUpdateTimestamp.Add(vc.timeInternal*24/25)) && !vc.discordReminded {
+				if blockTime.After(vc.lastUpdateTimestamp.Add(vc.timeInternal*24/25)) && !vc.discordReminded {
 					if err := vc.sendDiscordMsg(vc.discordReminder); err != nil {
 						zap.L().Error("failed to send discord reminder", zap.Error(err))
 					}

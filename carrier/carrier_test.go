@@ -71,7 +71,7 @@ func TestVoteCarrier(t *testing.T) {
 		require.Equal(int64(1548986420), ts.Unix())
 	})
 	t.Run("SubscribeNewBlock", func(t *testing.T) {
-		tipChan := make(chan *TipInfo)
+		tipChan := make(chan uint64)
 		reportChan := make(chan error)
 		unsubscribe := make(chan bool)
 		carrier.SubscribeNewBlock(tipChan, reportChan, unsubscribe)

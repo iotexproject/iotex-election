@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/iotexproject/iotex-election/carrier"
 	"github.com/iotexproject/iotex-election/types"
 	"github.com/stretchr/testify/require"
 )
@@ -59,13 +58,13 @@ func (*mockCarrier) BlockTimestamp(uint64) (time.Time, error) {
 	return time.Unix(1559240700, 0), nil
 }
 
-func (*mockCarrier) SubscribeNewBlock(chan *carrier.TipInfo, chan error, chan bool) {}
+func (*mockCarrier) SubscribeNewBlock(chan uint64, chan error, chan bool) {}
 
 func (*mockCarrier) HasStakingEvents(*big.Int, *big.Int) bool {
 	return true
 }
 
-func (*mockCarrier) Tip() (*carrier.TipInfo, error) { return &carrier.TipInfo{}, nil }
+func (*mockCarrier) Tip() (uint64, error) { return 0, nil }
 
 func (*mockCarrier) Registrations(uint64, *big.Int, uint8) (*big.Int, []*types.Registration, error) {
 	return nil, nil, nil

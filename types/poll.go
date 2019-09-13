@@ -23,8 +23,8 @@ var ErrInvalidProto = errors.New("Invalid election proto")
 
 // Poll defines the struct stores election result in db
 type Poll struct {
-	regs    [][]byte
 	buckets [][]byte
+	regs    [][]byte
 }
 
 // NewPoll creates a new electionresultMeta

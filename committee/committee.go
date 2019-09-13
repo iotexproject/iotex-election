@@ -88,7 +88,7 @@ type (
 		Stop(context.Context) error
 		// ResultByHeight returns the result on a specific ethereum height
 		ResultByHeight(height uint64) (*types.ElectionResult, error)
-		// FetchResultByHeight returns the votes
+		// FetchResultByHeight returns the buckets
 		FetchResultByHeight(height uint64) (*types.ElectionResult, error)
 		// HeightByTime returns the nearest result before time
 		HeightByTime(timestamp time.Time) (uint64, error)
@@ -123,9 +123,10 @@ type (
 	}
 
 	rawData struct {
-		mintTime   time.Time
-		candidates [][]byte
-		buckets    [][]byte
+		mintTime          time.Time
+		noNewStakingEvent bool
+		buckets           []*types.Bucket
+		registrations     []*types.Registration
 	}
 )
 
@@ -382,6 +383,21 @@ func (ec *committee) ResultByHeight(height uint64) (*types.ElectionResult, error
 	return ec.resultByHeight(height)
 }
 
+func (ec *committee) poll(height uint64) (*types.Poll, error) {
+	data, err := ec.db.Get(PollNamespace, ec.dbKey(height))
+	if err != nil {
+		return nil, err
+	}
+	if data == nil {
+		return nil, db.ErrNotExist
+	}
+	poll := &types.Poll{}
+	if err := poll.Deserialize(data); err != nil {
+		return nil, err
+	}
+	return poll, nil
+}
+
 func (ec *committee) resultByHeight(height uint64) (*types.ElectionResult, error) {
 	if height < ec.startHeight {
 		return nil, errors.Errorf(
@@ -402,16 +418,8 @@ func (ec *committee) resultByHeight(height uint64) (*types.ElectionResult, error
 	}
 
 	// if cache doesn't have corresponding result, read the resultMeta from db
-	heightKey := ec.dbKey(height)
-	data, err := ec.getResultDB(heightKey)
+	poll, err := ec.poll(height)
 	if err != nil {
-		return nil, err
-	}
-	if data == nil {
-		return nil, db.ErrNotExist
-	}
-	poll := &types.Poll{}
-	if err := poll.Deserialize(data); err != nil {
 		return nil, err
 	}
 
@@ -420,7 +428,6 @@ func (ec *committee) resultByHeight(height uint64) (*types.ElectionResult, error
 	if err != nil {
 		return nil, err
 	}
-
 	regs, err := ec.registrations(poll.Registrations())
 	if err != nil {
 		return nil, err
@@ -428,7 +435,6 @@ func (ec *committee) resultByHeight(height uint64) (*types.ElectionResult, error
 	if err := calculator.AddRegistrations(regs); err != nil {
 		return nil, err
 	}
-
 	buckets, err := ec.buckets(poll.Buckets())
 	if err != nil {
 		return nil, err
@@ -461,26 +467,37 @@ func (ec *committee) calcWeightedVotes(v *types.Bucket, now time.Time) *big.Int 
 	return weightedAmount
 }
 
-func (ec *committee) fetchBucketsByHeight(height uint64) ([]*types.Bucket, error) {
-	var allVotes []*types.Bucket
+func (ec *committee) fetchBucketsByHeight(height uint64, force bool) (bool, []*types.Bucket, error) {
+	if height > ec.interval && height != ec.startHeight && !force {
+		if !ec.carrier.HasStakingEvents(new(big.Int).SetUint64(height-ec.interval+1), new(big.Int).SetUint64(height)) {
+			return true, nil, nil
+		}
+	}
+	buckets, err := ec.fetchBucketsFromEthereum(height)
+
+	return false, buckets, err
+}
+
+func (ec *committee) fetchBucketsFromEthereum(height uint64) ([]*types.Bucket, error) {
+	var allBuckets []*types.Bucket
 	previousIndex := big.NewInt(0)
 	for {
-		var votes []*types.Bucket
+		var buckets []*types.Bucket
 		var err error
-		if previousIndex, votes, err = ec.carrier.Buckets(
+		if previousIndex, buckets, err = ec.carrier.Buckets(
 			height,
 			previousIndex,
 			ec.paginationSize,
 		); err != nil {
 			return nil, err
 		}
-		allVotes = append(allVotes, votes...)
-		if len(votes) < int(ec.paginationSize) {
+		allBuckets = append(allBuckets, buckets...)
+		if len(buckets) < int(ec.paginationSize) {
 			break
 		}
 	}
-	zap.L().Debug("fetch buckets by height from ethereum", zap.Int("number of buckets", len(allVotes)))
-	return allVotes, nil
+	zap.L().Debug("fetch buckets by height from ethereum", zap.Int("number of buckets", len(allBuckets)))
+	return allBuckets, nil
 }
 
 func (ec *committee) bucketFilter(v *types.Bucket) bool {
@@ -558,18 +575,18 @@ func (ec *committee) fetchResultByHeight(height uint64) (*types.ElectionResult, 
 	if err != nil {
 		return nil, err
 	}
-	candidates, err := ec.fetchRegistrationsByHeight(height)
+	regs, err := ec.fetchRegistrationsByHeight(height)
 	if err != nil {
 		return nil, err
 	}
-	if err := calculator.AddRegistrations(candidates); err != nil {
+	if err := calculator.AddRegistrations(regs); err != nil {
 		return nil, err
 	}
-	votes, err := ec.fetchBucketsByHeight(height)
+	_, buckets, err := ec.fetchBucketsByHeight(height, true)
 	if err != nil {
 		return nil, err
 	}
-	if err := calculator.AddBuckets(votes); err != nil {
+	if err := calculator.AddBuckets(buckets); err != nil {
 		return nil, err
 	}
 
@@ -582,15 +599,7 @@ func (ec *committee) fetchDataByHeight(height uint64) (*rawData, error) {
 	if err != nil {
 		return nil, err
 	}
-	rhs, err := ec.storeRegistrations(regs)
-	if err != nil {
-		return nil, err
-	}
-	buckets, err := ec.fetchBucketsByHeight(height)
-	if err != nil {
-		return nil, err
-	}
-	bhs, err := ec.storeBuckets(buckets)
+	noChange, buckets, err := ec.fetchBucketsByHeight(height, false)
 	if err != nil {
 		return nil, err
 	}
@@ -599,7 +608,12 @@ func (ec *committee) fetchDataByHeight(height uint64) (*rawData, error) {
 		return nil, err
 	}
 
-	return &rawData{mintTime, rhs, bhs}, nil
+	return &rawData{
+		mintTime:          mintTime,
+		noNewStakingEvent: noChange,
+		registrations:     regs,
+		buckets:           buckets,
+	}, nil
 }
 
 func (ec *committee) dbKey(height uint64) []byte {
@@ -612,10 +626,6 @@ func (ec *committee) getTimeDB(key []byte) ([]byte, error) {
 
 func (ec *committee) putTimeDB(key []byte, value []byte) error {
 	return ec.db.Put(BlockTimeNamespace, key, value)
-}
-
-func (ec *committee) getResultDB(key []byte) ([]byte, error) {
-	return ec.db.Get(PollNamespace, key)
 }
 
 func (ec *committee) getVoteDB(key []byte) ([]byte, error) {
@@ -633,7 +643,37 @@ func (ec *committee) storeData(height uint64, data *rawData) error {
 			zap.Error(err),
 		)
 	}
-	ser, err := types.NewPoll(data.buckets, data.candidates).Serialize()
+	batch := db.NewBatch()
+	var bhs [][]byte
+	if data.noNewStakingEvent {
+		poll, err := ec.poll(height - ec.interval)
+		if err != nil {
+			return err
+		}
+		bhs = poll.Buckets()
+	} else {
+		bhs = make([][]byte, len(data.buckets))
+		for i, bucket := range data.buckets {
+			data, err := bucket.Serialize()
+			if err != nil {
+				return err
+			}
+			hash := sha256.Sum256(data)
+			batch.Put(BucketNamespace, hash[:], data, "Failed to put a candidate into DB")
+			bhs[i] = hash[:]
+		}
+	}
+	rhs := make([][]byte, len(data.registrations))
+	for i, reg := range data.registrations {
+		data, err := reg.Serialize()
+		if err != nil {
+			return err
+		}
+		hash := sha256.Sum256(data)
+		batch.Put(RegistrationNamespace, hash[:], data, "Failed to put a candidate into DB")
+		rhs[i] = hash[:]
+	}
+	ser, err := types.NewPoll(bhs, rhs).Serialize()
 	if err != nil {
 		return err
 	}
@@ -642,55 +682,17 @@ func (ec *committee) storeData(height uint64, data *rawData) error {
 		return err
 	}
 	heightKey := ec.dbKey(height)
-	batchForResult := db.NewBatch()
-	batchForResult.Put(PollNamespace, heightKey, ser, "failed to put election result into db")
-	batchForResult.Put(BlockTimeNamespace, heightKey, timeData, "failed to put election time into db")
-	batchForResult.Put(BlockTimeNamespace, db.NextHeightKey, util.Uint64ToBytes(height+ec.interval), "failed to put next height into db")
-	if err := ec.db.Commit(batchForResult); err != nil {
+	batch.Put(PollNamespace, heightKey, ser, "failed to put election result into db")
+	batch.Put(BlockTimeNamespace, heightKey, timeData, "failed to put election time into db")
+	batch.Put(BlockTimeNamespace, db.NextHeightKey, util.Uint64ToBytes(height+ec.interval), "failed to put next height into db")
+	if err := ec.db.Commit(batch); err != nil {
 		return err
 	}
 	return ec.heightManager.add(height, data.mintTime)
 }
 
-func (ec *committee) storeBuckets(buckets []*types.Bucket) ([][]byte, error) {
-	batchForVote := db.NewBatch()
-	hashes := make([][]byte, len(buckets))
-	for i, v := range buckets {
-		data, err := v.Serialize()
-		if err != nil {
-			return nil, err
-		}
-		hashval := sha256.Sum256(data)
-		hashbytes := hashval[:]
-
-		if _, err := ec.getVoteDB(hashbytes); err != nil {
-			batchForVote.Put(BucketNamespace, hashbytes, data, "Failed to put a vote into DB")
-		}
-		hashes[i] = hashbytes
-	}
-	return hashes, ec.db.Commit(batchForVote)
-}
-
-func (ec *committee) storeRegistrations(registrations []*types.Registration) ([][]byte, error) {
-	batchForCandidate := db.NewBatch()
-	hashes := make([][]byte, len(registrations))
-	for i, c := range registrations {
-		data, err := c.Serialize()
-		if err != nil {
-			return nil, err
-		}
-		hashval := sha256.Sum256(data)
-		hashbytes := hashval[:]
-		if _, err := ec.getCandidateDB(hashbytes); err != nil {
-			batchForCandidate.Put(RegistrationNamespace, hashbytes, data, "Failed to put a candidate into DB")
-		}
-		hashes[i] = hashbytes
-	}
-	return hashes, ec.db.Commit(batchForCandidate)
-}
-
 func (ec *committee) buckets(keys [][]byte) ([]*types.Bucket, error) {
-	var votes []*types.Bucket
+	var buckets []*types.Bucket
 	for _, hash := range keys {
 		if len(hash) != 32 {
 			zap.L().Error("The length of the hash value should be 32")
@@ -699,13 +701,13 @@ func (ec *committee) buckets(keys [][]byte) ([]*types.Bucket, error) {
 		if err != nil {
 			return nil, err
 		}
-		vote := &types.Bucket{}
-		if err := vote.Deserialize(data); err != nil {
+		bucket := &types.Bucket{}
+		if err := bucket.Deserialize(data); err != nil {
 			return nil, err
 		}
-		votes = append(votes, vote)
+		buckets = append(buckets, bucket)
 	}
-	return votes, nil
+	return buckets, nil
 }
 
 func (ec *committee) registrations(keys [][]byte) ([]*types.Registration, error) {

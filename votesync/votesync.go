@@ -416,7 +416,7 @@ func (vc *VoteSync) sync(prevHeight, currHeight uint64, prevTs, currTs time.Time
 func (vc *VoteSync) fetchVotesUpdate(prevHeight, currHeight uint64, prevTs, currTs time.Time) ([]*WeightedVote, error) {
 	// prevHeight == 0, only run at first 2 time. get all votes from currHeight
 	if prevHeight == 0 {
-		curr, err := vc.retryFetchResultByHeight(currHeight)
+		curr, err := vc.retryFetchBucketsByHeight(currHeight)
 		if err != nil {
 			return nil, err
 		}
@@ -429,11 +429,11 @@ func (vc *VoteSync) fetchVotesUpdate(prevHeight, currHeight uint64, prevTs, curr
 		return ret, nil
 	}
 
-	prev, err := vc.retryFetchResultByHeight(prevHeight)
+	prev, err := vc.retryFetchBucketsByHeight(prevHeight)
 	if err != nil {
 		return nil, err
 	}
-	curr, err := vc.retryFetchResultByHeight(currHeight)
+	curr, err := vc.retryFetchBucketsByHeight(currHeight)
 	if err != nil {
 		return nil, err
 	}
@@ -468,7 +468,7 @@ func (vc *VoteSync) fetchVotesUpdate(prevHeight, currHeight uint64, prevTs, curr
 	return ret, nil
 }
 
-func (vc *VoteSync) retryFetchResultByHeight(h uint64) ([]*types.Bucket, error) {
+func (vc *VoteSync) retryFetchBucketsByHeight(h uint64) ([]*types.Bucket, error) {
 	var (
 		ret []*types.Bucket
 		err error

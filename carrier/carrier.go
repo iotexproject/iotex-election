@@ -16,6 +16,7 @@ import (
 	"sync"
 	"time"
 
+	ethereum "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -38,6 +39,8 @@ type Carrier interface {
 	BlockTimestamp(uint64) (time.Time, error)
 	// SubscribeNewBlock callbacks on new block created
 	SubscribeNewBlock(chan *TipInfo, chan error, chan bool)
+	// HasStakingEvents returns true if there is any staking related events or error
+	HasStakingEvents(*big.Int, *big.Int) bool
 	// Tip returns the latest height and its timestamp
 	Tip() (*TipInfo, error)
 	// Registrations returns the candidate registrations on height
@@ -233,6 +236,31 @@ func (evc *ethereumCarrier) candidates(
 		err = errors.Wrap(err, "failed to get candidates")
 	}
 	return
+}
+
+func (evc *ethereumCarrier) HasStakingEvents(from *big.Int, to *big.Int) bool {
+	retval := true
+	if err := evc.ethClientPool.Execute(func(client *ethclient.Client) error {
+		logs, err := client.FilterLogs(context.Background(), ethereum.FilterQuery{
+			FromBlock: from,
+			ToBlock:   to,
+			Addresses: []common.Address{evc.stakingContractAddress},
+			Topics: [][]common.Hash{
+				[]common.Hash{
+					common.HexToHash("0xbecddf0f61f76a4ac94a507fbc32c036d2fb7c4b466cad82dd9a4a2d76b263fe"), // created
+					common.HexToHash("0x004bbbedd0138c223ffed73fdab05a22a5d22770de54bea694d06661d59d1600"), // updated
+					common.HexToHash("0xaa192dc938c20fb63756fbd8f4d9f46092c3252f772b2c549c4688c118b6b475"), // unstaked
+				},
+			},
+		})
+		if err == nil {
+			retval = len(logs) != 0
+		}
+		return err
+	}); err != nil {
+		return true
+	}
+	return retval
 }
 
 func (evc *ethereumCarrier) Registrations(

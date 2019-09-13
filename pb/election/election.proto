@@ -17,7 +17,7 @@ import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 
 message Bucket {
-	uint64 index = 1;
+	bytes index = 1;
 	bytes voter = 2;
 	bytes candidate = 3;
 	bytes amount = 4;

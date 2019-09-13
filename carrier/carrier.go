@@ -348,6 +348,7 @@ func (evc *ethereumCarrier) Buckets(
 			break
 		}
 		v, err := types.NewBucket(
+			index,
 			time.Unix(buckets.StakeStartTimes[i].Int64(), 0),
 			time.Duration(buckets.StakeDurations[i].Uint64()*24)*time.Hour,
 			buckets.StakedAmounts[i],

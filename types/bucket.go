@@ -24,6 +24,7 @@ import (
 
 // Bucket defines a bucket stored in staking contract
 type Bucket struct {
+	index     *big.Int
 	startTime time.Time
 	duration  time.Duration
 	amount    *big.Int
@@ -34,6 +35,7 @@ type Bucket struct {
 
 // NewBucket creates a new bucket
 func NewBucket(
+	index     *big.Int,
 	startTime time.Time,
 	duration time.Duration,
 	amount *big.Int,
@@ -53,6 +55,7 @@ func NewBucket(
 	copy(cCandidate, candidate)
 
 	return &Bucket{
+		index:	   index,
 		startTime: startTime,
 		duration:  duration,
 		amount:    new(big.Int).Set(amount),
@@ -65,6 +68,7 @@ func NewBucket(
 // Clone clones the vote
 func (bucket *Bucket) Clone() *Bucket {
 	return &Bucket{
+		bucket.Index(),
 		bucket.StartTime(),
 		bucket.Duration(),
 		bucket.Amount(),
@@ -72,6 +76,10 @@ func (bucket *Bucket) Clone() *Bucket {
 		bucket.Voter(),
 		bucket.Candidate(),
 	}
+}
+
+func (bucket *Bucket) Index() *big.Int {
+	return new(big.Int).Set(bucket.amount)
 }
 
 // StartTime returns the start time
@@ -132,6 +140,7 @@ func (bucket *Bucket) ToProtoMsg() (*pb.Bucket, error) {
 		return nil, err
 	}
 	return &pb.Bucket{
+		Index:	   bucket.index.Bytes(),
 		Voter:     bucket.Voter(),
 		Candidate: bucket.Candidate(),
 		Amount:    bucket.amount.Bytes(),
@@ -152,6 +161,7 @@ func (bucket *Bucket) Serialize() ([]byte, error) {
 
 // FromProtoMsg extracts vote details from protobuf message (voteCore)
 func (bucket *Bucket) FromProtoMsg(vPb *pb.Bucket) (err error) {
+	bucket.index = big.NewInt(0).SetBytes(vPb.Index)
 	voter := make([]byte, len(vPb.Voter))
 	copy(voter, vPb.Voter)
 	bucket.voter = voter
@@ -169,7 +179,6 @@ func (bucket *Bucket) FromProtoMsg(vPb *pb.Bucket) (err error) {
 		return errors.Errorf("duration %s cannot be negative", bucket.duration)
 	}
 	bucket.decay = vPb.Decay
-
 	return nil
 }
 
@@ -183,27 +192,30 @@ func (bucket *Bucket) Deserialize(data []byte) error {
 	return bucket.FromProtoMsg(vPb)
 }
 
-func (v *Bucket) equal(vote *Bucket) bool {
-	if v == vote {
+func (v *Bucket) equal(bucket *Bucket) bool {
+	if v == bucket {
 		return true
 	}
-	if v == nil || vote == nil {
+	if v == nil || bucket == nil {
 		return false
 	}
-	if !v.startTime.Equal(vote.startTime) {
+	if v.index.Cmp(bucket.index) != 0 {
 		return false
 	}
-	if v.duration != vote.duration {
+	if !v.startTime.Equal(bucket.startTime) {
 		return false
 	}
-	if v.amount.Cmp(vote.amount) != 0 {
+	if v.duration != bucket.duration {
 		return false
 	}
-	if !bytes.Equal(v.voter, vote.voter) {
+	if v.amount.Cmp(bucket.amount) != 0 {
 		return false
 	}
-	if !bytes.Equal(v.candidate, vote.candidate) {
+	if !bytes.Equal(v.voter, bucket.voter) {
 		return false
 	}
-	return v.decay == vote.decay
+	if !bytes.Equal(v.candidate, bucket.candidate) {
+		return false
+	}
+	return v.decay == bucket.decay
 }

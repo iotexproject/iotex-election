@@ -189,8 +189,8 @@ func (evc *ethereumCarrier) tip(lastHeight uint64) (tip uint64, err error) {
 	if err = evc.ethClientPool.Execute(func(client *ethclient.Client) error {
 		header, err := client.HeaderByNumber(context.Background(), nil)
 		if err == nil {
-			if header.Number.Uint64() > lastHeight+12 {
-				tip = header.Number.Uint64() - 12
+			if header.Number.Uint64() > lastHeight+evc.confirmHeight {
+				tip = header.Number.Uint64() - evc.confirmHeight
 				return nil
 			}
 			err = errors.Errorf(

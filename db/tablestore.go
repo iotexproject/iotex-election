@@ -12,11 +12,7 @@ package db
 
 import (
 	"database/sql"
-	//"crypto/sha256"
 	_ "github.com/mattn/go-sqlite3"
-
-	//"go.uber.org/zap"
-	//"github.com/iotexproject/iotex-election/types"
 )
 
 type tableDB struct {

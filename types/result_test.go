@@ -39,6 +39,7 @@ func TestPoll(t *testing.T) {
 		votes := []*Vote{}
 		for _, c := range candidates {
 			b1, err := NewBucket(
+				big.NewInt(int64(rand.Intn(10000))),
 				time.Now(),
 				2*time.Hour,
 				big.NewInt(int64(rand.Intn(10000000))),
@@ -53,6 +54,7 @@ func TestPoll(t *testing.T) {
 			)
 			require.NoError(err)
 			b2, err := NewBucket(
+				big.NewInt(int64(rand.Intn(10000))),
 				time.Now(),
 				5*time.Hour,
 				big.NewInt(int64(rand.Intn(10000000))),

@@ -23,6 +23,7 @@ func TestNewVote(t *testing.T) {
 	startTime := time.Now()
 	t.Run("failed-to-new-with-negative-duration", func(t *testing.T) {
 		bucket, err := NewBucket(
+			big.NewInt(1000),
 			startTime,
 			-24*7*time.Hour,
 			big.NewInt(3),
@@ -35,6 +36,7 @@ func TestNewVote(t *testing.T) {
 	})
 	t.Run("failed-to-new-with-negative-amount", func(t *testing.T) {
 		vote, err := NewBucket(
+			big.NewInt(1000),
 			startTime,
 			24*7*time.Hour,
 			big.NewInt(-3),
@@ -47,6 +49,7 @@ func TestNewVote(t *testing.T) {
 	})
 	t.Run("failed-to-new-with-negative-weighted-amount", func(t *testing.T) {
 		bucket, err := NewBucket(
+			big.NewInt(1000),
 			startTime,
 			24*7*time.Hour,
 			big.NewInt(3),
@@ -61,6 +64,7 @@ func TestNewVote(t *testing.T) {
 	})
 	t.Run("success-new-a-vote", func(t *testing.T) {
 		vote, err := NewBucket(
+			big.NewInt(1000),
 			startTime,
 			24*7*time.Hour,
 			big.NewInt(3),
@@ -86,6 +90,7 @@ func TestRemainingTime(t *testing.T) {
 	stakingDuration := 24 * 7 * time.Hour
 	t.Run("decay-vote", func(t *testing.T) {
 		vote, err := NewBucket(
+			big.NewInt(1000),
 			startTime,
 			stakingDuration,
 			big.NewInt(3),
@@ -107,6 +112,7 @@ func TestRemainingTime(t *testing.T) {
 	})
 	t.Run("non-decay-vote", func(t *testing.T) {
 		vote, err := NewBucket(
+			big.NewInt(1000),
 			startTime,
 			stakingDuration,
 			big.NewInt(3),

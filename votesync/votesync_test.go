@@ -74,6 +74,7 @@ func (*mockCarrier) Buckets(h uint64, pidx *big.Int, count uint8) (*big.Int, []*
 
 	startTime := time.Unix(1559220700, 0)
 	b1, err := types.NewBucket(
+		big.NewInt(1000),
 		startTime,
 		24*7*time.Hour,
 		big.NewInt(3),
@@ -85,6 +86,7 @@ func (*mockCarrier) Buckets(h uint64, pidx *big.Int, count uint8) (*big.Int, []*
 		return nil, nil, err
 	}
 	b2, err := types.NewBucket(
+		big.NewInt(1000),
 		startTime,
 		24*7*time.Hour,
 		big.NewInt(3),
@@ -96,6 +98,7 @@ func (*mockCarrier) Buckets(h uint64, pidx *big.Int, count uint8) (*big.Int, []*
 		return nil, nil, err
 	}
 	b3, err := types.NewBucket(
+		big.NewInt(1000),
 		startTime,
 		24*7*time.Hour,
 		big.NewInt(3),
@@ -107,6 +110,7 @@ func (*mockCarrier) Buckets(h uint64, pidx *big.Int, count uint8) (*big.Int, []*
 		return nil, nil, err
 	}
 	b4, err := types.NewBucket(
+		big.NewInt(1000),
 		startTime,
 		24*7*time.Hour,
 		big.NewInt(3),
@@ -118,6 +122,7 @@ func (*mockCarrier) Buckets(h uint64, pidx *big.Int, count uint8) (*big.Int, []*
 		return nil, nil, err
 	}
 	b5, err := types.NewBucket(
+		big.NewInt(1000),
 		startTime,
 		24*7*time.Hour,
 		big.NewInt(4),
@@ -129,6 +134,7 @@ func (*mockCarrier) Buckets(h uint64, pidx *big.Int, count uint8) (*big.Int, []*
 		return nil, nil, err
 	}
 	b6, err := types.NewBucket(
+		big.NewInt(1000),
 		startTime,
 		24*7*time.Hour,
 		big.NewInt(3),
@@ -140,6 +146,7 @@ func (*mockCarrier) Buckets(h uint64, pidx *big.Int, count uint8) (*big.Int, []*
 		return nil, nil, err
 	}
 	b7, err := types.NewBucket(
+		big.NewInt(1000),
 		startTime,
 		24*7*time.Hour,
 		big.NewInt(3),

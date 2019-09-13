@@ -129,6 +129,7 @@ func TestResultCalculator(t *testing.T) {
 		)})
 		t.Run("vote-for-candidate-not-in-pool", func(t *testing.T) {
 			vote, err := NewBucket(
+				big.NewInt(1000),
 				now.Add(-20*time.Hour),
 				time.Hour*3,
 				big.NewInt(10),
@@ -142,6 +143,7 @@ func TestResultCalculator(t *testing.T) {
 		})
 		t.Run("vote-not-qualified", func(t *testing.T) {
 			vote, err := NewBucket(
+				big.NewInt(1000),
 				now.Add(-20*time.Hour),
 				time.Hour*3,
 				big.NewInt(9),
@@ -249,6 +251,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*Bucket {
 	// votes from voter1
 	// (2 + 1) * 100 = 300
 	vote, err := NewBucket(
+		big.NewInt(1000),
 		mintTime.Add(-2*time.Hour),
 		4*time.Hour,
 		big.NewInt(100),
@@ -260,6 +263,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*Bucket {
 	votes = append(votes, vote)
 	// will be filtered with low amount
 	vote, err = NewBucket(
+		big.NewInt(1000),
 		mintTime.Add(-85*time.Hour),
 		100*time.Hour,
 		big.NewInt(9),
@@ -272,6 +276,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*Bucket {
 	// votes from voter2
 	// (1 + 1) * 100 = 200
 	vote, err = NewBucket(
+		big.NewInt(1000),
 		mintTime.Add(-10*time.Hour),
 		1*time.Hour,
 		big.NewInt(100),
@@ -285,6 +290,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*Bucket {
 	// 70 * 10 = 700
 	// 1 * 70 * 10 = 700
 	vote, err = NewBucket(
+		big.NewInt(1000),
 		mintTime.Add(-3*time.Hour),
 		1*time.Hour,
 		big.NewInt(70),
@@ -297,6 +303,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*Bucket {
 	// 30 * 10 = 300
 	// (2 + 1) * 30 * 10 = 600
 	vote, err = NewBucket(
+		big.NewInt(1000),
 		mintTime.Add(-1*time.Hour),
 		2*time.Hour,
 		big.NewInt(30),
@@ -309,6 +316,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*Bucket {
 	// votes from voter4
 	// (9 + 1) * 50 = 500
 	vote, err = NewBucket(
+		big.NewInt(1000),
 		mintTime.Add(-10*time.Hour),
 		9*time.Hour,
 		big.NewInt(50),
@@ -320,6 +328,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*Bucket {
 	votes = append(votes, vote)
 	// (40 + 1) * 20 = 820
 	vote, err = NewBucket(
+		big.NewInt(1000),
 		mintTime.Add(-60*time.Hour),
 		100*time.Hour,
 		big.NewInt(20),
@@ -333,6 +342,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*Bucket {
 	// 490 * 2 = 980
 	// (1 + 1) * 490 * 2 = 1960
 	vote, err = NewBucket(
+		big.NewInt(1000),
 		mintTime.Add(-6*time.Hour),
 		7*time.Hour,
 		big.NewInt(490),
@@ -345,6 +355,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*Bucket {
 	// 15 * 2 = 30
 	// (21 + 1) * 15 * 2 = 660
 	vote, err = NewBucket(
+		big.NewInt(1000),
 		mintTime.Add(-10*time.Hour),
 		21*time.Hour,
 		big.NewInt(15),
@@ -357,6 +368,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*Bucket {
 	// votes from voter6
 	// 1 * 35 = 35
 	vote, err = NewBucket(
+		big.NewInt(1000),
 		mintTime.Add(-3*time.Hour),
 		0,
 		big.NewInt(1135),
@@ -369,6 +381,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*Bucket {
 	// votes from voter7
 	// start time > mint time, filtered
 	vote, err = NewBucket(
+		big.NewInt(1000),
 		mintTime.Add(1*time.Hour),
 		21*time.Hour,
 		big.NewInt(45),
@@ -380,6 +393,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*Bucket {
 	votes = append(votes, vote)
 	// (21 + 1) * 90 = 1980
 	vote, err = NewBucket(
+		big.NewInt(1000),
 		mintTime.Add(-1*time.Hour),
 		21*time.Hour,
 		big.NewInt(90),
@@ -391,6 +405,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*Bucket {
 	votes = append(votes, vote)
 	// (11 + 1) * 41 = 492
 	vote, err = NewBucket(
+		big.NewInt(1000),
 		mintTime.Add(-1*time.Hour),
 		11*time.Hour,
 		big.NewInt(41),
@@ -402,6 +417,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*Bucket {
 	votes = append(votes, vote)
 	// (10 + 1) * 70 = 770
 	vote, err = NewBucket(
+		big.NewInt(1000),
 		mintTime.Add(-10*time.Hour),
 		20*time.Hour,
 		big.NewInt(70),

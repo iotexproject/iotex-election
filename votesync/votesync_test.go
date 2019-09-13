@@ -61,6 +61,10 @@ func (*mockCarrier) BlockTimestamp(uint64) (time.Time, error) {
 
 func (*mockCarrier) SubscribeNewBlock(chan *carrier.TipInfo, chan error, chan bool) {}
 
+func (*mockCarrier) HasStakingEvents(*big.Int, *big.Int) bool {
+	return true
+}
+
 func (*mockCarrier) Tip() (*carrier.TipInfo, error) { return &carrier.TipInfo{}, nil }
 
 func (*mockCarrier) Registrations(uint64, *big.Int, uint8) (*big.Int, []*types.Registration, error) {

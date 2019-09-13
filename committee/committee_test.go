@@ -26,6 +26,7 @@ func TestCalcWeightedVotes(t *testing.T) {
 	startTime := time.Now()
 	duration := time.Hour * 24 * 14
 	bucket1, err := types.NewBucket(
+		big.NewInt(1000),
 		startTime,
 		duration,
 		big.NewInt(3000000),
@@ -44,6 +45,7 @@ func TestCalcWeightedVotes(t *testing.T) {
 	require.Equal(0, committee.calcWeightedVotes(bucket1, time.Now().Add(24*15*time.Hour)).Cmp(big.NewInt(3000000)))
 
 	bucket2, err := types.NewBucket(
+		big.NewInt(1000),
 		startTime,
 		duration,
 		big.NewInt(3000000),
@@ -61,6 +63,7 @@ func TestVoteFilter(t *testing.T) {
 	require := require.New(t)
 	c := &committee{voteThreshold: big.NewInt(10)}
 	bucket1, err := types.NewBucket(
+		big.NewInt(1000),
 		time.Now(),
 		time.Hour,
 		big.NewInt(3),
@@ -72,6 +75,7 @@ func TestVoteFilter(t *testing.T) {
 	require.True(c.bucketFilter(bucket1))
 
 	bucket2, err := types.NewBucket(
+		big.NewInt(1000),
 		time.Now(),
 		time.Hour,
 		big.NewInt(30),

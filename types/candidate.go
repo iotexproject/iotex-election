@@ -13,6 +13,9 @@ package types
 import (
 	"errors"
 	"math/big"
+
+	pb "github.com/iotexproject/iotex-election/pb/election"
+	"github.com/iotexproject/iotex-election/util"
 )
 
 // Candidate defines a delegate candidate
@@ -104,4 +107,30 @@ func (c *Candidate) SelfStakingTokens() *big.Int {
 // SetSelfStakingTokens set selfStakingTokens value in Candidate
 func (c *Candidate) SetSelfStakingTokens(selfStakingTokens *big.Int) {
 	c.selfStakingTokens = selfStakingTokens
+}
+
+// ToProtoMsg converts the instance to a protobuf message
+func (c *Candidate) ToProtoMsg() (*pb.Candidate, error) {
+	return &pb.Candidate{
+		Name:              c.Name(),
+		Address:           c.Address(),
+		OperatorAddress:   c.OperatorAddress(),
+		RewardAddress:     c.RewardAddress(),
+		Score:             c.score.Bytes(),
+		SelfStakingTokens: c.selfStakingTokens.Bytes(),
+		SelfStakingWeight: c.selfStakingWeight,
+	}, nil
+}
+
+// FromProtoMsg fills the instance with a protobuf message
+func (c *Candidate) FromProtoMsg(msg *pb.Candidate) error {
+	c.name = util.CopyBytes(msg.GetName())
+	c.address = util.CopyBytes(msg.GetAddress())
+	c.operatorAddress = util.CopyBytes(msg.GetOperatorAddress())
+	c.rewardAddress = util.CopyBytes(msg.GetRewardAddress())
+	c.score = new(big.Int).SetBytes(msg.GetScore())
+	c.selfStakingTokens = new(big.Int).SetBytes(msg.GetSelfStakingTokens())
+	c.selfStakingWeight = msg.GetSelfStakingWeight()
+
+	return nil
 }

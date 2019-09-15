@@ -33,9 +33,9 @@ func TestCandidate(t *testing.T) {
 	t.Run("protobuf", func(t *testing.T) {
 		cPb, err := c.ToProtoMsg()
 		require.NoError(err)
-		cc := &Registration{}
+		cc := &Candidate{}
 		require.NoError(cc.FromProtoMsg(cPb))
-		require.True(c.Registration.Equal(cc))
+		require.True(c.Equal(cc))
 	})
 	t.Run("clone", func(t *testing.T) {
 		cc := c.Clone()

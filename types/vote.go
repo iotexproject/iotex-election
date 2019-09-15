@@ -15,6 +15,9 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes"
+	pb "github.com/iotexproject/iotex-election/pb/election"
 	"github.com/pkg/errors"
 )
 
@@ -75,4 +78,64 @@ func CalcWeightedVotes(v *Bucket, now time.Time) *big.Int {
 	weightedAmount, _ := amount.Mul(amount, big.NewFloat(weight)).Int(nil)
 
 	return weightedAmount
+}
+
+// ToProtoMsg converts the vote to protobuf
+func (v *Vote) ToProtoMsg() (*pb.Vote, error) {
+	startTime, err := ptypes.TimestampProto(v.startTime)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.Vote{
+		Voter:          v.Voter(),
+		Candidate:      v.Candidate(),
+		Amount:         v.amount.Bytes(),
+		WeightedAmount: v.weighted.Bytes(),
+		StartTime:      startTime,
+		Duration:       ptypes.DurationProto(v.duration),
+		Decay:          v.decay,
+	}, nil
+}
+
+// Serialize serializes the vote to bytes
+func (v *Vote) Serialize() ([]byte, error) {
+	vPb, err := v.ToProtoMsg()
+	if err != nil {
+		return nil, err
+	}
+	return proto.Marshal(vPb)
+}
+
+// FromProtoMsg extracts vote details from protobuf message
+func (v *Vote) FromProtoMsg(vPb *pb.Vote) (err error) {
+	voter := make([]byte, len(vPb.Voter))
+	copy(voter, vPb.Voter)
+	v.voter = voter
+	candidate := make([]byte, len(vPb.Candidate))
+	copy(candidate, vPb.Candidate)
+	v.candidate = candidate
+	v.amount = big.NewInt(0).SetBytes(vPb.Amount)
+	v.weighted = new(big.Int).SetBytes(vPb.WeightedAmount)
+	if v.startTime, err = ptypes.Timestamp(vPb.StartTime); err != nil {
+		return err
+	}
+	if v.duration, err = ptypes.Duration(vPb.Duration); err != nil {
+		return err
+	}
+	if v.duration < 0 {
+		return errors.Errorf("duration %s cannot be negative", v.duration)
+	}
+	v.decay = vPb.Decay
+
+	return nil
+}
+
+// Deserialize deserializes a byte array to vote
+func (v *Vote) Deserialize(data []byte) error {
+	vPb := &pb.Vote{}
+	if err := proto.Unmarshal(data, vPb); err != nil {
+		return err
+	}
+
+	return v.FromProtoMsg(vPb)
 }

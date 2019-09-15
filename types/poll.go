@@ -12,14 +12,10 @@ package types
 
 import (
 	"github.com/golang/protobuf/proto"
-	"github.com/pkg/errors"
 
 	pb "github.com/iotexproject/iotex-election/pb/election"
 	"github.com/iotexproject/iotex-election/util"
 )
-
-// ErrInvalidProto indicates a format error of an election proto
-var ErrInvalidProto = errors.New("Invalid election proto")
 
 // Poll defines the struct stores election result in db
 type Poll struct {

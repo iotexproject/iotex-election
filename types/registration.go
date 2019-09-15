@@ -15,11 +15,12 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
+	"github.com/iotexproject/go-pkgs/hash"
 	pb "github.com/iotexproject/iotex-election/pb/election"
 	"github.com/iotexproject/iotex-election/util"
 )
 
-// Registration defines the meta of a candidate
+// Registration defines a registration in contract
 type Registration struct {
 	name              []byte
 	address           []byte
@@ -46,102 +47,111 @@ func NewRegistration(
 }
 
 // Clone clones the registration
-func (c *Registration) Clone() *Registration {
+func (reg *Registration) Clone() *Registration {
 	return &Registration{
-		name:              c.Name(),
-		address:           c.Address(),
-		operatorAddress:   c.OperatorAddress(),
-		rewardAddress:     c.RewardAddress(),
-		selfStakingWeight: c.SelfStakingWeight(),
+		name:              reg.Name(),
+		address:           reg.Address(),
+		operatorAddress:   reg.OperatorAddress(),
+		rewardAddress:     reg.RewardAddress(),
+		selfStakingWeight: reg.SelfStakingWeight(),
 	}
 }
 
 // Name returns the name of this candidate
-func (c *Registration) Name() []byte {
-	return util.CopyBytes(c.name)
+func (reg *Registration) Name() []byte {
+	return util.CopyBytes(reg.name)
 }
 
 // Address returns the address of this candidate on gravity chain
-func (c *Registration) Address() []byte {
-	return util.CopyBytes(c.address)
+func (reg *Registration) Address() []byte {
+	return util.CopyBytes(reg.address)
 }
 
 // OperatorAddress returns the address of the assigned operator on chain
-func (c *Registration) OperatorAddress() []byte {
-	return util.CopyBytes(c.operatorAddress)
+func (reg *Registration) OperatorAddress() []byte {
+	return util.CopyBytes(reg.operatorAddress)
 }
 
 // RewardAddress returns the address of the assigned benefiter on chain
-func (c *Registration) RewardAddress() []byte {
-	return util.CopyBytes(c.rewardAddress)
+func (reg *Registration) RewardAddress() []byte {
+	return util.CopyBytes(reg.rewardAddress)
 }
 
 // SelfStakingWeight returns the extra weight for self staking
-func (c *Registration) SelfStakingWeight() uint64 {
-	return c.selfStakingWeight
+func (reg *Registration) SelfStakingWeight() uint64 {
+	return reg.selfStakingWeight
 }
 
 // ToProtoMsg converts the instance to a protobuf message (CandidateCore)
-func (c *Registration) ToProtoMsg() (*pb.Registration, error) {
+func (reg *Registration) ToProtoMsg() (*pb.Registration, error) {
 	return &pb.Registration{
-		Name:              c.Name(),
-		Address:           c.Address(),
-		OperatorAddress:   c.OperatorAddress(),
-		RewardAddress:     c.RewardAddress(),
-		SelfStakingWeight: c.selfStakingWeight,
+		Name:              reg.Name(),
+		Address:           reg.Address(),
+		OperatorAddress:   reg.OperatorAddress(),
+		RewardAddress:     reg.RewardAddress(),
+		SelfStakingWeight: reg.selfStakingWeight,
 	}, nil
 }
 
 // Serialize serializes the candidate to bytes
-func (c *Registration) Serialize() ([]byte, error) {
-	cPb, err := c.ToProtoMsg()
+func (reg *Registration) Serialize() ([]byte, error) {
+	cPb, err := reg.ToProtoMsg()
 	if err != nil {
 		return nil, err
 	}
 	return proto.Marshal(cPb)
 }
 
+// Hash returns the hash of serialized data
+func (reg *Registration) Hash() (hash.Hash256, error) {
+	data, err := reg.Serialize()
+	if err != nil {
+		return hash.ZeroHash256, err
+	}
+	return hash.Hash256b(data), nil
+}
+
 // FromProtoMsg fills the instance with a protobuf message (CandidateCore)
-func (c *Registration) FromProtoMsg(msg *pb.Registration) error {
-	c.name = util.CopyBytes(msg.GetName())
-	c.address = util.CopyBytes(msg.GetAddress())
-	c.operatorAddress = util.CopyBytes(msg.GetOperatorAddress())
-	c.rewardAddress = util.CopyBytes(msg.GetRewardAddress())
-	c.selfStakingWeight = msg.GetSelfStakingWeight()
+func (reg *Registration) FromProtoMsg(msg *pb.Registration) error {
+	reg.name = util.CopyBytes(msg.GetName())
+	reg.address = util.CopyBytes(msg.GetAddress())
+	reg.operatorAddress = util.CopyBytes(msg.GetOperatorAddress())
+	reg.rewardAddress = util.CopyBytes(msg.GetRewardAddress())
+	reg.selfStakingWeight = msg.GetSelfStakingWeight()
 
 	return nil
 }
 
 // Deserialize deserializes a byte array to candidate
-func (c *Registration) Deserialize(data []byte) error {
+func (reg *Registration) Deserialize(data []byte) error {
 	cPb := &pb.Registration{}
 	if err := proto.Unmarshal(data, cPb); err != nil {
 		return err
 	}
 
-	return c.FromProtoMsg(cPb)
+	return reg.FromProtoMsg(cPb)
 }
 
 // Equal returns true if two candidates are identical
-func (c *Registration) Equal(candidate *Registration) bool {
-	if c == candidate {
+func (reg *Registration) Equal(r *Registration) bool {
+	if reg == r {
 		return true
 	}
-	if c == nil || candidate == nil {
+	if reg == nil || r == nil {
 		return false
 	}
-	if !bytes.Equal(c.name, candidate.name) {
+	if !bytes.Equal(reg.name, r.name) {
 		return false
 	}
-	if !bytes.Equal(c.address, candidate.address) {
+	if !bytes.Equal(reg.address, r.address) {
 		return false
 	}
-	if !bytes.Equal(c.operatorAddress, candidate.operatorAddress) {
+	if !bytes.Equal(reg.operatorAddress, r.operatorAddress) {
 		return false
 	}
-	if !bytes.Equal(c.rewardAddress, candidate.rewardAddress) {
+	if !bytes.Equal(reg.rewardAddress, r.rewardAddress) {
 		return false
 	}
 
-	return c.selfStakingWeight == candidate.selfStakingWeight
+	return reg.selfStakingWeight == r.selfStakingWeight
 }

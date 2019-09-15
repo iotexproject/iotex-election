@@ -19,6 +19,7 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	"github.com/pkg/errors"
 
+	"github.com/iotexproject/go-pkgs/hash"
 	pb "github.com/iotexproject/iotex-election/pb/election"
 )
 
@@ -62,7 +63,7 @@ func NewBucket(
 	}, nil
 }
 
-// Clone clones the vote
+// Clone clones the bucket
 func (bucket *Bucket) Clone() *Bucket {
 	return &Bucket{
 		bucket.StartTime(),
@@ -79,7 +80,7 @@ func (bucket *Bucket) StartTime() time.Time {
 	return bucket.startTime
 }
 
-// Duration returns the duration this vote for
+// Duration returns the duration of this bucket
 func (bucket *Bucket) Duration() time.Duration {
 	return bucket.duration
 }
@@ -92,7 +93,7 @@ func (bucket *Bucket) Voter() []byte {
 	return voter
 }
 
-// Amount returns the amount of vote
+// Amount returns the amount of bucket
 func (bucket *Bucket) Amount() *big.Int {
 	return new(big.Int).Set(bucket.amount)
 }
@@ -105,7 +106,7 @@ func (bucket *Bucket) Candidate() []byte {
 	return candidate
 }
 
-// Decay returns whether this is a decay vote
+// Decay returns whether this is a decay bucket
 func (bucket *Bucket) Decay() bool {
 	return bucket.decay
 }
@@ -125,7 +126,7 @@ func (bucket *Bucket) RemainingTime(now time.Time) time.Duration {
 	return bucket.duration
 }
 
-// ToProtoMsg converts the vote to protobuf
+// ToProtoMsg converts the bucket to protobuf
 func (bucket *Bucket) ToProtoMsg() (*pb.Bucket, error) {
 	startTime, err := ptypes.TimestampProto(bucket.startTime)
 	if err != nil {
@@ -141,7 +142,7 @@ func (bucket *Bucket) ToProtoMsg() (*pb.Bucket, error) {
 	}, nil
 }
 
-// Serialize serializes the vote to bytes
+// Serialize serializes the bucket to bytes
 func (bucket *Bucket) Serialize() ([]byte, error) {
 	vPb, err := bucket.ToProtoMsg()
 	if err != nil {
@@ -150,7 +151,16 @@ func (bucket *Bucket) Serialize() ([]byte, error) {
 	return proto.Marshal(vPb)
 }
 
-// FromProtoMsg extracts vote details from protobuf message (voteCore)
+// Hash returns the hash
+func (bucket *Bucket) Hash() (hash.Hash256, error) {
+	data, err := bucket.Serialize()
+	if err != nil {
+		return hash.ZeroHash256, err
+	}
+	return hash.Hash256b(data), nil
+}
+
+// FromProtoMsg extracts bucket details from protobuf message (voteCore)
 func (bucket *Bucket) FromProtoMsg(vPb *pb.Bucket) (err error) {
 	voter := make([]byte, len(vPb.Voter))
 	copy(voter, vPb.Voter)
@@ -173,7 +183,7 @@ func (bucket *Bucket) FromProtoMsg(vPb *pb.Bucket) (err error) {
 	return nil
 }
 
-// Deserialize deserializes a byte array to vote
+// Deserialize deserializes a byte array to bucket
 func (bucket *Bucket) Deserialize(data []byte) error {
 	vPb := &pb.Bucket{}
 	if err := proto.Unmarshal(data, vPb); err != nil {
@@ -183,27 +193,28 @@ func (bucket *Bucket) Deserialize(data []byte) error {
 	return bucket.FromProtoMsg(vPb)
 }
 
-func (v *Bucket) equal(vote *Bucket) bool {
-	if v == vote {
+// Equal returns true if two buckets are of the same values
+func (bucket *Bucket) Equal(b *Bucket) bool {
+	if bucket == b {
 		return true
 	}
-	if v == nil || vote == nil {
+	if bucket == nil || b == nil {
 		return false
 	}
-	if !v.startTime.Equal(vote.startTime) {
+	if !bucket.startTime.Equal(b.startTime) {
 		return false
 	}
-	if v.duration != vote.duration {
+	if bucket.duration != b.duration {
 		return false
 	}
-	if v.amount.Cmp(vote.amount) != 0 {
+	if bucket.amount.Cmp(b.amount) != 0 {
 		return false
 	}
-	if !bytes.Equal(v.voter, vote.voter) {
+	if !bytes.Equal(bucket.voter, b.voter) {
 		return false
 	}
-	if !bytes.Equal(v.candidate, vote.candidate) {
+	if !bytes.Equal(bucket.candidate, b.candidate) {
 		return false
 	}
-	return v.decay == vote.decay
+	return bucket.decay == b.decay
 }

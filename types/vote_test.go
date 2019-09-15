@@ -75,7 +75,7 @@ func TestNewVote(t *testing.T) {
 			require.NoError(err)
 			clone := &Bucket{}
 			require.NoError(clone.Deserialize(b))
-			require.True(vote.equal(clone))
+			require.True(vote.Equal(clone))
 		})
 	})
 }

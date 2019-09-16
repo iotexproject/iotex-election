@@ -82,11 +82,11 @@ func NewServer(cfg *Config) (Server, error) {
 		dbPath = "election.db"
 	}
 	var c committee.Committee
-	db, err := sql.Open("sqlite3", dbPath)
+	sqldb, err := sql.Open("sqlite3", "sqlite.db")
 	if err != nil {
 		return nil, err
 	}
-	c, err = committee.NewCommittee(db, cfg.Committee, nil)
+	c, err = committee.NewCommittee(sqldb, cfg.Committee, db.NewBoltDB(cfg.DB))
 	if err != nil {
 		return nil, err
 	}

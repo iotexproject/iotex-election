@@ -13,6 +13,7 @@ package committee
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"math"
 	"math/big"
 	"sort"
@@ -22,6 +23,7 @@ import (
 
 	ethereum "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -208,24 +210,32 @@ func (ec *committee) heightWithIdenticalRegs(height uint64) (uint64, error) {
 	var val int64
 	row := ec.db.QueryRow("SELECT identical_to FROM identical_registrations WHERE height = ?", util.Uint64ToInt64(height))
 	err := row.Scan(&val)
-	if err != nil {
+	switch err {
+	case nil:
+		return uint64(val), nil
+	case sql.ErrNoRows:
+		return height, nil
+	default:
 		return 0, err
 	}
-	return uint64(val), nil
 }
 
 func (ec *committee) heightWithIdenticalBuckets(height uint64) (uint64, error) {
 	var val int64
 	row := ec.db.QueryRow("SELECT identical_to FROM identical_buckets WHERE height = ?", util.Uint64ToInt64(height))
 	err := row.Scan(&val)
-	if err != nil {
+	switch err {
+	case nil:
+		return uint64(val), nil
+	case sql.ErrNoRows:
+		return height, nil
+	default:
 		return 0, err
 	}
-	return uint64(val), nil
 }
 
 func (ec *committee) hasIdenticalRegistrations(
-	regs []hash.Hash256,
+	regs [][]byte,
 	heightToCompare uint64,
 ) bool {
 	if heightToCompare < ec.startHeight {
@@ -243,10 +253,10 @@ func (ec *committee) hasIdenticalRegistrations(
 		if err != nil {
 			return false
 		}
-		if _, ok := rhs[h]; ok {
+		if _, ok := rhs[hash.Hash256b(h)]; ok {
 			return false
 		}
-		rhs[h] = true
+		rhs[hash.Hash256b(h)] = true
 	}
 	for _, h := range lastRegHashes {
 		if _, ok := rhs[h]; !ok {
@@ -284,11 +294,6 @@ func (ec *committee) hasIdenticalBuckets(
 }
 
 func (ec *committee) migrateResult(height uint64, r *types.ElectionResult) error {
-	tx, err := ec.db.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
 	candidates := r.Delegates()
 	regs := make([]*types.Registration, 0, len(candidates))
 	for _, candidate := range candidates {
@@ -307,11 +312,14 @@ func (ec *committee) migrateResult(height uint64, r *types.ElectionResult) error
 	})
 }
 
-func (ec *committee) migrate() error {
+func (ec *committee) migrate(ctx context.Context) error {
 	if ec.oldDB == nil {
 		return nil
 	}
 	kvstore := db.NewKVStoreWithNamespaceWrapper("electionNS", ec.oldDB)
+	if err := kvstore.Start(ctx); err != nil {
+		return err
+	}
 	nextHeightHash, err := kvstore.Get(db.NextHeightKey)
 	if err != nil {
 		return err
@@ -326,6 +334,7 @@ func (ec *committee) migrate() error {
 		if err := r.Deserialize(data); err != nil {
 			return err
 		}
+		fmt.Println("migrate result", height)
 		if err := ec.migrateResult(height, r); err != nil {
 			return err
 		}
@@ -339,8 +348,8 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 	if err = ec.createTables(); err != nil {
 		return err
 	}
-	if err = ec.migrate(); err != nil {
-		return err
+	if err = ec.migrate(ctx); err != nil {
+		return errors.Wrap(err, "failed to migrate")
 	}
 	if nextHeight, err := ec.loadNextHeight(); err == nil {
 		zap.L().Info("restoring from db")
@@ -773,7 +782,7 @@ func (ec *committee) storeRegistrationsAndBuckets(height uint64, regs []*types.R
 			return err
 		}
 	}
-	bucketStmt, err := tx.Prepare("INSERT OR IGNORE INTO buckets (hash, startTime, duration, amount, decay, voter, candidate) VALUES (?, ?, ?, ?, ?, ?, ?)")
+	bucketStmt, err := tx.Prepare("INSERT OR IGNORE INTO buckets (hash, start_time, duration, amount, decay, voter, candidate) VALUES (?, ?, ?, ?, ?, ?, ?)")
 	if err != nil {
 		return err
 	}
@@ -791,9 +800,11 @@ func (ec *committee) storeRegistrationsAndBuckets(height uint64, regs []*types.R
 }
 
 func (ec *committee) storeData(height uint64, data *rawData) error {
+	fmt.Println("store regs and buckets")
 	if err := ec.storeRegistrationsAndBuckets(height, data.registrations, data.buckets); err != nil {
 		return err
 	}
+	fmt.Println("store others")
 	tx, err := ec.db.Begin()
 	if err != nil {
 		return err
@@ -802,20 +813,22 @@ func (ec *committee) storeData(height uint64, data *rawData) error {
 	if err != nil {
 		return err
 	}
-	regHashes := make([]hash.Hash256, 0, len(data.registrations))
+	regHashes := make([][]byte, 0, len(data.registrations))
 	for _, reg := range data.registrations {
 		h, err := reg.Hash()
 		if err != nil {
 			return err
 		}
-		regHashes = append(regHashes, h)
+		regHashes = append(regHashes, h[:])
 	}
+	fmt.Println("handle registrations")
 	if ec.hasIdenticalRegistrations(regHashes, irh) {
 		if _, err := tx.Exec("INSERT OR IGNORE INTO identical_registrations (height, identical_to) VALUES (?, ?)", height, irh); err != nil {
 			return err
 		}
 	} else {
-		result, err := tx.Exec("INSERT INTO height_to_registrations (height, rid) VALUES (SELECT ?, id FROM registrations WHERE hash IN (?)", height, regHashes)
+		fmt.Println("insert into height to registrations")
+		result, err := tx.Exec("INSERT INTO height_to_registrations (height, rid) VALUES (SELECT ?, id FROM registrations WHERE hash IN (?))", height, pq.Array(regHashes))
 		if err != nil {
 			return err
 		}
@@ -832,6 +845,7 @@ func (ec *committee) storeData(height uint64, data *rawData) error {
 	if err != nil {
 		return err
 	}
+	fmt.Println("handle buckets")
 	bucketHashes := make(map[hash.Hash256]int)
 	for _, bucket := range data.buckets {
 		h, err := bucket.Hash()
@@ -849,6 +863,7 @@ func (ec *committee) storeData(height uint64, data *rawData) error {
 			return err
 		}
 	} else {
+		fmt.Println("insert into height to buckets", bucketHashes)
 		if _, err := tx.Exec("DROP TABLE IF EXISTS temp.buckets"); err != nil {
 			return err
 		}

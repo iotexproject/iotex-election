@@ -26,6 +26,7 @@ require (
 	github.com/iotexproject/iotex-proto v0.2.1-0.20190814190638-f74c55ffedf5
 	github.com/jackpal/go-nat-pmp v1.0.1 // indirect
 	github.com/karalabe/usb v0.0.0-20190703133951-9be757f914c0 // indirect
+	github.com/lib/pq v1.2.0
 	github.com/mattn/go-colorable v0.1.2 // indirect
 	github.com/mattn/go-runewidth v0.0.4 // indirect
 	github.com/mattn/go-sqlite3 v1.11.0

@@ -26,6 +26,8 @@ func TestVoteCarrier(t *testing.T) {
 	require := require.New(t)
 	// TODO: update contract address once finalize it
 	carrier, err := NewEthereumVoteCarrier(
+		12,
+		time.Second,
 		[]string{"https://kovan.infura.io/v3/7c2ccaaba3974b4da11877322cdb721f"},
 		common.HexToAddress("0xb4ca6cf2fe760517a3f92120acbe577311252663"),
 		common.HexToAddress("0xdedf0c1610d8a75ca896d8c93a0dc39abf7daff4"),
@@ -71,7 +73,7 @@ func TestVoteCarrier(t *testing.T) {
 		require.Equal(int64(1548986420), ts.Unix())
 	})
 	t.Run("SubscribeNewBlock", func(t *testing.T) {
-		tipChan := make(chan *TipInfo)
+		tipChan := make(chan uint64)
 		reportChan := make(chan error)
 		unsubscribe := make(chan bool)
 		carrier.SubscribeNewBlock(tipChan, reportChan, unsubscribe)

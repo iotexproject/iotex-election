@@ -27,22 +27,16 @@ import (
 	"github.com/iotexproject/iotex-election/types"
 )
 
-// TipInfo is the info of a tip block
-type TipInfo struct {
-	Height    uint64
-	BlockTime time.Time
-}
-
 // Carrier defines an interfact to fetch votes
 type Carrier interface {
 	// BlockTimestamp returns the timestamp of a block
 	BlockTimestamp(uint64) (time.Time, error)
 	// SubscribeNewBlock callbacks on new block created
-	SubscribeNewBlock(chan *TipInfo, chan error, chan bool)
+	SubscribeNewBlock(chan uint64, chan error, chan bool)
 	// HasStakingEvents returns true if there is any staking related events or error
 	HasStakingEvents(*big.Int, *big.Int) bool
 	// Tip returns the latest height and its timestamp
-	Tip() (*TipInfo, error)
+	Tip() (uint64, error)
 	// Registrations returns the candidate registrations on height
 	Registrations(uint64, *big.Int, uint8) (*big.Int, []*types.Registration, error)
 	// Buckets returns the buckets on height
@@ -118,6 +112,8 @@ func (pool *EthClientPool) Execute(callback func(c *ethclient.Client) error) (er
 }
 
 type ethereumCarrier struct {
+	confirmHeight           uint64
+	tickerDuration          time.Duration
 	ethClientPool           *EthClientPool
 	stakingContractAddress  common.Address
 	registerContractAddress common.Address
@@ -125,6 +121,8 @@ type ethereumCarrier struct {
 
 // NewEthereumVoteCarrier defines a carrier to fetch votes from ethereum contract
 func NewEthereumVoteCarrier(
+	confirmHeight uint64,
+	tickerDuration time.Duration,
 	clientURLs []string,
 	registerContractAddress common.Address,
 	stakingContractAddress common.Address,
@@ -133,6 +131,8 @@ func NewEthereumVoteCarrier(
 		return nil, errors.New("client URL list is empty")
 	}
 	return &ethereumCarrier{
+		confirmHeight:           confirmHeight,
+		tickerDuration:          tickerDuration,
 		ethClientPool:           NewEthClientPool(clientURLs),
 		stakingContractAddress:  stakingContractAddress,
 		registerContractAddress: registerContractAddress,
@@ -158,11 +158,11 @@ func (evc *ethereumCarrier) BlockTimestamp(height uint64) (ts time.Time, err err
 }
 
 func (evc *ethereumCarrier) SubscribeNewBlock(
-	tipChan chan *TipInfo,
+	tipChan chan uint64,
 	report chan error,
 	unsubscribe chan bool,
 ) {
-	ticker := time.NewTicker(60 * time.Second)
+	ticker := time.NewTicker(evc.tickerDuration)
 	lastHeight := uint64(0)
 	go func() {
 		for {
@@ -181,19 +181,16 @@ func (evc *ethereumCarrier) SubscribeNewBlock(
 	}()
 }
 
-func (evc *ethereumCarrier) Tip() (*TipInfo, error) {
+func (evc *ethereumCarrier) Tip() (uint64, error) {
 	return evc.tip(0)
 }
 
-func (evc *ethereumCarrier) tip(lastHeight uint64) (tip *TipInfo, err error) {
+func (evc *ethereumCarrier) tip(lastHeight uint64) (tip uint64, err error) {
 	if err = evc.ethClientPool.Execute(func(client *ethclient.Client) error {
 		header, err := client.HeaderByNumber(context.Background(), nil)
 		if err == nil {
-			if header.Number.Uint64() > lastHeight {
-				tip = &TipInfo{
-					Height:    header.Number.Uint64(),
-					BlockTime: time.Unix(int64(header.Time), 0),
-				}
+			if header.Number.Uint64() > lastHeight+evc.confirmHeight {
+				tip = header.Number.Uint64() - evc.confirmHeight
 				return nil
 			}
 			err = errors.Errorf(

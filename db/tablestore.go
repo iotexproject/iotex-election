@@ -13,13 +13,15 @@ package db
 import (
 	"database/sql"
 	_ "github.com/mattn/go-sqlite3"
+
+	"github.com/iotexproject/iotex-election/types"
+	"github.com/iotexproject/iotex-election/util"
 )
 
 type TableDB struct {
 	db 			*sql.DB 
 	path 		string
 }
-
 
 // NewTableStore creates a new tablestore
 func NewTableDB(cfg Config) *TableDB {

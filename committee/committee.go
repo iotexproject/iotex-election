@@ -12,6 +12,7 @@ package committee
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
 	"math"
 	"math/big"
@@ -20,9 +21,11 @@ import (
 	"sync/atomic"
 	"time"
 
+
 	ethereum "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
+	_ "github.com/mattn/go-sqlite3"
 	"go.uber.org/zap"
 
 	"github.com/iotexproject/go-pkgs/hash"
@@ -31,6 +34,9 @@ import (
 	"github.com/iotexproject/iotex-election/types"
 	"github.com/iotexproject/iotex-election/util"
 )
+
+// NextHeightKey defines the constant key of next height
+var NextHeightKey = int64(0)
 
 // CalcGravityChainHeight calculates the corresponding gravity chain height for an epoch
 type CalcGravityChainHeight func(uint64) (uint64, error)
@@ -319,16 +325,6 @@ func (ec *committee) migrate() error {
 	return nil
 }
 
-func (ec *committee) loadNextHeight() (uint64, error) {
-	// TODO (dorothy)
-	return 0, nil
-}
-
-func (ec *committee) mintTime(height uint64) (time.Time, error) {
-	// TODO (dorothy)
-	return time.Time{}, nil
-}
-
 func (ec *committee) Start(ctx context.Context) (err error) {
 	ec.mutex.Lock()
 	defer ec.mutex.Unlock()
@@ -343,7 +339,7 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 		ec.nextHeight = nextHeight
 		for height := ec.startHeight; height < ec.nextHeight; height += ec.interval {
 			zap.L().Info("loading", zap.Uint64("height", height))
-			mintTime, err := ec.mintTime(height)
+			mintTime, err := ec.mintTime(height) 
 			if err != nil {
 				return err
 			}
@@ -516,6 +512,79 @@ func (ec *committee) ResultByHeight(height uint64) (*types.ElectionResult, error
 	return ec.resultByHeight(height)
 }
 
+func (ec *committee) poll(height uint64) ([]*types.Bucket, []*types.Registration, error) {
+	var buckets []*types.Bucket
+	var index int64
+	var startTime time.Time
+	var duration string 
+	var amount []byte
+	var decay int64
+	var voter, candidate []byte
+
+	//H2B
+	rows, err := t.db.Query("SELECT index FROM heightToBucket WHERE height = ?", util.Uint64ToInt64(height))
+	if err != nil {
+		return nil, nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		err := rows.Scan(&index)
+		if err != nil {
+			return nil, nil, err
+		}
+		// read from buckets table by index
+		row := t.db.QueryRow("SELECT * FROM buckets WHERE id = ?", index)
+		err := row.Scan(&startTime, &duration, &amount, &decay, &voter, &candidate)
+		if err != nil {
+			zap.L().Error("failed to queryrow from buckets by id")
+			return nil, nil, err
+		}
+		bucket, err := types.NewBucket(startTime, time.ParseDuration(duration), big.NewInt(0).SetBytes(amount), decay != 0, voter, candidate)
+		if err != nil {
+			zap.L().Error("failed to make newBucket by reading buckets table")
+			return nil, nil, err
+		}
+		buckets = append(buckets, bucket)
+	}
+	if rows.Err() != nil {
+		return nil, nil, rows.Err()
+	}
+
+	var registrations []*types.Registration 
+	var name, address, operatorAddress, rewardAddress []byte
+	var selfStakingWeight int64
+	//H2R
+	rows, err = ec.db.Query("SELECT index FROM heightToReg WHERE height = ?", util.Uint64ToInt64(height))
+	if err != nil {
+		return nil, nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var index int64
+		err := rows.Scan(&index)
+		if err != nil {
+			return nil, nil, err
+		}
+		//read from regs table by index 
+		row := t.db.QueryRow("SELECT * FROM registrations WHERE id = ?", index)
+		err := row.Scan(&name, &address, &operatorAddress, &rewardAddress, &selfStakingWeight)
+		if err != nil {
+			zap.L().Error("failed to queryrow from registrations by id")
+			return nil, nil, err
+		}
+		bucket, err := types.NewRegistration(name, address, operatorAddress, rewardAddress, uint64(selfStakingWeight))
+		if err != nil {
+			zap.L().Error("failed to make NewRegistration by reading buckets table")
+			return nil, nil, err
+		registrations = append(registrations, index)
+	}
+	if rows.Err() != nil {
+		return nil, nil, rows.Err()
+	}
+	return buckets, registrations, nil
+
+}
+
 func (ec *committee) resultByHeight(height uint64) (*types.ElectionResult, error) {
 	if height < ec.startHeight {
 		return nil, errors.Errorf(
@@ -534,21 +603,17 @@ func (ec *committee) resultByHeight(height uint64) (*types.ElectionResult, error
 	if result != nil {
 		return result, nil
 	}
-
+	// if cache doesn't have corresponding result, read the resultMeta from db
+	buckets, registrations, err := ec.poll(height)
+	if err != nil {
+		return nil, err
+	}
 	//calculate the result from resultMeta
 	calculator, err := ec.calculator(height)
 	if err != nil {
 		return nil, err
 	}
-	regs, err := ec.registrations(height)
-	if err != nil {
-		return nil, err
-	}
-	if err := calculator.AddRegistrations(regs); err != nil {
-		return nil, err
-	}
-	buckets, err := ec.buckets(height)
-	if err != nil {
+	if err := calculator.AddRegistrations(registrations); err != nil {
 		return nil, err
 	}
 	if err := calculator.AddBuckets(buckets); err != nil {
@@ -728,6 +793,265 @@ func (ec *committee) fetchDataByHeight(height uint64) (*rawData, error) {
 	}, nil
 }
 
+func (ec *committee) loadNextHeight() (uint64, error) {
+	var val int64
+	row := t.db.QueryRow("SELECT height FROM next_height WHERE key = ?", NextHeightKey)
+	err := row.Scan(&val)
+	if err != nil {
+		return 0, err
+	}
+	return uint64(val), nil
+}
+
+func (ec *committee) mintTime(height uint64) (time.Time, error) {
+	var val time.Time
+	row := ec.db.QueryRow("SELECT time FROM mint_times WHERE height = ?", util.Uint64ToInt64(height))
+	err := row.Scan(&val)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return val, nil
+}
+
+/*
+//one transaction 
+func (ec *commttee) putPoll(height uint64, buckets []*types.Bucket, registrations []*types.Registration) error {
+>>>>>>> implement newDB
+	tx, err := ec.db.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+<<<<<<< HEAD
+	regStmt, err := tx.Prepare("INSERT OR IGNORE INTO registrations (hash, name, address, operator_address, reward_address, self_staking_weight) VALUES (?, ?, ?, ?, ?, ?)")
+	if err != nil {
+		return err
+	}
+	defer regStmt.Close()
+	for _, reg := range regs {
+		h, err := reg.Hash()
+		if err != nil {
+			return err
+		}
+		if _, err := regStmt.Exec(h, reg.Name(), reg.Address(), reg.OperatorAddress(), reg.RewardAddress(), reg.SelfStakingWeight()); err != nil {
+			return err
+		}
+	}
+	bucketStmt, err := tx.Prepare("INSERT OR IGNORE INTO buckets (hash, startTime, duration, amount, decay, voter, candidate) VALUES (?, ?, ?, ?, ?, ?, ?)")
+	if err != nil {
+		return err
+	}
+	defer bucketStmt.Close()
+	for _, bucket := range buckets {
+		h, err := bucket.Hash()
+		if err != nil {
+			return err
+		}
+		if _, err := bucketStmt.Exec(h, bucket.StartTime(), bucket.Duration(), bucket.Amount(), bucket.Decay(), bucket.Voter(), bucket.Candidate()); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
+func (ec *committee) storeData(height uint64, data *rawData) error {
+	if err := ec.storeRegistrationsAndBuckets(height, data.registrations, data.buckets); err != nil {
+		return err
+	}
+	tx, err := ec.db.Begin()
+	if err != nil {
+		return err
+	}
+	irh := ec.heightWithIdenticalRegs(height - ec.interval)
+	regHashes := make([]hash.Hash256, 0, len(data.registrations))
+	for _, reg := range data.registrations {
+		h, err := reg.Hash()
+		if err != nil {
+			return err
+		}
+		regHashes = append(regHashes, h)
+	}
+	if ec.hasIdenticalRegistrations(regHashes, irh) {
+		if _, err := tx.Exec("INSERT OR IGNORE INTO identical_registrations (height, identical_to) VALUES (?, ?)", height, irh); err != nil {
+			return err
+		}
+	} else {
+		_, err := tx.Exec("INSERT INTO height_to_registrations (height, index) VALUES (SELECT ?, id FROM registrations WHERE hash IN (?)", height, regHashes)
+		if err != nil {
+			return err
+		}
+		// TODO: result has the right number of lines
+=======
+
+	//read indexes from table 
+	bucketIndex := make([]int64, len(buckets))
+	for i, bucket := range buckets {
+		data, err := bucket.Serialize()
+			if err != nil {
+				return err
+			}
+		hash := sha256.Sum256(data)
+		bucketIndex[i] = getBucketIndexByHash(hash[:])
+	}
+	regIndex := make([]int64, len(registrations))
+	for i, reg := range registrations {
+		data, err := reg.Serialize()
+			if err != nil {
+				return err
+			}
+		hash := sha256.Sum256(data)
+		regIndex[i] = getRegIndexByHash(hash[:])
+	}
+
+	//insert heightToBucket
+	bucketStatement, err := tx.Prepare("INSERT INTO heightToBucket (height, index) VALUES (?, ?)")
+	if err != nil{
+		zap.L().Error("transaction prepare failed", 
+			zap.Error(err),
+		)
+		return err
+	}
+	for _, index := range bucketIndex {
+		res, err := bucketStatement.Exec(util.Uint64ToInt64(height), index)
+		if err != nil {
+			return err
+		}
+	}
+
+	//insert heightToReg 
+	regStatement, err := tx.Prepare("INSERT INTO heightToReg (height, index) VALUES (?, ?)")
+	if err != nil{
+		zap.L().Error("failed to prepare transaction", 
+			zap.Error(err),
+		)
+		return err
+	}
+	for _, index := range regIndex {
+		res, err := regStatement.Exec(util.Uint64ToInt64(height), index)
+		if err != nil {
+			return nil, err
+		}
+>>>>>>> implement newDB
+	}
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	if err := bucketStatement.Close(); err != nil {
+		return err
+	}
+	if err := regStatement.Close(); err != nil {
+		return err
+	}
+	return nil
+}
+
+
+<<<<<<< HEAD
+	ibh := ec.heightWithIdenticalBuckets(height - ec.interval)
+	bucketHashes := make(map[hash.Hash256]int)
+	for _, bucket := range data.buckets {
+		h, err := bucket.Hash()
+		if err != nil {
+			return err
+		}
+		if times, ok := bucketHashes[h]; ok {
+			bucketHashes[h] = times + 1
+		} else {
+			bucketHashes[h] = 1
+		}
+	}
+	if !data.migration && data.noNewStakingEvent || data.migration && ec.hasIdenticalBuckets(bucketHashes, ibh) {
+		if _, err := tx.Exec("INSERT OR IGNORE INTO identical_buckets (height, identical_to) VALUES (?, ?)", height, ibh); err != nil {
+			return err
+		}
+	} else {
+		if _, err := tx.Exec("DROP TABLE IF EXISTS temp.buckets"); err != nil {
+			return err
+		}
+		if _, err := tx.Exec("CREATE TABEL temp.buckets (height INTEGER PRIMARY KEY, hash BLOB, times INTEGER)"); err != nil {
+			return err
+		}
+		stmt, err := tx.Prepare("INSERT INTO temp.buckets (height, hash, times) VALUES (?, ?, ?)")
+		if err != nil {
+			return err
+		}
+		defer stmt.Close()
+		for key, value := range bucketHashes {
+			if _, err := stmt.Exec(height, key, value); err != nil {
+				return err
+			}
+		}
+		if _, err := tx.Exec(`INSERT OR IGNORE INTO height_to_buckets (height, index, times) VALUES (
+			SELECT temp.buckets.height, buckets.id, temp.buckets.times FROM buckets INNER JOIN temp.buckets WHERE buckets.hash = temp.buckets.hash
+		)`); err != nil {
+			return err
+		}
+		// TODO: verify result
+		if _, err := tx.Exec("DROP TABLE temp.buckets"); err != nil {
+			return err
+		}
+=======
+
+//InsertBuckets puts buckets into buckes table, and returns array of index(key)
+func (t *tableDB) putBucketAndRegistration(buckets []*types.Bucket, registrations []*types.Registration) error {
+	tx, err := t.db.Begin()
+	if err != nil {
+		return nil, nil, err
+	}
+	defer tx.Rollback()
+
+	bucketStat, err := tx.Prepare("INSERT OR IGNORE INTO buckets (hash, startTime, duration, amount, decay, voter, candidate, bucketIndex) VALUES (?, ?, ?, ?, ?, ?, ?)")
+	regStat, err := tx.Prepare("INSERT OR IGNORE INTO registrations (hash, name, address, operatorAddress, rewardAddress, selfStakingWeight) VALUES (?, ?, ?, ?, ?, ?)")
+	if err != nil{
+		zap.L().Error("transaction prepare failed", 
+			zap.Error(err),
+		)
+		return err
+	}
+
+	for _, bucket := range buckets {
+		//serialze and get an hash 
+		rawData, err := bucket.Serialize()
+		if err != nil {
+			return err
+		}
+		hashval := sha256.Sum224(rawData)
+		hashbytes := hashval[:]
+		
+		res, err := bucketStat.Exec(hashbytes, bucket.StartTime(), bucket.Duration().String(), bucket.Amount().Bytes(), bucket.Decay(), bucket.Voter(), bucket.Candidate())
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, reg := range registrations {
+		//serialze and get an hash 
+		rawData, err := reg.Serialize()
+		if err != nil {
+			return err
+		}
+		hashval := sha256.Sum224(rawData)
+		hashbytes := hashval[:]
+
+		res, err := regStat.Exec(hashbytes, reg.Name(), reg.Address(),reg.OperatorAddress(), reg.RewardAddress(), util.Uint64ToInt64(SelfStakingWeight()))
+		if err != nil {
+			return err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	if err := bucketStat.Close(); err != nil {
+		return err
+>>>>>>> implement newDB
+	}
+	if err != regStat.Close(); err != nil {
+		return err
+	}
+	return nil 
+}
+*/
+
 func (ec *committee) storeRegistrationsAndBuckets(height uint64, regs []*types.Registration, buckets []*types.Bucket) error {
 	tx, err := ec.db.Begin()
 	if err != nil {
@@ -842,6 +1166,10 @@ func (ec *committee) storeData(height uint64, data *rawData) error {
 		return err
 	}
 
+	if _, err := tx.Exec("INSERT OR REPLACE INTO nextHeight (key, height) VALUES (?, ?)", NextHeightKey, util.Uint64ToInt64(height)); err != nil {
+		return err
+	}
+
 	return tx.Commit()
 }
 
@@ -861,8 +1189,32 @@ func (ec *committee) registrationHashes(height uint64) ([]hash.Hash256, error) {
 }
 
 func (ec *committee) registrations(height uint64) ([]*types.Registration, error) {
-	// TODO (dorothy)
-	return nil, nil
+	
+	var registrations []*types.Registration 
+	var name, address, operatorAddress, rewardAddress []byte
+	var selfStakingWeight int64
+	rows, err := ec.db.Query("SELECT * FROM registrations WHERE id IN (SELECT index FROM height_to_registrations WHERE height = ?", util.Uint64ToInt64(height))
+	if err != nil {
+		return nil, nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		err := rows.Scan(&name, &address, &operatorAddress, &rewardAddress, &selfStakingWeight)
+		if err != nil {
+			zap.L().Error("failed to scan registration data")
+			return nil, nil, err
+		}
+		bucket, err := types.NewRegistration(name, address, operatorAddress, rewardAddress, uint64(selfStakingWeight))
+		if err != nil {
+			zap.L().Error("failed to make NewRegistration by reading buckets table")
+			return nil, nil, err
+		}
+		registrations = append(registrations, index)
+	}
+	if rows.Err() != nil {
+		return nil, nil, rows.Err()
+	}
+	return registrations, nil
 }
 
 func (ec *committee) retryFetchDataByHeight(height uint64) (data *rawData, err error) {

@@ -12,6 +12,7 @@ package db
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pkg/errors"
 	"go.etcd.io/bbolt"
@@ -197,6 +198,7 @@ func (b *boltDB) Start(_ context.Context) error {
 func (b *boltDB) Stop(_ context.Context) error {
 	if b.db != nil {
 		if err := b.db.Close(); err != nil {
+			fmt.Println(err)
 			return errors.Wrap(ErrIO, err.Error())
 		}
 	}

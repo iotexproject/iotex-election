@@ -13,14 +13,17 @@ package util
 import (
 	"encoding/binary"
 	"time"
+
+	"go.uber.org/zap"
+
 )
 
 
 const MaxUint = ^uint(0) 
-const MaxInt = int(MaxUint >> 1) 
+const MaxInt = int64(MaxUint >> 1) 
 
 func Uint64ToInt64(u uint64) int64 {
-	if u > MaxInt {
+	if u > uint64(MaxInt) {
 		zap.L().Panic("Height can't be converted to int64")
 	}
 	return int64(u)

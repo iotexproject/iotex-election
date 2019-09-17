@@ -2,7 +2,7 @@
 // This program is free software: you can redistribute it and/or modify it under the terms of the
 // GNU General Public License as published by the Free Software Foundation, either version 3 of
 // the License, or (at your option) any later version.
-// This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+// This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 // without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See
 // the GNU General Public License for more details.
 // You should have received a copy of the GNU General Public License along with this program. If
@@ -51,7 +51,7 @@ type memStore struct {
 // NewInMemKVStore creates a new in memory kv store
 func NewInMemKVStore() KVStore {
 	return &memStore{
-		kv : make(map[string][]byte),
+		kv: make(map[string][]byte),
 	}
 }
 
@@ -87,7 +87,6 @@ type KVStoreWithNamespace interface {
 	Stop(context.Context) error
 	Get(string, []byte) ([]byte, error)
 	Put(string, []byte, []byte) error
-	Commit(KVStoreBatch) error
 }
 
 // KVStoreWithNamespaceWrapper defines a wrapper to convert KVStoreWithNamespace to KVStore
@@ -125,10 +124,10 @@ func (w *KVStoreWithNamespaceWrapper) Put(key []byte, value []byte) error {
 }
 
 type memStoreWithNamespace struct {
-	kvs 		map[string]KVStore
+	kvs map[string]KVStore
 }
 
-// NewInMemStoreWithNamespace defines a wrapper to convert memStore to KVStoreWithNamespace 
+// NewInMemStoreWithNamespace defines a wrapper to convert memStore to KVStoreWithNamespace
 func NewInMemStoreWithNamespace(_ Config) KVStoreWithNamespace {
 	return &memStoreWithNamespace{
 		kvs: make(map[string]KVStore),
@@ -137,69 +136,37 @@ func NewInMemStoreWithNamespace(_ Config) KVStoreWithNamespace {
 
 // Start starts the memStoreWithNamespace
 func (m *memStoreWithNamespace) Start(_ context.Context) error {
-	return nil 
+	return nil
 }
 
-// Stop stops the memStoreWithNamespace 
-func (m *memStoreWithNamespace) Stop (_ context.Context) error {
-	m.kvs = nil 
+// Stop stops the memStoreWithNamespace
+func (m *memStoreWithNamespace) Stop(_ context.Context) error {
+	m.kvs = nil
 	return nil
 
 }
 
-// Get gets value by key from memStoreWithNamespace 
-func (m * memStoreWithNamespace) Get(namespace string, key []byte) ([]byte, error) {
+// Get gets value by key from memStoreWithNamespace
+func (m *memStoreWithNamespace) Get(namespace string, key []byte) ([]byte, error) {
 	if kvstore, ok := m.kvs[namespace]; ok {
 		return kvstore.Get(key)
 	}
-	//if the namespace doesn't exist, return error  
+	//if the namespace doesn't exist, return error
 	return nil, errors.New("Namespace doesn't exist")
 }
 
-// Put puts key and value to memStoreWithNamespace 
+// Put puts key and value to memStoreWithNamespace
 func (m *memStoreWithNamespace) Put(namespace string, key []byte, value []byte) error {
 	if kvstore, ok := m.kvs[namespace]; ok {
 		return kvstore.Put(key, value)
 	}
-	//if the namespace doesn't exist, it makes new kvstore and namespace, and put the data 
-	newkvStore := NewInMemKVStore() 
-	if err := newkvStore.Put(key,value); err != nil {
-		return err 
+	//if the namespace doesn't exist, it makes new kvstore and namespace, and put the data
+	newkvStore := NewInMemKVStore()
+	if err := newkvStore.Put(key, value); err != nil {
+		return err
 	}
 	m.kvs[namespace] = newkvStore
 	return nil
-}
-
-
-// Commit commits a batch
-func (m *memStoreWithNamespace) Commit(b KVStoreBatch) (e error) {
-	succeed := false
-	b.Lock()
-	defer func() {
-		if succeed {
-			// clear the batch if commit succeeds
-			b.ClearAndUnlock()
-		} else {
-			b.Unlock()
-		}
-	}()
-	for i := 0; i < b.Size(); i++ {
-		write, err := b.Entry(i)
-		if err != nil {
-			return err
-		}
-		if write.writeType == Put {
-			if err := m.Put(write.namespace, write.key, write.value); err != nil {
-				e = err
-				break
-			}
-		}
-	}
-	if e == nil {
-		succeed = true
-	}
-
-	return e
 }
 
 type boltDB struct {
@@ -271,51 +238,6 @@ func (b *boltDB) Put(namespace string, key []byte, value []byte) error {
 		if err == nil {
 			break
 		}
-	}
-	return err
-}
-
-
-// Commit commits a batch
-func (b *boltDB) Commit(batch KVStoreBatch) (err error) {
-	succeed := true
-	batch.Lock()
-	defer func() {
-		if succeed {
-			// clear the batch if commit succeeds
-			batch.ClearAndUnlock()
-		} else {
-			batch.Unlock()
-		}
-
-	}()
-
-	for c := uint8(0); c < b.numRetries; c++ {
-		if err = b.db.Update(func(tx *bbolt.Tx) error {
-			for i := 0; i < batch.Size(); i++ {
-				write, err := batch.Entry(i)
-				if err != nil {
-					return err
-				}
-				if write.writeType == Put {
-					bucket, err := tx.CreateBucketIfNotExists([]byte(write.namespace))
-					if err != nil {
-						return errors.Wrapf(err, write.errorFormat, write.errorArgs)
-					}
-					if err := bucket.Put(write.key, write.value); err != nil {
-						return errors.Wrapf(err, write.errorFormat, write.errorArgs)
-					}
-				}
-			}
-			return nil
-		}); err == nil {
-			break
-		}
-	}
-
-	if err != nil {
-		succeed = false
-		err = errors.Wrap(ErrIO, err.Error())
 	}
 	return err
 }

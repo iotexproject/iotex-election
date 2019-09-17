@@ -11,6 +11,7 @@
 package server
 
 import (
+	"database/sql"
 	"encoding/hex"
 	"errors"
 	"log"
@@ -21,6 +22,8 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/ptypes/empty"
+	// require sqlite 3
+	_ "github.com/mattn/go-sqlite3"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/net/context"
@@ -74,12 +77,16 @@ func NewServer(cfg *Config) (Server, error) {
 	}
 	zap.ReplaceGlobals(l)
 
-	var c committee.Committee
-	if cfg.DB.DBPath != "" {
-		c, err = committee.NewCommittee(db.NewBoltDB(cfg.DB), cfg.Committee)
-	} else {
-		c, err = committee.NewCommittee(db.NewInMemStoreWithNamespace(cfg.DB), cfg.Committee)
+	dbPath := cfg.DB.DBPath
+	if dbPath == "" {
+		dbPath = "election.db"
 	}
+	var c committee.Committee
+	sqldb, err := sql.Open("sqlite3", "sqlite.db")
+	if err != nil {
+		return nil, err
+	}
+	c, err = committee.NewCommittee(sqldb, cfg.Committee, db.NewBoltDB(cfg.DB))
 	if err != nil {
 		return nil, err
 	}
@@ -278,12 +285,12 @@ func (s *server) GetBucketsByCandidate(ctx context.Context, request *api.GetBuck
 	}
 	var votes []*types.Vote
 	switch len(name) {
-		case 0:
-			votes = result.Votes()
-		case 12:
-			votes = result.VotesByDelegate(name)
-		default:
-			return nil, errors.New("invalid candidate name")
+	case 0:
+		votes = result.Votes()
+	case 12:
+		votes = result.VotesByDelegate(name)
+	default:
+		return nil, errors.New("invalid candidate name")
 	}
 	if votes == nil {
 		return nil, errors.New("No buckets for the candidate")

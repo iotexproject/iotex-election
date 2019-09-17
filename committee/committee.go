@@ -12,7 +12,7 @@ package committee
 
 import (
 	"context"
-	"crypto/sha256"
+	"database/sql"
 	"math"
 	"math/big"
 	"sort"
@@ -22,27 +22,15 @@ import (
 
 	ethereum "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
+	"github.com/iotexproject/go-pkgs/hash"
 	"github.com/iotexproject/iotex-election/carrier"
 	"github.com/iotexproject/iotex-election/db"
 	"github.com/iotexproject/iotex-election/types"
 	"github.com/iotexproject/iotex-election/util"
-)
-
-const (
-	// PollNamespace is the bucket name for election Result
-	PollNamespace = "Poll"
-
-	// BlockTimeNamespace is the bucket name for election Time
-	BlockTimeNamespace = "BlockTime"
-
-	// BucketNamespace is the bucket name for Bucket
-	BucketNamespace = "Bucket"
-
-	// RegistrationNamespace is the bucket name for Registration
-	RegistrationNamespace = "Registration"
 )
 
 // CalcGravityChainHeight calculates the corresponding gravity chain height for an epoch
@@ -99,7 +87,8 @@ type (
 	}
 
 	committee struct {
-		db                    db.KVStoreWithNamespace
+		oldDB                 db.KVStoreWithNamespace
+		db                    *sql.DB
 		carrier               carrier.Carrier
 		retryLimit            uint8
 		paginationSize        uint8
@@ -125,13 +114,33 @@ type (
 	rawData struct {
 		mintTime          time.Time
 		noNewStakingEvent bool
+		migration         bool
 		buckets           []*types.Bucket
 		registrations     []*types.Registration
 	}
 )
 
+func (ec *committee) createTables() error {
+	tableCreations := []string{
+		"CREATE TABLE IF NOT EXISTS buckets (id INTEGER PRIMARY KEY AUTOINCREMENT, hash BLOB UNIQUE, start_time TIMESTAMP, duration TEXT, amount BLOB, decay INTEGER, voter BLOB, candidate BLOB)",
+		"CREATE TABLE IF NOT EXISTS registrations (id INTEGER PRIMARY KEY AUTOINCREMENT, hash BLOB UNIQUE, name BLOB, address BLOB, operator_address BLOB, reward_address BLOB, self_staking_weight INTEGER)",
+		"CREATE TABLE IF NOT EXISTS height_to_registrations (height INTEGER, rid INTEGER REFERENCES registrations(id), CONSTRAINT key PRIMARY KEY (height, rid))",
+		"CREATE TABLE IF NOT EXISTS height_to_buckets (height INTEGER, bid INTEGER REFERENCES buckets(id), times INTEGER, CONSTRAINT key PRIMARY KEY (height, bid))",
+		"CREATE TABLE IF NOT EXISTS mint_times (height INTEGER PRIMARY KEY, time TIMESTAMP)",
+		"CREATE TABLE IF NOT EXISTS meta (key BLOB PRIMARY KEY, value BLOB)",
+		"CREATE TABLE IF NOT EXISTS identical_buckets (height INTEGER PRIMARY KEY, identical_to INTEGER)",
+		"CREATE TABLE IF NOT EXISTS identical_registrations (height INTEGER PRIMARY KEY, identical_to INTEGER)",
+	}
+	for _, creation := range tableCreations {
+		if _, err := ec.db.Exec(creation); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // NewCommittee creates a committee
-func NewCommittee(db db.KVStoreWithNamespace, cfg Config) (Committee, error) {
+func NewCommittee(newDB *sql.DB, cfg Config, oldDB db.KVStoreWithNamespace) (Committee, error) {
 	if !common.IsHexAddress(cfg.StakingContractAddress) {
 		return nil, errors.New("Invalid staking contract address")
 	}
@@ -171,7 +180,8 @@ func NewCommittee(db db.KVStoreWithNamespace, cfg Config) (Committee, error) {
 		gravityChainBatchSize = cfg.GravityChainBatchSize
 	}
 	return &committee{
-		db:                    db,
+		oldDB:                 oldDB,
+		db:                    newDB,
 		cache:                 newResultCache(cfg.CacheSize),
 		heightManager:         newHeightManager(),
 		carrier:               carrier,
@@ -191,27 +201,162 @@ func NewCommittee(db db.KVStoreWithNamespace, cfg Config) (Committee, error) {
 	}, nil
 }
 
+func (ec *committee) heightWithIdenticalRegs(height uint64) (uint64, error) {
+	var val int64
+	row := ec.db.QueryRow("SELECT identical_to FROM identical_registrations WHERE height = ?", util.Uint64ToInt64(height))
+	err := row.Scan(&val)
+	switch err {
+	case nil:
+		return uint64(val), nil
+	case sql.ErrNoRows:
+		return height, nil
+	default:
+		return 0, err
+	}
+}
+
+func (ec *committee) heightWithIdenticalBuckets(height uint64) (uint64, error) {
+	var val int64
+	row := ec.db.QueryRow("SELECT identical_to FROM identical_buckets WHERE height = ?", util.Uint64ToInt64(height))
+	err := row.Scan(&val)
+	switch err {
+	case nil:
+		return uint64(val), nil
+	case sql.ErrNoRows:
+		return height, nil
+	default:
+		return 0, err
+	}
+}
+
+func (ec *committee) hasIdenticalRegistrations(
+	regs [][]byte,
+	lastRegHashes []hash.Hash256,
+) bool {
+	if regs == nil && lastRegHashes == nil {
+		return true
+	}
+	if regs == nil || lastRegHashes == nil {
+		return false
+	}
+	if len(regs) != len(lastRegHashes) {
+		return false
+	}
+	rhs := map[hash.Hash256]bool{}
+	for _, h := range regs {
+		if _, ok := rhs[hash.Hash256b(h)]; ok {
+			return false
+		}
+		rhs[hash.Hash256b(h)] = true
+	}
+	for _, h := range lastRegHashes {
+		if _, ok := rhs[h]; !ok {
+			return false
+		}
+		rhs[h] = false
+	}
+	return true
+}
+
+func (ec *committee) hasIdenticalBuckets(
+	buckets map[hash.Hash256]int,
+	lastBucketHashes map[hash.Hash256]int,
+) bool {
+	if buckets == nil && lastBucketHashes == nil {
+		return true
+	}
+	if buckets == nil || lastBucketHashes == nil {
+		return false
+	}
+	if len(buckets) != len(lastBucketHashes) {
+		return false
+	}
+	for h, times := range buckets {
+		last, ok := lastBucketHashes[h]
+		if !ok {
+			return false
+		}
+		if last != times {
+			return false
+		}
+	}
+	return true
+}
+
+func (ec *committee) migrateResult(height uint64, r *types.ElectionResult) error {
+	candidates := r.Delegates()
+	regs := make([]*types.Registration, 0, len(candidates))
+	for _, candidate := range candidates {
+		regs = append(regs, &candidate.Registration)
+	}
+	votes := r.Votes()
+	buckets := make([]*types.Bucket, 0, len(votes))
+	for _, vote := range votes {
+		buckets = append(buckets, &vote.Bucket)
+	}
+	return ec.storeData(height, &rawData{
+		mintTime:      r.MintTime(),
+		registrations: regs,
+		buckets:       buckets,
+		migration:     true,
+	})
+}
+
+func (ec *committee) migrate(ctx context.Context) (err error) {
+	if ec.oldDB == nil {
+		return nil
+	}
+	kvstore := db.NewKVStoreWithNamespaceWrapper("electionNS", ec.oldDB)
+	if err := kvstore.Start(ctx); err != nil {
+		return err
+	}
+	defer func() {
+		err = kvstore.Stop(ctx)
+	}()
+	nextHeightHash, err := kvstore.Get(db.NextHeightKey)
+	if err != nil {
+		return err
+	}
+	nextHeight := util.BytesToUint64(nextHeightHash)
+	nextHeightInNewDB, err := ec.loadNextHeight()
+	if err == nil && nextHeightInNewDB >= nextHeight {
+		return nil
+	}
+	for height := ec.startHeight; height < nextHeight; height += ec.interval {
+		data, err := kvstore.Get(util.Uint64ToBytes(height))
+		if err != nil {
+			return err
+		}
+		r := &types.ElectionResult{}
+		if err := r.Deserialize(data); err != nil {
+			return err
+		}
+		if err := ec.migrateResult(height, r); err != nil {
+			return err
+		}
+	}
+	return
+}
+
 func (ec *committee) Start(ctx context.Context) (err error) {
 	ec.mutex.Lock()
 	defer ec.mutex.Unlock()
-	if err := ec.db.Start(ctx); err != nil {
-		return errors.Wrap(err, "error when starting db")
+	if err = ec.createTables(); err != nil {
+		return err
 	}
-	if startHeight, err := ec.getTimeDB(db.NextHeightKey); err == nil {
+	if err = ec.migrate(ctx); err != nil {
+		return errors.Wrap(err, "failed to migrate")
+	}
+	if nextHeight, err := ec.loadNextHeight(); err == nil {
 		zap.L().Info("restoring from db")
-		ec.nextHeight = util.BytesToUint64(startHeight)
+		ec.nextHeight = nextHeight
 		for height := ec.startHeight; height < ec.nextHeight; height += ec.interval {
 			zap.L().Info("loading", zap.Uint64("height", height))
-			heightKey := ec.dbKey(height)
-			data, err := ec.getTimeDB(heightKey)
+			mintTime, err := ec.mintTime(height)
 			if err != nil {
 				return err
 			}
-			time, err := util.BytesToTime(data)
-			if err != nil {
-				return err
-			}
-			if err := ec.heightManager.add(height, time); err != nil {
+			if err := ec.heightManager.add(height, mintTime); err != nil {
 				return err
 			}
 		}
@@ -269,7 +414,7 @@ func (ec *committee) Stop(ctx context.Context) error {
 	ec.terminate <- true
 	ec.carrier.Close()
 
-	return ec.db.Stop(ctx)
+	return nil
 }
 
 func (ec *committee) Status() STATUS {
@@ -380,22 +525,8 @@ func (ec *committee) ResultByHeight(height uint64) (*types.ElectionResult, error
 	return ec.resultByHeight(height)
 }
 
-func (ec *committee) poll(height uint64) (*types.Poll, error) {
-	data, err := ec.db.Get(PollNamespace, ec.dbKey(height))
-	if err != nil {
-		return nil, err
-	}
-	if data == nil {
-		return nil, db.ErrNotExist
-	}
-	poll := &types.Poll{}
-	if err := poll.Deserialize(data); err != nil {
-		return nil, err
-	}
-	return poll, nil
-}
-
 func (ec *committee) resultByHeight(height uint64) (*types.ElectionResult, error) {
+	zap.L().Info("fetch result from DB and calculate", zap.Uint64("height", height))
 	if height < ec.startHeight {
 		return nil, errors.Errorf(
 			"height %d is lower than start height %d",
@@ -414,25 +545,20 @@ func (ec *committee) resultByHeight(height uint64) (*types.ElectionResult, error
 		return result, nil
 	}
 
-	// if cache doesn't have corresponding result, read the resultMeta from db
-	poll, err := ec.poll(height)
-	if err != nil {
-		return nil, err
-	}
-
-	//calculate the result from resultMeta
+	//calculate the result from DB
 	calculator, err := ec.calculator(height)
 	if err != nil {
 		return nil, err
 	}
-	regs, err := ec.registrations(poll.Registrations())
+	regs, err := ec.registrations(height)
 	if err != nil {
 		return nil, err
 	}
 	if err := calculator.AddRegistrations(regs); err != nil {
 		return nil, err
 	}
-	buckets, err := ec.buckets(poll.Buckets())
+
+	buckets, err := ec.buckets(height)
 	if err != nil {
 		return nil, err
 	}
@@ -613,117 +739,321 @@ func (ec *committee) fetchDataByHeight(height uint64) (*rawData, error) {
 	}, nil
 }
 
-func (ec *committee) dbKey(height uint64) []byte {
-	return util.Uint64ToBytes(height)
+func (ec *committee) loadNextHeight() (uint64, error) {
+	var val []byte
+	row := ec.db.QueryRow("SELECT value FROM meta WHERE key = ?", db.NextHeightKey)
+	err := row.Scan(&val)
+	if err != nil {
+		return 0, err
+	}
+	return util.BytesToUint64(val), nil
 }
 
-func (ec *committee) getTimeDB(key []byte) ([]byte, error) {
-	return ec.db.Get(BlockTimeNamespace, key)
+func (ec *committee) mintTime(height uint64) (time.Time, error) {
+	var val time.Time
+	row := ec.db.QueryRow("SELECT time FROM mint_times WHERE height = ?", util.Uint64ToInt64(height))
+	err := row.Scan(&val)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return val, nil
 }
 
-func (ec *committee) putTimeDB(key []byte, value []byte) error {
-	return ec.db.Put(BlockTimeNamespace, key, value)
-}
-
-func (ec *committee) getVoteDB(key []byte) ([]byte, error) {
-	return ec.db.Get(BucketNamespace, key)
-}
-
-func (ec *committee) getCandidateDB(key []byte) ([]byte, error) {
-	return ec.db.Get(RegistrationNamespace, key)
+func (ec *committee) storeRegistrationsAndBuckets(height uint64, regs []*types.Registration, buckets []*types.Bucket) error {
+	tx, err := ec.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	regStmt, err := tx.Prepare("INSERT OR IGNORE INTO registrations (hash, name, address, operator_address, reward_address, self_staking_weight) VALUES (?, ?, ?, ?, ?, ?)")
+	if err != nil {
+		return err
+	}
+	defer regStmt.Close()
+	for _, reg := range regs {
+		h, err := reg.Hash()
+		if err != nil {
+			return err
+		}
+		if _, err := regStmt.Exec(h[:], reg.Name(), reg.Address(), reg.OperatorAddress(), reg.RewardAddress(), util.Uint64ToInt64(reg.SelfStakingWeight())); err != nil {
+			return err
+		}
+	}
+	bucketStmt, err := tx.Prepare("INSERT OR IGNORE INTO buckets (hash, start_time, duration, amount, decay, voter, candidate) VALUES (?, ?, ?, ?, ?, ?, ?)")
+	if err != nil {
+		return err
+	}
+	defer bucketStmt.Close()
+	for _, bucket := range buckets {
+		h, err := bucket.Hash()
+		if err != nil {
+			return err
+		}
+		if _, err := bucketStmt.Exec(h[:], bucket.StartTime(), bucket.Duration().String(), bucket.Amount().Bytes(), bucket.Decay(), bucket.Voter(), bucket.Candidate()); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
 }
 
 func (ec *committee) storeData(height uint64, data *rawData) error {
-	if err := ec.heightManager.validate(height, data.mintTime); err != nil {
-		zap.L().Fatal(
-			"Unexpected status that the upcoming block height or time is invalid",
-			zap.Error(err),
-		)
+	if err := ec.storeRegistrationsAndBuckets(height, data.registrations, data.buckets); err != nil {
+		return err
 	}
-	batch := db.NewBatch()
-	var bhs [][]byte
-	if data.noNewStakingEvent {
-		poll, err := ec.poll(height - ec.interval)
+	tx, err := ec.db.Begin()
+	if err != nil {
+		return err
+	}
+	irh, lastRegHashes, err := ec.registrationHashes(height - ec.interval)
+	if err != nil {
+		return err
+	}
+	regHashes := make([][]byte, 0, len(data.registrations))
+	for _, reg := range data.registrations {
+		h, err := reg.Hash()
 		if err != nil {
 			return err
 		}
-		bhs = poll.Buckets()
+		regHashes = append(regHashes, h[:])
+	}
+	if ec.hasIdenticalRegistrations(regHashes, lastRegHashes) {
+		if _, err := tx.Exec("INSERT OR IGNORE INTO identical_registrations (height, identical_to) VALUES (?, ?)", height, irh); err != nil {
+			return err
+		}
 	} else {
-		bhs = make([][]byte, len(data.buckets))
-		for i, bucket := range data.buckets {
-			data, err := bucket.Serialize()
-			if err != nil {
+		if _, err := tx.Exec("DROP TABLE IF EXISTS temp_regs"); err != nil {
+			return err
+		}
+		if _, err := tx.Exec("CREATE TABLE temp_regs (height INTEGER, hash BLOB PRIMARY KEY)"); err != nil {
+			return err
+		}
+
+		stmt, err := tx.Prepare("INSERT INTO temp_regs (height, hash) VALUES (?, ?)")
+		if err != nil {
+			return err
+		}
+		defer stmt.Close()
+		for _, value := range regHashes {
+			if _, err := stmt.Exec(height, value[:]); err != nil {
 				return err
 			}
-			hash := sha256.Sum256(data)
-			batch.Put(BucketNamespace, hash[:], data, "Failed to put a candidate into DB")
-			bhs[i] = hash[:]
 		}
-	}
-	rhs := make([][]byte, len(data.registrations))
-	for i, reg := range data.registrations {
-		data, err := reg.Serialize()
+		result, err := tx.Exec(`INSERT OR REPLACE INTO height_to_registrations (height, rid) 
+			SELECT temp_regs.height, registrations.id FROM registrations INNER JOIN temp_regs ON registrations.hash=temp_regs.hash
+		`)
 		if err != nil {
 			return err
 		}
-		hash := sha256.Sum256(data)
-		batch.Put(RegistrationNamespace, hash[:], data, "Failed to put a candidate into DB")
-		rhs[i] = hash[:]
+		rows, err := result.RowsAffected()
+		if err != nil {
+			return err
+		}
+		if rows != int64(len(regHashes)) {
+			return errors.New("wrong number of registration records")
+		}
+		if _, err := tx.Exec("DROP TABLE temp_regs"); err != nil {
+			return err
+		}
 	}
-	ser, err := types.NewPoll(bhs, rhs).Serialize()
+
+	ibh, lastBucketHashes, err := ec.bucketHashes(height - ec.interval)
 	if err != nil {
 		return err
 	}
-	timeData, err := util.TimeToBytes(data.mintTime)
-	if err != nil {
+	bucketHashes := make(map[hash.Hash256]int)
+	for _, bucket := range data.buckets {
+		h, err := bucket.Hash()
+		if err != nil {
+			return err
+		}
+		if times, ok := bucketHashes[h]; ok {
+			bucketHashes[h] = times + 1
+		} else {
+			bucketHashes[h] = 1
+		}
+	}
+	if !data.migration && data.noNewStakingEvent || data.migration && ec.hasIdenticalBuckets(bucketHashes, lastBucketHashes) {
+		if _, err := tx.Exec("INSERT OR IGNORE INTO identical_buckets (height, identical_to) VALUES (?, ?)", height, ibh); err != nil {
+			return err
+		}
+	} else {
+		if _, err := tx.Exec("DROP TABLE IF EXISTS temp_buckets"); err != nil {
+			return err
+		}
+		if _, err := tx.Exec("CREATE TABLE temp_buckets (height INTEGER, hash BLOB PRIMARY KEY, times INTEGER)"); err != nil {
+			return err
+		}
+		stmt, err := tx.Prepare("INSERT INTO temp_buckets (height, hash, times) VALUES (?, ?, ?)")
+		if err != nil {
+			return err
+		}
+		defer stmt.Close()
+		for key, value := range bucketHashes {
+			if _, err := stmt.Exec(height, key[:], value); err != nil {
+				return err
+			}
+		}
+		result, err := tx.Exec(`INSERT OR REPLACE INTO height_to_buckets (height, bid, times)
+			SELECT temp_buckets.height, buckets.id, temp_buckets.times FROM buckets INNER JOIN temp_buckets WHERE buckets.hash = temp_buckets.hash
+		`)
+		if err != nil {
+			return err
+		}
+		rows, err := result.RowsAffected()
+		if err != nil {
+			return err
+		}
+		if rows != int64(len(bucketHashes)) {
+			return errors.New("wrong number of bucket records")
+		}
+		if _, err := tx.Exec("DROP TABLE temp_buckets"); err != nil {
+			return err
+		}
+	}
+	if _, err := tx.Exec("INSERT OR IGNORE INTO mint_times (height, time) VALUES (?, ?)", height, data.mintTime); err != nil {
 		return err
 	}
-	heightKey := ec.dbKey(height)
-	batch.Put(PollNamespace, heightKey, ser, "failed to put election result into db")
-	batch.Put(BlockTimeNamespace, heightKey, timeData, "failed to put election time into db")
-	batch.Put(BlockTimeNamespace, db.NextHeightKey, util.Uint64ToBytes(height+ec.interval), "failed to put next height into db")
-	if err := ec.db.Commit(batch); err != nil {
+
+	if _, err := tx.Exec("INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)", db.NextHeightKey, util.Uint64ToBytes(height)); err != nil {
 		return err
 	}
-	return ec.heightManager.add(height, data.mintTime)
+
+	return tx.Commit()
 }
 
-func (ec *committee) buckets(keys [][]byte) ([]*types.Bucket, error) {
-	var buckets []*types.Bucket
-	for _, hash := range keys {
-		if len(hash) != 32 {
-			zap.L().Error("The length of the hash value should be 32")
+func (ec *committee) bucketHashes(height uint64) (uint64, map[hash.Hash256]int, error) {
+	height, err := ec.heightWithIdenticalBuckets(height)
+	if err != nil {
+		return 0, nil, err
+	}
+	hashes := make(map[hash.Hash256]int)
+	rows, err := ec.db.Query(`
+        SELECT b.hash, hb.times as times
+        FROM buckets as b INNER JOIN height_to_buckets as hb
+        ON b.id = hb.bid 
+        WHERE hb.height = ? 
+    `, util.Uint64ToInt64(height))
+	if err != nil {
+		return 0, nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var val []byte
+		var time int
+		if err := rows.Scan(&val, &time); err != nil {
+			return 0, nil, err
 		}
-		data, err := ec.getVoteDB(hash)
+		hashes[hash.BytesToHash256(val)] = time
+	}
+	if rows.Err() != nil {
+		return 0, nil, rows.Err()
+	}
+	return height, hashes, nil
+}
+
+func (ec *committee) buckets(height uint64) (buckets []*types.Bucket, err error) {
+	height, err = ec.heightWithIdenticalBuckets(height)
+	if err != nil {
+		return
+	}
+	var decay, times int64
+	var startTime time.Time
+	var rawDuration string
+	var amount, voter, candidate []byte
+
+	rows, err := ec.db.Query(`
+		SELECT b.start_time, b.duration, b.amount, b.decay, b.voter, b.candidate, hb.times as times
+		FROM buckets as b INNER JOIN height_to_buckets as hb
+		ON b.id = hb.bid
+		WHERE hb.height = ? 
+	`, util.Uint64ToInt64(height))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		if err := rows.Scan(&startTime, &rawDuration, &amount, &decay, &voter, &candidate, &times); err != nil {
+			return nil, err
+		}
+		duration, err := time.ParseDuration(rawDuration)
+		bucket, err := types.NewBucket(startTime, duration, big.NewInt(0).SetBytes(amount), voter, candidate, decay != 0)
 		if err != nil {
 			return nil, err
 		}
-		bucket := &types.Bucket{}
-		if err := bucket.Deserialize(data); err != nil {
-			return nil, err
+		for i := int64(0); i < times; i++ {
+			buckets = append(buckets, bucket)
 		}
-		buckets = append(buckets, bucket)
 	}
+	if rows.Err() != nil {
+		return nil, rows.Err()
+	}
+	zap.L().Debug("fetch buckets from DB", zap.Int("number of buckets", len(buckets)))
+
 	return buckets, nil
 }
 
-func (ec *committee) registrations(keys [][]byte) ([]*types.Registration, error) {
-	var cands []*types.Registration
-	for _, hash := range keys {
-		if len(hash) != 32 {
-			zap.L().Error("The length of the hash value should be 32")
-		}
-		data, err := ec.getCandidateDB(hash)
-		if err != nil {
-			return nil, err
-		}
-		cand := &types.Registration{}
-		if err := cand.Deserialize(data); err != nil {
-			return nil, err
-		}
-		cands = append(cands, cand)
+func (ec *committee) registrationHashes(height uint64) (uint64, []hash.Hash256, error) {
+	if height < ec.startHeight {
+		return height, nil, nil
 	}
-	return cands, nil
+	height, err := ec.heightWithIdenticalRegs(height)
+	if err != nil {
+		return 0, nil, err
+	}
+	var hashes []hash.Hash256
+	rows, err := ec.db.Query(`
+        SELECT r.hash
+        FROM registrations as r INNER JOIN height_to_registrations as hr
+        ON r.id = hr.rid
+        WHERE hr.height = ? 
+    `, util.Uint64ToInt64(height))
+	if err != nil {
+		return 0, nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var val []byte
+		if err := rows.Scan(&val); err != nil {
+			return 0, nil, err
+		}
+		hashes = append(hashes, hash.BytesToHash256(val))
+	}
+	if rows.Err() != nil {
+		return 0, nil, rows.Err()
+	}
+	return height, hashes, nil
+}
+
+func (ec *committee) registrations(height uint64) (registrations []*types.Registration, err error) {
+	height, err = ec.heightWithIdenticalRegs(height)
+	if err != nil {
+		return
+	}
+	var name, address, operatorAddress, rewardAddress []byte
+	var selfStakingWeight int64
+	rows, err := ec.db.Query(`
+        SELECT r.name, r.address, r.operator_address, r.reward_address, r.self_staking_weight
+        FROM registrations as r INNER JOIN height_to_registrations as hr
+        ON r.id = hr.rid
+        WHERE hr.height = ? 
+    `, util.Uint64ToInt64(height))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		if err := rows.Scan(&name, &address, &operatorAddress, &rewardAddress, &selfStakingWeight); err != nil {
+			return nil, err
+		}
+		reg := types.NewRegistration(name, address, operatorAddress, rewardAddress, uint64(selfStakingWeight))
+		registrations = append(registrations, reg)
+	}
+	if rows.Err() != nil {
+		return nil, rows.Err()
+	}
+	zap.L().Debug("fetch registrations from DB", zap.Int("number of registrations", len(registrations)))
+
+	return registrations, nil
 }
 
 func (ec *committee) retryFetchDataByHeight(height uint64) (data *rawData, err error) {

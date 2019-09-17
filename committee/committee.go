@@ -22,6 +22,7 @@ import (
 
 	ethereum "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
+	lru "github.com/hashicorp/golang-lru"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -99,7 +100,7 @@ type (
 		selfStakingThreshold  *big.Int
 		interval              uint64
 
-		cache         *resultCache
+		cache         *lru.Cache
 		heightManager *heightManager
 
 		startHeight           uint64
@@ -179,10 +180,14 @@ func NewCommittee(newDB *sql.DB, cfg Config, oldDB db.KVStoreWithNamespace) (Com
 	if cfg.GravityChainBatchSize > 0 {
 		gravityChainBatchSize = cfg.GravityChainBatchSize
 	}
+	cache, err := lru.New(int(cfg.CacheSize))
+	if err != nil {
+		return nil, err
+	}
 	return &committee{
 		oldDB:                 oldDB,
 		db:                    newDB,
-		cache:                 newResultCache(cfg.CacheSize),
+		cache:                 cache,
 		heightManager:         newHeightManager(),
 		carrier:               carrier,
 		retryLimit:            cfg.NumOfRetries,
@@ -540,9 +545,14 @@ func (ec *committee) resultByHeight(height uint64) (*types.ElectionResult, error
 			height,
 		)
 	}
-	result := ec.cache.get(height)
-	if result != nil {
-		return result, nil
+
+	if cacheResult, ok := ec.cache.Get(height); ok {
+		if result, as := cacheResult.(*types.ElectionResult); as {
+			return result, nil 
+		}
+		return nil, errors.Errorf(
+			"lru cache type assertion has error",
+		)
 	}
 
 	//calculate the result from DB
@@ -566,11 +576,11 @@ func (ec *committee) resultByHeight(height uint64) (*types.ElectionResult, error
 		return nil, err
 	}
 
-	result, err = calculator.Calculate()
+	result, err := calculator.Calculate()
 	if err != nil {
 		return nil, err
 	}
-	ec.cache.insert(height, result)
+	ec.cache.Add(height, result)
 
 	return result, nil
 }

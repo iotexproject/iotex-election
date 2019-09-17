@@ -16,7 +16,7 @@ require (
 	github.com/golang/mock v1.3.1
 	github.com/golang/protobuf v1.3.1
 	github.com/graph-gophers/graphql-go v0.0.0-20190610161739-8f92f34fc598 // indirect
-	github.com/hashicorp/golang-lru v0.5.1 // indirect
+	github.com/hashicorp/golang-lru v0.5.1
 	github.com/howeyc/fsnotify v0.9.0 // indirect
 	github.com/huin/goupnp v1.0.0 // indirect
 	github.com/influxdata/influxdb v1.7.7 // indirect

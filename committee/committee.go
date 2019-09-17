@@ -828,10 +828,31 @@ func (ec *committee) storeData(height uint64, data *rawData) error {
 		}
 	} else {
 		fmt.Println("insert into height to registrations")
-		result, err := tx.Exec("INSERT INTO height_to_registrations (height, rid) VALUES (SELECT ?, id FROM registrations WHERE hash IN (?))", height, pq.Array(regHashes))
+		//result, err := tx.Exec("INSERT INTO height_to_registrations (height, rid) VALUES (SELECT ?, id FROM registrations WHERE hash IN (?))", height, pq.Array(regHashes))
+		if _, err := tx.Exec("CREATE TABLE temp.regs (height INTEGER, hash BLOB PRIMARY KEY)"); err != nil {
+			return err
+		}
+		stmt, err := tx.Prepare("INSERT INTO temp.regs (height, hash) VALUES (?, ?")
 		if err != nil {
 			return err
 		}
+		defer stmt.Close() 
+		for key, value := range regHashes {
+			if _, err := stmt.Exec(height, value[:]); err != nil {
+				return err
+			}
+		}
+		result, err := tx.Exec(`INSERT OR IGNORE INTO height_to_registrations (height, rid) VALUES (
+			SELECT temp.regs.height, registrations.id FROM registrations INNER JOIN temp.regs WHERE registrations.hash = temp.regs.hash
+		)`)
+		if err != nil {
+			return err
+		}
+
+		//result, err := tx.Exec("INSERT INTO height_to_registrations (height, rid) VALUES (SELECT ?, id FROM registrations WHERE hash IN (?)", height, regHashes)
+		//if err != nil {
+		//	return err
+		//}
 		rows, err := result.RowsAffected()
 		if err != nil {
 			return err

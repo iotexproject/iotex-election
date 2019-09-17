@@ -13,7 +13,6 @@ package committee
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"math"
 	"math/big"
 	"sort"
@@ -34,9 +33,6 @@ import (
 	"github.com/iotexproject/iotex-election/types"
 	"github.com/iotexproject/iotex-election/util"
 )
-
-// NextHeightKey defines the constant key of next height
-var NextHeightKey = int64(0)
 
 // CalcGravityChainHeight calculates the corresponding gravity chain height for an epoch
 type CalcGravityChainHeight func(uint64) (uint64, error)
@@ -132,7 +128,7 @@ func (ec *committee) createTables() error {
 		"CREATE TABLE IF NOT EXISTS height_to_registrations (height INTEGER, rid INTEGER REFERENCES registrations(id), CONSTRAINT key PRIMARY KEY (height, rid))",
 		"CREATE TABLE IF NOT EXISTS height_to_buckets (height INTEGER, bid INTEGER REFERENCES buckets(id), times INTEGER, CONSTRAINT key PRIMARY KEY (height, bid))",
 		"CREATE TABLE IF NOT EXISTS mint_times (height INTEGER PRIMARY KEY, time TIMESTAMP)",
-		"CREATE TABLE IF NOT EXISTS next_height (key INTEGER PRIMARY KEY, height integer)",
+		"CREATE TABLE IF NOT EXISTS meta (key BLOB PRIMARY KEY, value BLOB)",
 		"CREATE TABLE IF NOT EXISTS identical_buckets (height INTEGER PRIMARY KEY, identical_to INTEGER)",
 		"CREATE TABLE IF NOT EXISTS identical_registrations (height INTEGER PRIMARY KEY, identical_to INTEGER)",
 	}
@@ -236,13 +232,12 @@ func (ec *committee) heightWithIdenticalBuckets(height uint64) (uint64, error) {
 
 func (ec *committee) hasIdenticalRegistrations(
 	regs [][]byte,
-	heightToCompare uint64,
+	lastRegHashes []hash.Hash256,
 ) bool {
-	if heightToCompare < ec.startHeight {
-		return false
+	if regs == nil && lastRegHashes == nil {
+		return true
 	}
-	lastRegHashes, err := ec.registrationHashes(heightToCompare)
-	if err != nil {
+	if regs == nil || lastRegHashes == nil {
 		return false
 	}
 	if len(regs) != len(lastRegHashes) {
@@ -250,9 +245,6 @@ func (ec *committee) hasIdenticalRegistrations(
 	}
 	rhs := map[hash.Hash256]bool{}
 	for _, h := range regs {
-		if err != nil {
-			return false
-		}
 		if _, ok := rhs[hash.Hash256b(h)]; ok {
 			return false
 		}
@@ -269,13 +261,12 @@ func (ec *committee) hasIdenticalRegistrations(
 
 func (ec *committee) hasIdenticalBuckets(
 	buckets map[hash.Hash256]int,
-	heightToCompare uint64,
+	lastBucketHashes map[hash.Hash256]int,
 ) bool {
-	if heightToCompare < ec.startHeight {
-		return false
+	if buckets == nil && lastBucketHashes == nil {
+		return true
 	}
-	lastBucketHashes, err := ec.bucketHashes(heightToCompare)
-	if err != nil {
+	if buckets == nil || lastBucketHashes == nil {
 		return false
 	}
 	if len(buckets) != len(lastBucketHashes) {
@@ -312,37 +303,40 @@ func (ec *committee) migrateResult(height uint64, r *types.ElectionResult) error
 	})
 }
 
-func (ec *committee) migrate(ctx context.Context) error {
+func (ec *committee) migrate(ctx context.Context) (err error) {
 	if ec.oldDB == nil {
 		return nil
 	}
 	kvstore := db.NewKVStoreWithNamespaceWrapper("electionNS", ec.oldDB)
 	if err := kvstore.Start(ctx); err != nil {
-		zap.L().Error("failed to start the oldDB")
 		return err
 	}
+	defer func() {
+		err = kvstore.Stop(ctx)
+	}()
 	nextHeightHash, err := kvstore.Get(db.NextHeightKey)
 	if err != nil {
-		zap.L().Error("failed to get nextHeight from oldDB")
 		return err
 	}
 	nextHeight := util.BytesToUint64(nextHeightHash)
+	nextHeightInNewDB, err := ec.loadNextHeight()
+	if err == nil && nextHeightInNewDB >= nextHeight {
+		return nil
+	}
 	for height := ec.startHeight; height < nextHeight; height += ec.interval {
 		data, err := kvstore.Get(util.Uint64ToBytes(height))
 		if err != nil {
-			zap.L().Error("failed to get electionresult from oldDB")
 			return err
 		}
 		r := &types.ElectionResult{}
 		if err := r.Deserialize(data); err != nil {
 			return err
 		}
-		fmt.Println("migrate result", height)
 		if err := ec.migrateResult(height, r); err != nil {
 			return err
 		}
 	}
-	return nil
+	return
 }
 
 func (ec *committee) Start(ctx context.Context) (err error) {
@@ -746,13 +740,13 @@ func (ec *committee) fetchDataByHeight(height uint64) (*rawData, error) {
 }
 
 func (ec *committee) loadNextHeight() (uint64, error) {
-	var val int64
-	row := ec.db.QueryRow("SELECT height FROM next_height WHERE key = ?", NextHeightKey)
+	var val []byte
+	row := ec.db.QueryRow("SELECT value FROM meta WHERE key = ?", db.NextHeightKey)
 	err := row.Scan(&val)
 	if err != nil {
 		return 0, err
 	}
-	return uint64(val), nil
+	return util.BytesToUint64(val), nil
 }
 
 func (ec *committee) mintTime(height uint64) (time.Time, error) {
@@ -803,16 +797,14 @@ func (ec *committee) storeRegistrationsAndBuckets(height uint64, regs []*types.R
 }
 
 func (ec *committee) storeData(height uint64, data *rawData) error {
-	fmt.Println("store regs and buckets")
 	if err := ec.storeRegistrationsAndBuckets(height, data.registrations, data.buckets); err != nil {
 		return err
 	}
-	fmt.Println("store others")
 	tx, err := ec.db.Begin()
 	if err != nil {
 		return err
 	}
-	irh, err := ec.heightWithIdenticalRegs(height - ec.interval)
+	irh, lastRegHashes, err := ec.registrationHashes(height - ec.interval)
 	if err != nil {
 		return err
 	}
@@ -824,13 +816,11 @@ func (ec *committee) storeData(height uint64, data *rawData) error {
 		}
 		regHashes = append(regHashes, h[:])
 	}
-	fmt.Println("handle registrations")
-	if ec.hasIdenticalRegistrations(regHashes, irh) {
+	if ec.hasIdenticalRegistrations(regHashes, lastRegHashes) {
 		if _, err := tx.Exec("INSERT OR IGNORE INTO identical_registrations (height, identical_to) VALUES (?, ?)", height, irh); err != nil {
 			return err
 		}
 	} else {
-		fmt.Println("insert into height to registrations")
 		if _, err := tx.Exec("DROP TABLE IF EXISTS temp_regs"); err != nil {
 			return err
 		}
@@ -842,18 +832,16 @@ func (ec *committee) storeData(height uint64, data *rawData) error {
 		if err != nil {
 			return err
 		}
-		defer stmt.Close() 
+		defer stmt.Close()
 		for _, value := range regHashes {
 			if _, err := stmt.Exec(height, value[:]); err != nil {
-				zap.L().Error("can't put into temp_regs")
 				return err
 			}
 		}
-		result, err := tx.Exec(`INSERT OR IGNORE INTO height_to_registrations (height, rid) 
+		result, err := tx.Exec(`INSERT OR REPLACE INTO height_to_registrations (height, rid) 
 			SELECT temp_regs.height, registrations.id FROM registrations INNER JOIN temp_regs ON registrations.hash=temp_regs.hash
 		`)
 		if err != nil {
-			zap.L().Error("error when we insert into H2R")
 			return err
 		}
 		rows, err := result.RowsAffected()
@@ -861,18 +849,17 @@ func (ec *committee) storeData(height uint64, data *rawData) error {
 			return err
 		}
 		if rows != int64(len(regHashes)) {
-			//return errors.New("wrong number of registration records")
+			return errors.New("wrong number of registration records")
 		}
 		if _, err := tx.Exec("DROP TABLE temp_regs"); err != nil {
 			return err
 		}
 	}
 
-	ibh, err := ec.heightWithIdenticalBuckets(height - ec.interval)
+	ibh, lastBucketHashes, err := ec.bucketHashes(ec.startHeight - ec.interval)
 	if err != nil {
 		return err
 	}
-	fmt.Println("handle buckets")
 	bucketHashes := make(map[hash.Hash256]int)
 	for _, bucket := range data.buckets {
 		h, err := bucket.Hash()
@@ -885,12 +872,11 @@ func (ec *committee) storeData(height uint64, data *rawData) error {
 			bucketHashes[h] = 1
 		}
 	}
-	if !data.migration && data.noNewStakingEvent || data.migration && ec.hasIdenticalBuckets(bucketHashes, ibh) {
+	if !data.migration && data.noNewStakingEvent || data.migration && ec.hasIdenticalBuckets(bucketHashes, lastBucketHashes) {
 		if _, err := tx.Exec("INSERT OR IGNORE INTO identical_buckets (height, identical_to) VALUES (?, ?)", height, ibh); err != nil {
 			return err
 		}
 	} else {
-		fmt.Println("insert into height to buckets", bucketHashes)
 		if _, err := tx.Exec("DROP TABLE IF EXISTS temp_buckets"); err != nil {
 			return err
 		}
@@ -907,7 +893,7 @@ func (ec *committee) storeData(height uint64, data *rawData) error {
 				return err
 			}
 		}
-		result, err := tx.Exec(`INSERT OR IGNORE INTO height_to_buckets (height, bid, times)
+		result, err := tx.Exec(`INSERT OR REPLACE INTO height_to_buckets (height, bid, times)
 			SELECT temp_buckets.height, buckets.id, temp_buckets.times FROM buckets INNER JOIN temp_buckets WHERE buckets.hash = temp_buckets.hash
 		`)
 		if err != nil {
@@ -918,8 +904,7 @@ func (ec *committee) storeData(height uint64, data *rawData) error {
 			return err
 		}
 		if rows != int64(len(bucketHashes)) {
-			//return errors.New("wrong number of bucket records")
-			//[dorothy] why does it have to be same? there might be duplicate, is this wrong? 
+			return errors.New("wrong number of bucket records")
 		}
 		if _, err := tx.Exec("DROP TABLE temp_buckets"); err != nil {
 			return err
@@ -929,14 +914,18 @@ func (ec *committee) storeData(height uint64, data *rawData) error {
 		return err
 	}
 
-	if _, err := tx.Exec("INSERT OR REPLACE INTO next_height (key, height) VALUES (?, ?)", NextHeightKey, util.Uint64ToInt64(height)); err != nil {
+	if _, err := tx.Exec("INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)", db.NextHeightKey, util.Uint64ToBytes(height)); err != nil {
 		return err
 	}
 
 	return tx.Commit()
 }
 
-func (ec *committee) bucketHashes(height uint64) (map[hash.Hash256]int, error) {
+func (ec *committee) bucketHashes(height uint64) (uint64, map[hash.Hash256]int, error) {
+	height, err := ec.heightWithIdenticalBuckets(height)
+	if err != nil {
+		return 0, nil, err
+	}
 	hashes := make(map[hash.Hash256]int)
 	rows, err := ec.db.Query(`
         SELECT b.hash, hb.times as times
@@ -945,26 +934,28 @@ func (ec *committee) bucketHashes(height uint64) (map[hash.Hash256]int, error) {
         WHERE hb.height = ? 
     `, util.Uint64ToInt64(height))
 	if err != nil {
-		zap.L().Error("failed to get a query in bucketHashes")
-		return nil, err
+		return 0, nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var val []byte
 		var time int
 		if err := rows.Scan(&val, &time); err != nil {
-			return nil, err
+			return 0, nil, err
 		}
 		hashes[hash.BytesToHash256(val)] = time
 	}
 	if rows.Err() != nil {
-		return nil, rows.Err()
+		return 0, nil, rows.Err()
 	}
-	return hashes, nil
+	return height, hashes, nil
 }
 
-func (ec *committee) buckets(height uint64) ([]*types.Bucket, error) {
-	var buckets []*types.Bucket
+func (ec *committee) buckets(height uint64) (buckets []*types.Bucket, err error) {
+	height, err = ec.heightWithIdenticalBuckets(height)
+	if err != nil {
+		return
+	}
 	var decay, times int64
 	var startTime time.Time
 	var rawDuration string
@@ -973,7 +964,7 @@ func (ec *committee) buckets(height uint64) ([]*types.Bucket, error) {
 	rows, err := ec.db.Query(`
 		SELECT b.start_time, b.duration, b.amount, b.decay, b.voter, b.candidate, hb.times as times
 		FROM buckets as b INNER JOIN height_to_buckets as hb
-		ON buckets.id = hb.bid
+		ON b.id = hb.bid
 		WHERE hb.height = ? 
 	`, util.Uint64ToInt64(height))
 	if err != nil {
@@ -981,7 +972,7 @@ func (ec *committee) buckets(height uint64) ([]*types.Bucket, error) {
 	}
 	defer rows.Close()
 	for rows.Next() {
-		if err := rows.Scan(&startTime, &rawDuration, &amount, &voter, &candidate, &times); err != nil {
+		if err := rows.Scan(&startTime, &rawDuration, &amount, &decay, &voter, &candidate, &times); err != nil {
 			return nil, err
 		}
 		duration, err := time.ParseDuration(rawDuration)
@@ -996,10 +987,17 @@ func (ec *committee) buckets(height uint64) ([]*types.Bucket, error) {
 	if rows.Err() != nil {
 		return nil, rows.Err()
 	}
-	return nil, nil
+	return buckets, nil
 }
 
-func (ec *committee) registrationHashes(height uint64) ([]hash.Hash256, error) {
+func (ec *committee) registrationHashes(height uint64) (uint64, []hash.Hash256, error) {
+	if height < ec.startHeight {
+		return height, nil, nil
+	}
+	height, err := ec.heightWithIdenticalRegs(height)
+	if err != nil {
+		return 0, nil, err
+	}
 	var hashes []hash.Hash256
 	rows, err := ec.db.Query(`
         SELECT r.hash
@@ -1008,24 +1006,27 @@ func (ec *committee) registrationHashes(height uint64) ([]hash.Hash256, error) {
         WHERE hr.height = ? 
     `, util.Uint64ToInt64(height))
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var val []byte
 		if err := rows.Scan(&val); err != nil {
-			return nil, err
+			return 0, nil, err
 		}
 		hashes = append(hashes, hash.BytesToHash256(val))
 	}
 	if rows.Err() != nil {
-		return nil, rows.Err()
+		return 0, nil, rows.Err()
 	}
-	return hashes, nil
+	return height, hashes, nil
 }
 
-func (ec *committee) registrations(height uint64) ([]*types.Registration, error) {
-	var registrations []*types.Registration
+func (ec *committee) registrations(height uint64) (registrations []*types.Registration, err error) {
+	height, err = ec.heightWithIdenticalRegs(height)
+	if err != nil {
+		return
+	}
 	var name, address, operatorAddress, rewardAddress []byte
 	var selfStakingWeight int64
 	rows, err := ec.db.Query(`
@@ -1040,7 +1041,6 @@ func (ec *committee) registrations(height uint64) ([]*types.Registration, error)
 	defer rows.Close()
 	for rows.Next() {
 		if err := rows.Scan(&name, &address, &operatorAddress, &rewardAddress, &selfStakingWeight); err != nil {
-			zap.L().Error("failed to scan registration data")
 			return nil, err
 		}
 		reg := types.NewRegistration(name, address, operatorAddress, rewardAddress, uint64(selfStakingWeight))

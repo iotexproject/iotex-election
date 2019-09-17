@@ -49,6 +49,24 @@ func (v *Vote) Clone() *Vote {
 	}
 }
 
+
+// Equal returns true if two candidates are identical
+func (v *Vote) Equal(vote *Vote) bool {
+	if v == vote {
+		return true
+	}
+	if v == nil || vote == nil {
+		return false
+	}
+	if !v.Bucket.Equal(&vote.Bucket) {
+		return false
+	}
+	if v.weighted.Cmp(vote.weighted) != 0 {
+		return false
+	}
+	return true
+}
+
 // SetWeightedAmount sets the weighted amount for the vote
 func (v *Vote) SetWeightedAmount(w *big.Int) error {
 	if w == nil || big.NewInt(0).Cmp(w) > 0 {

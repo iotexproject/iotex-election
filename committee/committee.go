@@ -527,6 +527,7 @@ func (ec *committee) ResultByHeight(height uint64) (*types.ElectionResult, error
 }
 
 func (ec *committee) resultByHeight(height uint64) (*types.ElectionResult, error) {
+	zap.L().Info("fetch result from DB and calculate", zap.Uint64("height", height))
 	if height < ec.startHeight {
 		return nil, errors.Errorf(
 			"height %d is lower than start height %d",
@@ -856,7 +857,7 @@ func (ec *committee) storeData(height uint64, data *rawData) error {
 		}
 	}
 
-	ibh, lastBucketHashes, err := ec.bucketHashes(ec.startHeight - ec.interval)
+	ibh, lastBucketHashes, err := ec.bucketHashes(height - ec.interval)
 	if err != nil {
 		return err
 	}
@@ -987,6 +988,8 @@ func (ec *committee) buckets(height uint64) (buckets []*types.Bucket, err error)
 	if rows.Err() != nil {
 		return nil, rows.Err()
 	}
+	zap.L().Debug("fetch buckets from DB", zap.Int("number of buckets", len(buckets)))
+
 	return buckets, nil
 }
 
@@ -1049,6 +1052,8 @@ func (ec *committee) registrations(height uint64) (registrations []*types.Regist
 	if rows.Err() != nil {
 		return nil, rows.Err()
 	}
+	zap.L().Debug("fetch registrations from DB", zap.Int("number of registrations", len(registrations)))
+
 	return registrations, nil
 }
 

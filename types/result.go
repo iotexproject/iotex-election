@@ -215,20 +215,41 @@ func (r *ElectionResult) Equal(result *ElectionResult) bool {
 	if !r.mintTime.Equal(result.mintTime) {
 		return false
 	}
+
 	if r.totalVotedStakes.Cmp(result.totalVotedStakes) != 0 {
 		return false
 	}
+	
 	if r.totalVotes.Cmp(result.totalVotes) != 0 {
 		return false
 	}
+	
 	if len(r.delegates) != len(result.delegates) {
 		return false
 	}
+	diff := make(map[string]*Candidate, len(r.delegates))
+	for _, delegate := range r.delegates {
+	 	diff[hex.EncodeToString(delegate.Registration.Name())] = delegate
+	}
+	for _, delegate := range result.delegates {
+	 	if val, ok := diff[hex.EncodeToString(delegate.Registration.Name())]; ok {
+	 		if !val.Equal(delegate){
+	 			return false
+	 		}
+	 	} else {
+	 		return false
+	 	}
+	}
+
 	if len(r.votes) != len(result.votes) {
 		return false
 	}
-	for i, delegate := range r.delegates {
-		if !delegate.Equal(result.delegates[i]) {
+	for key, val := range r.votes {
+		if compareVal, ok := result.votes[key]; ok {
+			if len(compareVal) != len(val) {
+				return false
+			}
+		} else {
 			return false
 		}
 	}

@@ -23,7 +23,7 @@ import (
 
 	ethereum "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/lib/pq"
+	//"github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -318,16 +318,19 @@ func (ec *committee) migrate(ctx context.Context) error {
 	}
 	kvstore := db.NewKVStoreWithNamespaceWrapper("electionNS", ec.oldDB)
 	if err := kvstore.Start(ctx); err != nil {
+		zap.L().Error("failed to start the oldDB")
 		return err
 	}
 	nextHeightHash, err := kvstore.Get(db.NextHeightKey)
 	if err != nil {
+		zap.L().Error("failed to get nextHeight from oldDB")
 		return err
 	}
 	nextHeight := util.BytesToUint64(nextHeightHash)
 	for height := ec.startHeight; height < nextHeight; height += ec.interval {
 		data, err := kvstore.Get(util.Uint64ToBytes(height))
 		if err != nil {
+			zap.L().Error("failed to get electionresult from oldDB")
 			return err
 		}
 		r := &types.ElectionResult{}
@@ -828,37 +831,40 @@ func (ec *committee) storeData(height uint64, data *rawData) error {
 		}
 	} else {
 		fmt.Println("insert into height to registrations")
-		//result, err := tx.Exec("INSERT INTO height_to_registrations (height, rid) VALUES (SELECT ?, id FROM registrations WHERE hash IN (?))", height, pq.Array(regHashes))
-		if _, err := tx.Exec("CREATE TABLE temp.regs (height INTEGER, hash BLOB PRIMARY KEY)"); err != nil {
+		if _, err := tx.Exec("DROP TABLE IF EXISTS temp_regs"); err != nil {
 			return err
 		}
-		stmt, err := tx.Prepare("INSERT INTO temp.regs (height, hash) VALUES (?, ?")
+		if _, err := tx.Exec("CREATE TABLE temp_regs (height INTEGER, hash BLOB PRIMARY KEY)"); err != nil {
+			return err
+		}
+
+		stmt, err := tx.Prepare("INSERT INTO temp_regs (height, hash) VALUES (?, ?)")
 		if err != nil {
 			return err
 		}
 		defer stmt.Close() 
-		for key, value := range regHashes {
+		for _, value := range regHashes {
 			if _, err := stmt.Exec(height, value[:]); err != nil {
+				zap.L().Error("can't put into temp_regs")
 				return err
 			}
 		}
-		result, err := tx.Exec(`INSERT OR IGNORE INTO height_to_registrations (height, rid) VALUES (
-			SELECT temp.regs.height, registrations.id FROM registrations INNER JOIN temp.regs WHERE registrations.hash = temp.regs.hash
-		)`)
+		result, err := tx.Exec(`INSERT OR IGNORE INTO height_to_registrations (height, rid) 
+			SELECT temp_regs.height, registrations.id FROM registrations INNER JOIN temp_regs ON registrations.hash=temp_regs.hash
+		`)
 		if err != nil {
+			zap.L().Error("error when we insert into H2R")
 			return err
 		}
-
-		//result, err := tx.Exec("INSERT INTO height_to_registrations (height, rid) VALUES (SELECT ?, id FROM registrations WHERE hash IN (?)", height, regHashes)
-		//if err != nil {
-		//	return err
-		//}
 		rows, err := result.RowsAffected()
 		if err != nil {
 			return err
 		}
 		if rows != int64(len(regHashes)) {
-			return errors.New("wrong number of registration records")
+			//return errors.New("wrong number of registration records")
+		}
+		if _, err := tx.Exec("DROP TABLE temp_regs"); err != nil {
+			return err
 		}
 	}
 
@@ -885,25 +891,25 @@ func (ec *committee) storeData(height uint64, data *rawData) error {
 		}
 	} else {
 		fmt.Println("insert into height to buckets", bucketHashes)
-		if _, err := tx.Exec("DROP TABLE IF EXISTS temp.buckets"); err != nil {
+		if _, err := tx.Exec("DROP TABLE IF EXISTS temp_buckets"); err != nil {
 			return err
 		}
-		if _, err := tx.Exec("CREATE TABLE temp.buckets (height INTEGER PRIMARY KEY, hash BLOB, times INTEGER)"); err != nil {
+		if _, err := tx.Exec("CREATE TABLE temp_buckets (height INTEGER, hash BLOB PRIMARY KEY, times INTEGER)"); err != nil {
 			return err
 		}
-		stmt, err := tx.Prepare("INSERT INTO temp.buckets (height, hash, times) VALUES (?, ?, ?)")
+		stmt, err := tx.Prepare("INSERT INTO temp_buckets (height, hash, times) VALUES (?, ?, ?)")
 		if err != nil {
 			return err
 		}
 		defer stmt.Close()
 		for key, value := range bucketHashes {
-			if _, err := stmt.Exec(height, key, value); err != nil {
+			if _, err := stmt.Exec(height, key[:], value); err != nil {
 				return err
 			}
 		}
-		result, err := tx.Exec(`INSERT OR IGNORE INTO height_to_buckets (height, bid, times) VALUES (
-			SELECT temp.buckets.height, buckets.id, temp.buckets.times FROM buckets INNER JOIN temp.buckets WHERE buckets.hash = temp.buckets.hash
-		)`)
+		result, err := tx.Exec(`INSERT OR IGNORE INTO height_to_buckets (height, bid, times)
+			SELECT temp_buckets.height, buckets.id, temp_buckets.times FROM buckets INNER JOIN temp_buckets WHERE buckets.hash = temp_buckets.hash
+		`)
 		if err != nil {
 			return err
 		}
@@ -912,17 +918,18 @@ func (ec *committee) storeData(height uint64, data *rawData) error {
 			return err
 		}
 		if rows != int64(len(bucketHashes)) {
-			return errors.New("wrong number of bucket records")
+			//return errors.New("wrong number of bucket records")
+			//[dorothy] why does it have to be same? there might be duplicate, is this wrong? 
 		}
-		if _, err := tx.Exec("DROP TABLE temp.buckets"); err != nil {
+		if _, err := tx.Exec("DROP TABLE temp_buckets"); err != nil {
 			return err
 		}
 	}
-	if _, err := tx.Exec("INSERT INTO mint_times (height, time) VALUES (?, ?)", height, data.mintTime); err != nil {
+	if _, err := tx.Exec("INSERT OR IGNORE INTO mint_times (height, time) VALUES (?, ?)", height, data.mintTime); err != nil {
 		return err
 	}
 
-	if _, err := tx.Exec("INSERT OR REPLACE INTO nextHeight (key, height) VALUES (?, ?)", NextHeightKey, util.Uint64ToInt64(height)); err != nil {
+	if _, err := tx.Exec("INSERT OR REPLACE INTO next_height (key, height) VALUES (?, ?)", NextHeightKey, util.Uint64ToInt64(height)); err != nil {
 		return err
 	}
 
@@ -930,13 +937,15 @@ func (ec *committee) storeData(height uint64, data *rawData) error {
 }
 
 func (ec *committee) bucketHashes(height uint64) (map[hash.Hash256]int, error) {
-	var hashes map[hash.Hash256]int
+	hashes := make(map[hash.Hash256]int)
 	rows, err := ec.db.Query(`
         SELECT b.hash, hb.times as times
         FROM buckets as b INNER JOIN height_to_buckets as hb
-        WHERE hb.height = ? AND b.id = hb.bid
+        ON b.id = hb.bid 
+        WHERE hb.height = ? 
     `, util.Uint64ToInt64(height))
 	if err != nil {
+		zap.L().Error("failed to get a query in bucketHashes")
 		return nil, err
 	}
 	defer rows.Close()
@@ -964,14 +973,14 @@ func (ec *committee) buckets(height uint64) ([]*types.Bucket, error) {
 	rows, err := ec.db.Query(`
 		SELECT b.start_time, b.duration, b.amount, b.decay, b.voter, b.candidate, hb.times as times
 		FROM buckets as b INNER JOIN height_to_buckets as hb
-		WHERE hb.height = ? AND buckets.id = hb.bid
+		ON buckets.id = hb.bid
+		WHERE hb.height = ? 
 	`, util.Uint64ToInt64(height))
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
-		// repeated "times"
 		if err := rows.Scan(&startTime, &rawDuration, &amount, &voter, &candidate, &times); err != nil {
 			return nil, err
 		}
@@ -995,7 +1004,8 @@ func (ec *committee) registrationHashes(height uint64) ([]hash.Hash256, error) {
 	rows, err := ec.db.Query(`
         SELECT r.hash
         FROM registrations as r INNER JOIN height_to_registrations as hr
-        WHERE hr.height = ? AND r.id = hr.rid
+        ON r.id = hr.rid
+        WHERE hr.height = ? 
     `, util.Uint64ToInt64(height))
 	if err != nil {
 		return nil, err
@@ -1021,7 +1031,8 @@ func (ec *committee) registrations(height uint64) ([]*types.Registration, error)
 	rows, err := ec.db.Query(`
         SELECT r.name, r.address, r.operator_address, r.reward_address, r.self_staking_weight
         FROM registrations as r INNER JOIN height_to_registrations as hr
-        WHERE hr.height = ? AND r.id = hr.rid
+        ON r.id = hr.rid
+        WHERE hr.height = ? 
     `, util.Uint64ToInt64(height))
 	if err != nil {
 		return nil, err

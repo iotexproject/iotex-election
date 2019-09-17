@@ -249,6 +249,21 @@ func (r *ElectionResult) Equal(result *ElectionResult) bool {
 			if len(compareVal) != len(val) {
 				return false
 			}
+			diff := make(map[string]*Vote, len(val))
+			for _, vote := range val {
+				byte, _ := vote.Serialize()	
+				diff[string(byte)] = vote
+			}
+			for _, vote := range compareVal {
+				byte, _ := vote.Serialize()	
+				if compareVote, ok := diff[string(byte)]; ok {
+					if !compareVote.Equal(vote) {
+						return false
+					}
+				}else {
+					return false
+				}
+			}
 		} else {
 			return false
 		}

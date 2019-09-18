@@ -13,9 +13,12 @@ package committee
 import (
 	"context"
 	"database/sql"
+	"encoding/hex"
+	"encoding/json"
 	"math"
 	"math/big"
 	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -23,6 +26,8 @@ import (
 	ethereum "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	lru "github.com/hashicorp/golang-lru"
+	"github.com/lib/pq"
+	// require sqlite3 driver
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -123,10 +128,10 @@ type (
 
 func (ec *committee) createTables() error {
 	tableCreations := []string{
-		"CREATE TABLE IF NOT EXISTS buckets (id INTEGER PRIMARY KEY AUTOINCREMENT, hash BLOB UNIQUE, start_time TIMESTAMP, duration TEXT, amount BLOB, decay INTEGER, voter BLOB, candidate BLOB)",
-		"CREATE TABLE IF NOT EXISTS registrations (id INTEGER PRIMARY KEY AUTOINCREMENT, hash BLOB UNIQUE, name BLOB, address BLOB, operator_address BLOB, reward_address BLOB, self_staking_weight INTEGER)",
+		"CREATE TABLE IF NOT EXISTS buckets (id INTEGER PRIMARY KEY AUTOINCREMENT, hash TEXT UNIQUE, start_time TIMESTAMP, duration TEXT, amount BLOB, decay INTEGER, voter BLOB, candidate BLOB)",
+		"CREATE TABLE IF NOT EXISTS registrations (id INTEGER PRIMARY KEY AUTOINCREMENT, hash TEXT UNIQUE, name BLOB, address BLOB, operator_address BLOB, reward_address BLOB, self_staking_weight INTEGER)",
 		"CREATE TABLE IF NOT EXISTS height_to_registrations (height INTEGER, rid INTEGER REFERENCES registrations(id), CONSTRAINT key PRIMARY KEY (height, rid))",
-		"CREATE TABLE IF NOT EXISTS height_to_buckets (height INTEGER, bid INTEGER REFERENCES buckets(id), times INTEGER, CONSTRAINT key PRIMARY KEY (height, bid))",
+		"CREATE TABLE IF NOT EXISTS height_to_buckets (height INTEGER PRIMARY KEY, bids BLOB, times BLOB)",
 		"CREATE TABLE IF NOT EXISTS mint_times (height INTEGER PRIMARY KEY, time TIMESTAMP)",
 		"CREATE TABLE IF NOT EXISTS meta (key BLOB PRIMARY KEY, value BLOB)",
 		"CREATE TABLE IF NOT EXISTS identical_buckets (height INTEGER PRIMARY KEY, identical_to INTEGER)",
@@ -312,11 +317,13 @@ func (ec *committee) migrate(ctx context.Context) (err error) {
 		return nil
 	}
 	kvstore := db.NewKVStoreWithNamespaceWrapper("electionNS", ec.oldDB)
-	if err := kvstore.Start(ctx); err != nil {
+	if err = kvstore.Start(ctx); err != nil {
 		return err
 	}
 	defer func() {
-		err = kvstore.Stop(ctx)
+		if err == nil {
+			err = kvstore.Stop(ctx)
+		}
 	}()
 	nextHeightHash, err := kvstore.Get(db.NextHeightKey)
 	if err != nil {
@@ -326,21 +333,28 @@ func (ec *committee) migrate(ctx context.Context) (err error) {
 	nextHeightInNewDB, err := ec.loadNextHeight()
 	if err == nil && nextHeightInNewDB >= nextHeight {
 		return nil
+	} else if err != nil {
+		nextHeightInNewDB = ec.startHeight
 	}
-	for height := ec.startHeight; height < nextHeight; height += ec.interval {
+	lastPrintTime := time.Time{}
+	for height := nextHeightInNewDB; height < nextHeight; height += ec.interval {
+		if time.Now().Sub(lastPrintTime) > 5*time.Second {
+			zap.L().Info("migrating", zap.Uint64("height", height))
+			lastPrintTime = time.Now()
+		}
 		data, err := kvstore.Get(util.Uint64ToBytes(height))
 		if err != nil {
 			return err
 		}
 		r := &types.ElectionResult{}
-		if err := r.Deserialize(data); err != nil {
+		if err = r.Deserialize(data); err != nil {
 			return err
 		}
-		if err := ec.migrateResult(height, r); err != nil {
-			return err
+		if err = ec.migrateResult(height, r); err != nil {
+			return errors.Wrapf(err, "failed to migrate %d", height)
 		}
 	}
-	return
+	return nil
 }
 
 func (ec *committee) Start(ctx context.Context) (err error) {
@@ -354,9 +368,13 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 	}
 	if nextHeight, err := ec.loadNextHeight(); err == nil {
 		zap.L().Info("restoring from db")
+		lastPrintTime := time.Time{}
 		ec.nextHeight = nextHeight
 		for height := ec.startHeight; height < ec.nextHeight; height += ec.interval {
-			zap.L().Info("loading", zap.Uint64("height", height))
+			if time.Now().Sub(lastPrintTime) > time.Second {
+				zap.L().Info("loading", zap.Uint64("height", height))
+				lastPrintTime = time.Now()
+			}
 			mintTime, err := ec.mintTime(height)
 			if err != nil {
 				return err
@@ -439,6 +457,9 @@ func (ec *committee) Sync(tipHeight uint64) error {
 	if err != nil {
 		return err
 	}
+	if len(data) == 0 {
+		return nil
+	}
 	ec.mutex.Lock()
 	defer ec.mutex.Unlock()
 
@@ -490,9 +511,9 @@ func (ec *committee) storeInBatch(data map[uint64]*rawData) error {
 		}
 		ec.nextHeight = height + ec.interval
 		latestBlockTime = data[height].mintTime
+		zap.L().Info("synced to", zap.Time("block time", latestBlockTime))
+		atomic.StoreInt64(&ec.lastUpdateTimestamp, latestBlockTime.Unix())
 	}
-	zap.L().Info("synced to", zap.Time("block time", latestBlockTime))
-	atomic.StoreInt64(&ec.lastUpdateTimestamp, latestBlockTime.Unix())
 
 	return nil
 }
@@ -785,7 +806,7 @@ func (ec *committee) storeRegistrationsAndBuckets(height uint64, regs []*types.R
 		if err != nil {
 			return err
 		}
-		if _, err := regStmt.Exec(h[:], reg.Name(), reg.Address(), reg.OperatorAddress(), reg.RewardAddress(), util.Uint64ToInt64(reg.SelfStakingWeight())); err != nil {
+		if _, err := regStmt.Exec(hex.EncodeToString(h[:]), reg.Name(), reg.Address(), reg.OperatorAddress(), reg.RewardAddress(), util.Uint64ToInt64(reg.SelfStakingWeight())); err != nil {
 			return err
 		}
 	}
@@ -799,7 +820,7 @@ func (ec *committee) storeRegistrationsAndBuckets(height uint64, regs []*types.R
 		if err != nil {
 			return err
 		}
-		if _, err := bucketStmt.Exec(h[:], bucket.StartTime(), bucket.Duration().String(), bucket.Amount().Bytes(), bucket.Decay(), bucket.Voter(), bucket.Candidate()); err != nil {
+		if _, err := bucketStmt.Exec(hex.EncodeToString(h[:]), bucket.StartTime(), bucket.Duration().String(), bucket.Amount().Bytes(), bucket.Decay(), bucket.Voter(), bucket.Candidate()); err != nil {
 			return err
 		}
 	}
@@ -808,7 +829,7 @@ func (ec *committee) storeRegistrationsAndBuckets(height uint64, regs []*types.R
 
 func (ec *committee) storeData(height uint64, data *rawData) error {
 	if err := ec.storeRegistrationsAndBuckets(height, data.registrations, data.buckets); err != nil {
-		return err
+		return errors.Wrap(err, "failed to store registrations and buckets")
 	}
 	tx, err := ec.db.Begin()
 	if err != nil {
@@ -834,17 +855,16 @@ func (ec *committee) storeData(height uint64, data *rawData) error {
 		if _, err := tx.Exec("DROP TABLE IF EXISTS temp_regs"); err != nil {
 			return err
 		}
-		if _, err := tx.Exec("CREATE TABLE temp_regs (height INTEGER, hash BLOB PRIMARY KEY)"); err != nil {
+		if _, err := tx.Exec("CREATE TABLE temp_regs (height INTEGER, hash TEXT PRIMARY KEY)"); err != nil {
 			return err
 		}
-
 		stmt, err := tx.Prepare("INSERT INTO temp_regs (height, hash) VALUES (?, ?)")
 		if err != nil {
 			return err
 		}
 		defer stmt.Close()
 		for _, value := range regHashes {
-			if _, err := stmt.Exec(height, value[:]); err != nil {
+			if _, err := stmt.Exec(height, hex.EncodeToString(value[:])); err != nil {
 				return err
 			}
 		}
@@ -865,59 +885,72 @@ func (ec *committee) storeData(height uint64, data *rawData) error {
 			return err
 		}
 	}
-
 	ibh, lastBucketHashes, err := ec.bucketHashes(height - ec.interval)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to get bucket hashes")
 	}
-	bucketHashes := make(map[hash.Hash256]int)
+	bh2times := make(map[hash.Hash256]int)
+	bucketHashes := []string{}
 	for _, bucket := range data.buckets {
 		h, err := bucket.Hash()
 		if err != nil {
 			return err
 		}
-		if times, ok := bucketHashes[h]; ok {
-			bucketHashes[h] = times + 1
+		if times, ok := bh2times[h]; ok {
+			bh2times[h] = times + 1
 		} else {
-			bucketHashes[h] = 1
+			bucketHashes = append(bucketHashes, hex.EncodeToString(h[:]))
+			bh2times[h] = 1
 		}
 	}
-	if !data.migration && data.noNewStakingEvent || data.migration && ec.hasIdenticalBuckets(bucketHashes, lastBucketHashes) {
+	if !data.migration && data.noNewStakingEvent || data.migration && ec.hasIdenticalBuckets(bh2times, lastBucketHashes) {
 		if _, err := tx.Exec("INSERT OR IGNORE INTO identical_buckets (height, identical_to) VALUES (?, ?)", height, ibh); err != nil {
 			return err
 		}
 	} else {
-		if _, err := tx.Exec("DROP TABLE IF EXISTS temp_buckets"); err != nil {
-			return err
-		}
-		if _, err := tx.Exec("CREATE TABLE temp_buckets (height INTEGER, hash BLOB PRIMARY KEY, times INTEGER)"); err != nil {
-			return err
-		}
-		stmt, err := tx.Prepare("INSERT INTO temp_buckets (height, hash, times) VALUES (?, ?, ?)")
-		if err != nil {
-			return err
-		}
-		defer stmt.Close()
-		for key, value := range bucketHashes {
-			if _, err := stmt.Exec(height, key[:], value); err != nil {
+		if len(bucketHashes) != 0 {
+			ids := make([]int64, 0, len(bucketHashes))
+			times := make([]int, 0, len(bucketHashes))
+			var id int64
+			var val string
+			rows, err := tx.Query("SELECT id, hash FROM buckets WHERE hash IN ('" + strings.Join(bucketHashes, "','") + "')")
+			if err != nil {
 				return err
 			}
-		}
-		result, err := tx.Exec(`INSERT OR REPLACE INTO height_to_buckets (height, bid, times)
-			SELECT temp_buckets.height, buckets.id, temp_buckets.times FROM buckets INNER JOIN temp_buckets WHERE buckets.hash = temp_buckets.hash
-		`)
-		if err != nil {
-			return err
-		}
-		rows, err := result.RowsAffected()
-		if err != nil {
-			return err
-		}
-		if rows != int64(len(bucketHashes)) {
-			return errors.New("wrong number of bucket records")
-		}
-		if _, err := tx.Exec("DROP TABLE temp_buckets"); err != nil {
-			return err
+			defer rows.Close()
+			for rows.Next() {
+				if err := rows.Scan(&id, &val); err != nil {
+					return err
+				}
+				h, err := hash.HexStringToHash256(val)
+				if err != nil {
+					return err
+				}
+				ids = append(ids, id)
+				times = append(times, bh2times[h])
+			}
+			if err := rows.Err(); err != nil {
+				return err
+			}
+			if len(ids) != len(bucketHashes) {
+				return errors.New("wrong number of bucket records")
+			}
+			bidBytes, err := json.Marshal(ids)
+			if err != nil {
+				return err
+			}
+			timeBytes, err := json.Marshal(times)
+			if err != nil {
+				return err
+			}
+			if _, err := tx.Exec(
+				"INSERT OR REPLACE INTO height_to_buckets (height, bids, times) VALUES (?, ?, ?)",
+				height,
+				bidBytes,
+				timeBytes,
+			); err != nil {
+				return err
+			}
 		}
 	}
 	if _, err := tx.Exec("INSERT OR IGNORE INTO mint_times (height, time) VALUES (?, ?)", height, data.mintTime); err != nil {
@@ -931,29 +964,57 @@ func (ec *committee) storeData(height uint64, data *rawData) error {
 	return tx.Commit()
 }
 
+func (ec *committee) bucketIDAndTimesByHeight(height uint64) ([]int64, []int, error) {
+	var (
+		bidBytes, timeBytes []byte
+		bids                []int64
+		times               []int
+	)
+	if err := ec.db.QueryRow("SELECT bids, times FROM height_to_buckets WHERE height = ?", util.Uint64ToInt64(height)).Scan(&bidBytes, &timeBytes); err != nil {
+		return nil, nil, err
+	}
+	if err := json.Unmarshal(bidBytes, &bids); err != nil {
+		return nil, nil, err
+	}
+	if err := json.Unmarshal(timeBytes, &times); err != nil {
+		return nil, nil, err
+	}
+	return bids, times, nil
+}
+
 func (ec *committee) bucketHashes(height uint64) (uint64, map[hash.Hash256]int, error) {
+	if height < ec.startHeight {
+		return height, nil, nil
+	}
 	height, err := ec.heightWithIdenticalBuckets(height)
 	if err != nil {
 		return 0, nil, err
 	}
-	hashes := make(map[hash.Hash256]int)
-	rows, err := ec.db.Query(`
-        SELECT b.hash, hb.times as times
-        FROM buckets as b INNER JOIN height_to_buckets as hb
-        ON b.id = hb.bid 
-        WHERE hb.height = ? 
-    `, util.Uint64ToInt64(height))
+	bids, times, err := ec.bucketIDAndTimesByHeight(height)
+	if err != nil {
+		return 0, nil, err
+	}
+	id2times := make(map[int64]int, len(bids))
+	for i, id := range bids {
+		id2times[id] = times[i]
+	}
+	rows, err := ec.db.Query("SELECT id, hash FROM buckets WHERE id IN (?)", pq.Array(bids))
 	if err != nil {
 		return 0, nil, err
 	}
 	defer rows.Close()
+	hashes := make(map[hash.Hash256]int, len(bids))
 	for rows.Next() {
-		var val []byte
-		var time int
-		if err := rows.Scan(&val, &time); err != nil {
+		var id int64
+		var val string
+		if err := rows.Scan(&id, &val); err != nil {
 			return 0, nil, err
 		}
-		hashes[hash.BytesToHash256(val)] = time
+		h, err := hash.HexStringToHash256(val)
+		if err != nil {
+			return 0, nil, err
+		}
+		hashes[h] = id2times[id]
 	}
 	if rows.Err() != nil {
 		return 0, nil, rows.Err()
@@ -966,23 +1027,28 @@ func (ec *committee) buckets(height uint64) (buckets []*types.Bucket, err error)
 	if err != nil {
 		return
 	}
-	var decay, times int64
+	var id, decay int64
 	var startTime time.Time
 	var rawDuration string
 	var amount, voter, candidate []byte
-
-	rows, err := ec.db.Query(`
-		SELECT b.start_time, b.duration, b.amount, b.decay, b.voter, b.candidate, hb.times as times
-		FROM buckets as b INNER JOIN height_to_buckets as hb
-		ON b.id = hb.bid
-		WHERE hb.height = ? 
-	`, util.Uint64ToInt64(height))
+	bids, times, err := ec.bucketIDAndTimesByHeight(height)
+	if err != nil {
+		return nil, err
+	}
+	id2times := make(map[int64]int, len(bids))
+	for i, id := range bids {
+		id2times[id] = times[i]
+	}
+	rows, err := ec.db.Query(
+		"SELECT id, start_time, duration, amount, decay, voter, candidate FROM buckets WHERE id IN (?)",
+		pq.Array(bids),
+	)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
-		if err := rows.Scan(&startTime, &rawDuration, &amount, &decay, &voter, &candidate, &times); err != nil {
+		if err := rows.Scan(&id, &startTime, &rawDuration, &amount, &decay, &voter, &candidate); err != nil {
 			return nil, err
 		}
 		duration, err := time.ParseDuration(rawDuration)
@@ -990,7 +1056,7 @@ func (ec *committee) buckets(height uint64) (buckets []*types.Bucket, err error)
 		if err != nil {
 			return nil, err
 		}
-		for i := int64(0); i < times; i++ {
+		for i := id2times[id]; i > 0; i-- {
 			buckets = append(buckets, bucket)
 		}
 	}
@@ -1022,11 +1088,15 @@ func (ec *committee) registrationHashes(height uint64) (uint64, []hash.Hash256, 
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var val []byte
+		var val string
 		if err := rows.Scan(&val); err != nil {
 			return 0, nil, err
 		}
-		hashes = append(hashes, hash.BytesToHash256(val))
+		h, err := hash.HexStringToHash256(val)
+		if err != nil {
+			return 0, nil, err
+		}
+		hashes = append(hashes, h)
 	}
 	if rows.Err() != nil {
 		return 0, nil, rows.Err()

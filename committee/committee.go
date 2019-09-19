@@ -18,6 +18,7 @@ import (
 	"math"
 	"math/big"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -26,7 +27,6 @@ import (
 	ethereum "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	lru "github.com/hashicorp/golang-lru"
-	"github.com/lib/pq"
 	// require sqlite3 driver
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
@@ -569,7 +569,7 @@ func (ec *committee) resultByHeight(height uint64) (*types.ElectionResult, error
 
 	if cacheResult, ok := ec.cache.Get(height); ok {
 		if result, as := cacheResult.(*types.ElectionResult); as {
-			return result, nil 
+			return result, nil
 		}
 		return nil, errors.Errorf(
 			"lru cache type assertion has error",
@@ -687,7 +687,7 @@ func (ec *committee) calculator(height uint64, dbflag bool) (*types.ResultCalcul
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return types.NewResultCalculator(
 		timestamp,
 		ec.skipManifiedCandidate,
@@ -1005,11 +1005,14 @@ func (ec *committee) bucketHashes(height uint64) (uint64, map[hash.Hash256]int, 
 	if err != nil {
 		return 0, nil, err
 	}
+	if len(bids) == 0 {
+		return height, map[hash.Hash256]int{}, nil
+	}
 	id2times := make(map[int64]int, len(bids))
 	for i, id := range bids {
 		id2times[id] = times[i]
 	}
-	rows, err := ec.db.Query("SELECT id, hash FROM buckets WHERE id IN (?)", pq.Array(bids))
+	rows, err := ec.db.Query("SELECT id, hash FROM buckets WHERE id IN (" + atos(bids) + ")")
 	if err != nil {
 		return 0, nil, err
 	}
@@ -1033,6 +1036,18 @@ func (ec *committee) bucketHashes(height uint64) (uint64, map[hash.Hash256]int, 
 	return height, hashes, nil
 }
 
+func atos(a []int64) string {
+	if len(a) == 0 {
+		return ""
+	}
+
+	b := make([]string, len(a))
+	for i, v := range a {
+		b[i] = strconv.FormatInt(v, 10)
+	}
+	return strings.Join(b, ",")
+}
+
 func (ec *committee) buckets(height uint64) (buckets []*types.Bucket, err error) {
 	height, err = ec.heightWithIdenticalBuckets(height)
 	if err != nil {
@@ -1046,13 +1061,15 @@ func (ec *committee) buckets(height uint64) (buckets []*types.Bucket, err error)
 	if err != nil {
 		return nil, err
 	}
+	if len(bids) == 0 {
+		return []*types.Bucket{}, nil
+	}
 	id2times := make(map[int64]int, len(bids))
 	for i, id := range bids {
 		id2times[id] = times[i]
 	}
 	rows, err := ec.db.Query(
-		"SELECT id, start_time, duration, amount, decay, voter, candidate FROM buckets WHERE id IN (?)",
-		pq.Array(bids),
+		"SELECT id, start_time, duration, amount, decay, voter, candidate FROM buckets WHERE id IN (" + atos(bids) + ")",
 	)
 	if err != nil {
 		return nil, err

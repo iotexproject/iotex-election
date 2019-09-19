@@ -577,7 +577,7 @@ func (ec *committee) resultByHeight(height uint64) (*types.ElectionResult, error
 	}
 
 	//calculate the result from DB
-	calculator, err := ec.calculator(height)
+	calculator, err := ec.calculator(height, true)
 	if err != nil {
 		return nil, err
 	}
@@ -676,11 +676,18 @@ func (ec *committee) getMintTimeByHeight(height uint64) (time.Time, error) {
 	return mintTime, nil
 }
 
-func (ec *committee) calculator(height uint64) (*types.ResultCalculator, error) {
-	timestamp, err := ec.getMintTimeByHeight(height)
+func (ec *committee) calculator(height uint64, dbflag bool) (*types.ResultCalculator, error) {
+	var timestamp time.Time
+	var err error
+	if dbflag {
+		timestamp, err = ec.mintTime(height)
+	} else {
+		timestamp, err = ec.getMintTimeByHeight(height)
+	}
 	if err != nil {
 		return nil, err
 	}
+	
 	return types.NewResultCalculator(
 		timestamp,
 		ec.skipManifiedCandidate,
@@ -725,7 +732,7 @@ func (ec *committee) FetchResultByHeight(height uint64) (*types.ElectionResult, 
 
 func (ec *committee) fetchResultByHeight(height uint64) (*types.ElectionResult, error) {
 	zap.L().Info("fetch result from ethereum", zap.Uint64("height", height))
-	calculator, err := ec.calculator(height)
+	calculator, err := ec.calculator(height, false)
 	if err != nil {
 		return nil, err
 	}
@@ -784,10 +791,14 @@ func (ec *committee) mintTime(height uint64) (time.Time, error) {
 	var val time.Time
 	row := ec.db.QueryRow("SELECT time FROM mint_times WHERE height = ?", util.Uint64ToInt64(height))
 	err := row.Scan(&val)
-	if err != nil {
+	switch err {
+	case nil:
+		return val, nil
+	case sql.ErrNoRows:
+		return time.Time{}, db.ErrNotExist
+	default:
 		return time.Time{}, err
 	}
-	return val, nil
 }
 
 func (ec *committee) storeRegistrationsAndBuckets(height uint64, regs []*types.Registration, buckets []*types.Bucket) error {

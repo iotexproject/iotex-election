@@ -680,13 +680,12 @@ func (ec *committee) calculator(height uint64, dbflag bool) (*types.ResultCalcul
 	var timestamp time.Time
 	var err error
 	if dbflag {
-		if timestamp, err = ec.mintTime(height); err != nil {
-			return nil, err
-		}
-	}else {
-		if timestamp, err = ec.getMintTimeByHeight(height); err != nil {
-			return nil, err
-		}
+		timestamp, err = ec.mintTime(height)
+	} else {
+		timestamp, err = ec.getMintTimeByHeight(height)
+	}
+	if err != nil {
+		return nil, err
 	}
 	
 	return types.NewResultCalculator(

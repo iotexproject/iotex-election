@@ -129,7 +129,7 @@ func (arch *archive) TipHeight() (uint64, error) {
 	return arch.tipHeight(nil)
 }
 
-const heightQuery = "SELECT MAX(height) FROM mint_times WHERE ? <= ts WHERE EXISTS (SELECT * FROM mint_times WHERE ? >= ts)"
+const heightQuery = "SELECT MAX(height) FROM mint_times WHERE ? >= time AND EXISTS (SELECT * FROM mint_times WHERE ? <= time)"
 const tipHeightQuery = "SELECT MAX(height) FROM mint_times"
 
 func (arch *archive) HeightBefore(ts time.Time) (uint64, error) {

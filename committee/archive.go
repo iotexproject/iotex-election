@@ -129,9 +129,6 @@ func (arch *archive) TipHeight() (uint64, error) {
 	return arch.tipHeight(nil)
 }
 
-const heightQuery = "SELECT MAX(height) FROM mint_times WHERE ? >= time AND EXISTS (SELECT * FROM mint_times WHERE ? <= time)"
-const tipHeightQuery = "SELECT MAX(height) FROM mint_times"
-
 func (arch *archive) HeightBefore(ts time.Time) (uint64, error) {
 	var height int64
 	if err := arch.db.QueryRow(heightQuery, ts, ts).Scan(&height); err != nil {
@@ -248,6 +245,7 @@ const (
 	bucketHashQuery            = "SELECT id, hash FROM buckets WHERE id IN (%s)"
 	bucketIDQuery              = "SELECT id, hash FROM buckets WHERE hash IN ('%s')"
 	bucketQuery                = "SELECT id, start_time, duration, amount, decay, voter, candidate FROM buckets WHERE id IN (%s)"
+	heightQuery                = "SELECT MAX(height) FROM mint_times WHERE ? >= time AND EXISTS (SELECT * FROM mint_times WHERE ? <= time)"
 	identicalBucketQuery       = "SELECT identical_to FROM identical_buckets WHERE height = ?"
 	identicalRegistrationQuery = "SELECT identical_to FROM identical_registrations WHERE height = ?"
 	insertBucketQuery          = "INSERT OR IGNORE INTO buckets (hash, start_time, duration, amount, decay, voter, candidate) VALUES (?, ?, ?, ?, ?, ?, ?)"
@@ -261,6 +259,7 @@ const (
 	registrationQuery          = `SELECT r.name, r.address, r.operator_address, r.reward_address, r.self_staking_weight
 								FROM registrations as r INNER JOIN height_to_registrations as hr
 								ON r.id = hr.rid WHERE hr.height = ?`
+	tipHeightQuery = "SELECT MAX(height) FROM mint_times"
 )
 
 func (arch *archive) registrationHashes(height uint64, tx *sql.Tx) (uint64, []hash.Hash256, error) {

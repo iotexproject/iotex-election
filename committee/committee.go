@@ -24,6 +24,7 @@ import (
 	ethereum "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	lru "github.com/hashicorp/golang-lru"
+
 	// require sqlite3 driver
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
@@ -76,11 +77,11 @@ type (
 		// Stop stops the committee service
 		Stop(context.Context) error
 		// ResultByHeight returns the result on a specific ethereum height
-		ResultByHeight(height uint64) (*types.ElectionResult, error)
-		// FetchResultByHeight returns the buckets
-		FetchResultByHeight(height uint64) (*types.ElectionResult, error)
+		ResultByHeight(uint64) (*types.ElectionResult, error)
+		// Archive returns the archive of this committee
+		Archive() Archive
 		// HeightByTime returns the nearest result before time
-		HeightByTime(timestamp time.Time) (uint64, error)
+		HeightByTime(time.Time) (uint64, error)
 		// LatestHeight returns the height with latest result
 		LatestHeight() uint64
 		// Status returns the committee status
@@ -245,6 +246,10 @@ func (ec *committee) Stop(ctx context.Context) error {
 	ec.carrier.Close()
 
 	return ec.archive.Stop(ctx)
+}
+
+func (ec *committee) Archive() Archive {
+	return ec.archive
 }
 
 func (ec *committee) Status() STATUS {

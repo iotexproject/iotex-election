@@ -86,7 +86,11 @@ func NewServer(cfg *Config) (Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	c, err = committee.NewCommittee(sqldb, cfg.Committee, db.NewBoltDB(cfg.DB))
+	archive, err := committee.NewArchive(sqldb, cfg.Committee.GravityChainStartHeight, cfg.Committee.GravityChainHeightInterval, db.NewBoltDB(cfg.DB))
+	if err != nil {
+		return nil, err
+	}
+	c, err = committee.NewCommittee(archive, cfg.Committee)
 	if err != nil {
 		return nil, err
 	}

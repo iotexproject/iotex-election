@@ -12,9 +12,9 @@ package committee
 
 import (
 	"context"
-	"database/sql"
 	"math"
 	"math/big"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -78,8 +78,6 @@ type (
 		Stop(context.Context) error
 		// ResultByHeight returns the result on a specific ethereum height
 		ResultByHeight(uint64) (*types.ElectionResult, error)
-		// Archive returns the archive of this committee
-		Archive() Archive
 		// HeightByTime returns the nearest result before time
 		HeightByTime(time.Time) (uint64, error)
 		// LatestHeight returns the height with latest result
@@ -89,7 +87,7 @@ type (
 	}
 
 	committee struct {
-		archive               Archive
+		archive               PollArchive
 		carrier               carrier.Carrier
 		retryLimit            uint8
 		paginationSize        uint8
@@ -120,13 +118,9 @@ type (
 )
 
 // NewCommittee creates a committee
-func NewCommittee(newDB *sql.DB, cfg Config, oldDB db.KVStoreWithNamespace) (Committee, error) {
+func NewCommittee(archive PollArchive, cfg Config) (Committee, error) {
 	if !common.IsHexAddress(cfg.StakingContractAddress) {
 		return nil, errors.New("Invalid staking contract address")
-	}
-	archive, err := NewArchive(newDB, cfg.GravityChainStartHeight, cfg.GravityChainHeightInterval, oldDB)
-	if err != nil {
-		return nil, err
 	}
 	carrier, err := carrier.NewEthereumVoteCarrier(
 		12,
@@ -192,7 +186,6 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 	if err = ec.archive.Start(ctx); err != nil {
 		return err
 	}
-
 	tip, err := ec.carrier.Tip()
 	if err != nil {
 		return errors.Wrap(err, "failed to get tip height")
@@ -246,10 +239,6 @@ func (ec *committee) Stop(ctx context.Context) error {
 	ec.carrier.Close()
 
 	return ec.archive.Stop(ctx)
-}
-
-func (ec *committee) Archive() Archive {
-	return ec.archive
 }
 
 func (ec *committee) Status() STATUS {
@@ -331,8 +320,21 @@ func (ec *committee) storeInBatch(data map[uint64]*rawData) error {
 			arrOfBuckets = append(arrOfBuckets, data[height].buckets)
 		}
 	}
-	if err := ec.archive.PutPolls(heights, mintTimes, arrOfRegs, arrOfBuckets); err != nil {
-		return err
+	indice := map[uint64]int{}
+	for i, height := range heights {
+		if _, ok := indice[height]; ok {
+			return errors.Errorf("duplicate height %d", height)
+		}
+		indice[height] = i
+	}
+	sort.Slice(heights, func(i, j int) bool {
+		return heights[i] < heights[j]
+	})
+	for _, height := range heights {
+		index := indice[height]
+		if err := ec.archive.PutPoll(height, mintTimes[index], arrOfRegs[index], arrOfBuckets[index]); err != nil {
+			return err
+		}
 	}
 	atomic.StoreInt64(&ec.lastUpdateTimestamp, time.Now().Unix())
 	return nil

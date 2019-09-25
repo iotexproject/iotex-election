@@ -57,23 +57,11 @@ type archive struct {
 
 // NewArchive creates a new arch of poll
 func NewArchive(newDB *sql.DB, startHeight uint64, interval uint64, oldDB db.KVStoreWithNamespace) (PollArchive, error) {
-	bucketTableOperator, err := NewRecordTableOperator(
-		"buckets",
-		interval,
-		InsertBuckets,
-		QueryBuckets,
-		"CREATE TABLE IF NOT EXISTS %s (id INTEGER PRIMARY KEY AUTOINCREMENT, hash TEXT UNIQUE, start_time TIMESTAMP, duration TEXT, amount BLOB, decay INTEGER, voter BLOB, candidate BLOB)",
-	)
+	bucketTableOperator, err := NewBucketTableOperator("buckets", interval)
 	if err != nil {
 		return nil, err
 	}
-	registrationTableOperator, err := NewRecordTableOperator(
-		"registrations",
-		interval,
-		InsertRegistrations,
-		QueryRegistrations,
-		"CREATE TABLE IF NOT EXISTS %s (id INTEGER PRIMARY KEY AUTOINCREMENT, hash TEXT UNIQUE, name BLOB, address BLOB, operator_address BLOB, reward_address BLOB, self_staking_weight INTEGER)",
-	)
+	registrationTableOperator, err := NewRegistrationTableOperator("registrations", interval)
 	if err != nil {
 		return nil, err
 	}

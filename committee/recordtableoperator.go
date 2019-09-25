@@ -68,6 +68,28 @@ type recordTableOperator struct {
 	interval uint64
 }
 
+// NewBucketTableOperator creates an operator for bucket table
+func NewBucketTableOperator(tableName string, interval uint64) (Operator, error) {
+	return NewRecordTableOperator(
+		tableName,
+		interval,
+		InsertBuckets,
+		QueryBuckets,
+		"CREATE TABLE IF NOT EXISTS %s (id INTEGER PRIMARY KEY AUTOINCREMENT, hash TEXT UNIQUE, start_time TIMESTAMP, duration TEXT, amount BLOB, decay INTEGER, voter BLOB, candidate BLOB)",
+	)
+}
+
+// NewRegistrationTableOperator create an operator for registration table
+func NewRegistrationTableOperator(tableName string, interval uint64) (Operator, error) {
+	return NewRecordTableOperator(
+		tableName,
+		interval,
+		InsertRegistrations,
+		QueryRegistrations,
+		"CREATE TABLE IF NOT EXISTS %s (id INTEGER PRIMARY KEY AUTOINCREMENT, hash TEXT UNIQUE, name BLOB, address BLOB, operator_address BLOB, reward_address BLOB, self_staking_weight INTEGER)",
+	)
+}
+
 // NewRecordTableOperator creates a new arch of poll
 func NewRecordTableOperator(
 	tableName string,

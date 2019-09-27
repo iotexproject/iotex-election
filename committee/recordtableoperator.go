@@ -310,6 +310,8 @@ func (arch *recordTableOperator) lastHeight(height uint64, tx *sql.Tx) (uint64, 
 	switch err {
 	case nil:
 		return uint64(val), nil
+	case sql.ErrNoRows:
+		return 0, nil 
 	default:
 		return 0, err
 	}

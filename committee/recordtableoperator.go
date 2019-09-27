@@ -58,21 +58,19 @@ type recordTableOperator struct {
 	hashQuery                  string
 	idQuery                    string
 	identicalQuery             string
+	lastHeightQuery			   string
 	insertHeightToRecordsQuery string
 	insertIdenticalQuery       string
 	tableCreations             []string
 
 	insertRecordsFunc InsertRecordsFunc
 	queryRecordsFunc  QueryRecordsFunc
-
-	interval uint64
 }
 
 // NewBucketTableOperator creates an operator for bucket table
-func NewBucketTableOperator(tableName string, interval uint64) (Operator, error) {
+func NewBucketTableOperator(tableName string) (Operator, error) {
 	return NewRecordTableOperator(
 		tableName,
-		interval,
 		InsertBuckets,
 		QueryBuckets,
 		"CREATE TABLE IF NOT EXISTS %s (id INTEGER PRIMARY KEY AUTOINCREMENT, hash TEXT UNIQUE, start_time TIMESTAMP, duration TEXT, amount BLOB, decay INTEGER, voter BLOB, candidate BLOB)",
@@ -80,10 +78,9 @@ func NewBucketTableOperator(tableName string, interval uint64) (Operator, error)
 }
 
 // NewRegistrationTableOperator create an operator for registration table
-func NewRegistrationTableOperator(tableName string, interval uint64) (Operator, error) {
+func NewRegistrationTableOperator(tableName string) (Operator, error) {
 	return NewRecordTableOperator(
 		tableName,
-		interval,
 		InsertRegistrations,
 		QueryRegistrations,
 		"CREATE TABLE IF NOT EXISTS %s (id INTEGER PRIMARY KEY AUTOINCREMENT, hash TEXT UNIQUE, name BLOB, address BLOB, operator_address BLOB, reward_address BLOB, self_staking_weight INTEGER)",
@@ -93,18 +90,17 @@ func NewRegistrationTableOperator(tableName string, interval uint64) (Operator, 
 // NewRecordTableOperator creates a new arch of poll
 func NewRecordTableOperator(
 	tableName string,
-	interval uint64,
 	insertRecordsFunc InsertRecordsFunc,
 	queryRecordsFunc QueryRecordsFunc,
 	recordTableCreation string,
 ) (Operator, error) {
 	return &recordTableOperator{
 		tableName:                  tableName,
-		interval:                   interval,
 		frequencyQuery:             fmt.Sprintf("SELECT ids, frequencies FROM height_to_%s WHERE height = ?", tableName),
 		hashQuery:                  fmt.Sprintf("SELECT id, hash FROM %s WHERE id IN (%s)", tableName, "%s"),
 		idQuery:                    fmt.Sprintf("SELECT id, hash FROM %s WHERE hash IN ('%s')", tableName, "%s"),
 		identicalQuery:             fmt.Sprintf("SELECT identical_to FROM identical_%s WHERE height = ?", tableName),
+		lastHeightQuery:			fmt.Sprintf("SELECT height FROM identical_%s WHERE height < ? ORDER BY height DESC LIMIT 1", tableName),
 		insertHeightToRecordsQuery: fmt.Sprintf("INSERT OR REPLACE INTO height_to_%s (height, ids, frequencies) VALUES (?, ?, ?)", tableName),
 		insertIdenticalQuery:       fmt.Sprintf("INSERT OR IGNORE INTO identical_%s (height, identical_to) VALUES (?, ?)", tableName),
 		insertRecordsFunc:          insertRecordsFunc,
@@ -132,10 +128,14 @@ func (arch *recordTableOperator) Get(height uint64, db *sql.DB, tx *sql.Tx) (int
 
 func (arch *recordTableOperator) Put(height uint64, records interface{}, tx *sql.Tx) (err error) {
 	var hash2Frequencies map[hash.Hash256]int
+	var lastHeight uint64
 	if hash2Frequencies, err = arch.insertRecordsFunc(arch.tableName, records, tx); err != nil {
 		return err
 	}
-	lastIdenticalHeight, lastFrequencies, err := arch.hashes(height-arch.interval, nil, tx)
+	if lastHeight, err = arch.lastHeight(height, tx); err != nil {
+		return err
+	}
+	lastIdenticalHeight, lastFrequencies, err := arch.hashes(lastHeight, nil, tx)
 	if err != nil {
 		return errors.Wrap(err, "failed to get record hashes")
 	}
@@ -299,6 +299,17 @@ func (arch *recordTableOperator) identicalTo(height uint64, sdb *sql.DB, tx *sql
 		return uint64(val), nil
 	case sql.ErrNoRows:
 		return height, nil
+	default:
+		return 0, err
+	}
+}
+
+func (arch *recordTableOperator) lastHeight(height uint64, tx *sql.Tx) (uint64, error) {
+	var val int64
+	err := tx.QueryRow(arch.lastHeightQuery, util.Uint64ToInt64(height)).Scan(&val)
+	switch err {
+	case nil:
+		return uint64(val), nil
 	default:
 		return 0, err
 	}

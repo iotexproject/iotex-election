@@ -5,10 +5,10 @@
 package mock_apiserviceclient
 
 import (
+	x "."
 	context "context"
 	gomock "github.com/golang/mock/gomock"
 	empty "github.com/golang/protobuf/ptypes/empty"
-	api "github.com/iotexproject/iotex-election/pb/api"
 	grpc "google.golang.org/grpc"
 	reflect "reflect"
 )
@@ -37,13 +37,13 @@ func (m *MockAPIServiceClient) EXPECT() *MockAPIServiceClientMockRecorder {
 }
 
 // GetMeta mocks base method
-func (m *MockAPIServiceClient) GetMeta(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*api.ChainMeta, error) {
+func (m *MockAPIServiceClient) GetMeta(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*x.ChainMeta, error) {
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "GetMeta", varargs...)
-	ret0, _ := ret[0].(*api.ChainMeta)
+	ret0, _ := ret[0].(*x.ChainMeta)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -55,13 +55,13 @@ func (mr *MockAPIServiceClientMockRecorder) GetMeta(ctx, in interface{}, opts ..
 }
 
 // GetCandidates mocks base method
-func (m *MockAPIServiceClient) GetCandidates(ctx context.Context, in *api.GetCandidatesRequest, opts ...grpc.CallOption) (*api.CandidateResponse, error) {
+func (m *MockAPIServiceClient) GetCandidates(ctx context.Context, in *x.GetCandidatesRequest, opts ...grpc.CallOption) (*x.CandidateResponse, error) {
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "GetCandidates", varargs...)
-	ret0, _ := ret[0].(*api.CandidateResponse)
+	ret0, _ := ret[0].(*x.CandidateResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -73,13 +73,13 @@ func (mr *MockAPIServiceClientMockRecorder) GetCandidates(ctx, in interface{}, o
 }
 
 // GetCandidateByName mocks base method
-func (m *MockAPIServiceClient) GetCandidateByName(ctx context.Context, in *api.GetCandidateByNameRequest, opts ...grpc.CallOption) (*api.Candidate, error) {
+func (m *MockAPIServiceClient) GetCandidateByName(ctx context.Context, in *x.GetCandidateByNameRequest, opts ...grpc.CallOption) (*x.Candidate, error) {
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "GetCandidateByName", varargs...)
-	ret0, _ := ret[0].(*api.Candidate)
+	ret0, _ := ret[0].(*x.Candidate)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -91,13 +91,13 @@ func (mr *MockAPIServiceClientMockRecorder) GetCandidateByName(ctx, in interface
 }
 
 // GetBucketsByCandidate mocks base method
-func (m *MockAPIServiceClient) GetBucketsByCandidate(ctx context.Context, in *api.GetBucketsByCandidateRequest, opts ...grpc.CallOption) (*api.BucketResponse, error) {
+func (m *MockAPIServiceClient) GetBucketsByCandidate(ctx context.Context, in *x.GetBucketsByCandidateRequest, opts ...grpc.CallOption) (*x.BucketResponse, error) {
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "GetBucketsByCandidate", varargs...)
-	ret0, _ := ret[0].(*api.BucketResponse)
+	ret0, _ := ret[0].(*x.BucketResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -108,14 +108,32 @@ func (mr *MockAPIServiceClientMockRecorder) GetBucketsByCandidate(ctx, in interf
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBucketsByCandidate", reflect.TypeOf((*MockAPIServiceClient)(nil).GetBucketsByCandidate), varargs...)
 }
 
+// GetBuckets mocks base method
+func (m *MockAPIServiceClient) GetBuckets(ctx context.Context, in *x.GetBucketsRequest, opts ...grpc.CallOption) (*x.BucketResponse, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetBuckets", varargs...)
+	ret0, _ := ret[0].(*x.BucketResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetBuckets indicates an expected call of GetBuckets
+func (mr *MockAPIServiceClientMockRecorder) GetBuckets(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBuckets", reflect.TypeOf((*MockAPIServiceClient)(nil).GetBuckets), varargs...)
+}
+
 // IsHealth mocks base method
-func (m *MockAPIServiceClient) IsHealth(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*api.HealthCheckResponse, error) {
+func (m *MockAPIServiceClient) IsHealth(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*x.HealthCheckResponse, error) {
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "IsHealth", varargs...)
-	ret0, _ := ret[0].(*api.HealthCheckResponse)
+	ret0, _ := ret[0].(*x.HealthCheckResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -150,9 +168,9 @@ func (m *MockAPIServiceServer) EXPECT() *MockAPIServiceServerMockRecorder {
 }
 
 // GetMeta mocks base method
-func (m *MockAPIServiceServer) GetMeta(arg0 context.Context, arg1 *empty.Empty) (*api.ChainMeta, error) {
+func (m *MockAPIServiceServer) GetMeta(arg0 context.Context, arg1 *empty.Empty) (*x.ChainMeta, error) {
 	ret := m.ctrl.Call(m, "GetMeta", arg0, arg1)
-	ret0, _ := ret[0].(*api.ChainMeta)
+	ret0, _ := ret[0].(*x.ChainMeta)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -163,9 +181,9 @@ func (mr *MockAPIServiceServerMockRecorder) GetMeta(arg0, arg1 interface{}) *gom
 }
 
 // GetCandidates mocks base method
-func (m *MockAPIServiceServer) GetCandidates(arg0 context.Context, arg1 *api.GetCandidatesRequest) (*api.CandidateResponse, error) {
+func (m *MockAPIServiceServer) GetCandidates(arg0 context.Context, arg1 *x.GetCandidatesRequest) (*x.CandidateResponse, error) {
 	ret := m.ctrl.Call(m, "GetCandidates", arg0, arg1)
-	ret0, _ := ret[0].(*api.CandidateResponse)
+	ret0, _ := ret[0].(*x.CandidateResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -176,9 +194,9 @@ func (mr *MockAPIServiceServerMockRecorder) GetCandidates(arg0, arg1 interface{}
 }
 
 // GetCandidateByName mocks base method
-func (m *MockAPIServiceServer) GetCandidateByName(arg0 context.Context, arg1 *api.GetCandidateByNameRequest) (*api.Candidate, error) {
+func (m *MockAPIServiceServer) GetCandidateByName(arg0 context.Context, arg1 *x.GetCandidateByNameRequest) (*x.Candidate, error) {
 	ret := m.ctrl.Call(m, "GetCandidateByName", arg0, arg1)
-	ret0, _ := ret[0].(*api.Candidate)
+	ret0, _ := ret[0].(*x.Candidate)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -189,9 +207,9 @@ func (mr *MockAPIServiceServerMockRecorder) GetCandidateByName(arg0, arg1 interf
 }
 
 // GetBucketsByCandidate mocks base method
-func (m *MockAPIServiceServer) GetBucketsByCandidate(arg0 context.Context, arg1 *api.GetBucketsByCandidateRequest) (*api.BucketResponse, error) {
+func (m *MockAPIServiceServer) GetBucketsByCandidate(arg0 context.Context, arg1 *x.GetBucketsByCandidateRequest) (*x.BucketResponse, error) {
 	ret := m.ctrl.Call(m, "GetBucketsByCandidate", arg0, arg1)
-	ret0, _ := ret[0].(*api.BucketResponse)
+	ret0, _ := ret[0].(*x.BucketResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -201,10 +219,23 @@ func (mr *MockAPIServiceServerMockRecorder) GetBucketsByCandidate(arg0, arg1 int
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBucketsByCandidate", reflect.TypeOf((*MockAPIServiceServer)(nil).GetBucketsByCandidate), arg0, arg1)
 }
 
+// GetBuckets mocks base method
+func (m *MockAPIServiceServer) GetBuckets(arg0 context.Context, arg1 *x.GetBucketsRequest) (*x.BucketResponse, error) {
+	ret := m.ctrl.Call(m, "GetBuckets", arg0, arg1)
+	ret0, _ := ret[0].(*x.BucketResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetBuckets indicates an expected call of GetBuckets
+func (mr *MockAPIServiceServerMockRecorder) GetBuckets(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBuckets", reflect.TypeOf((*MockAPIServiceServer)(nil).GetBuckets), arg0, arg1)
+}
+
 // IsHealth mocks base method
-func (m *MockAPIServiceServer) IsHealth(arg0 context.Context, arg1 *empty.Empty) (*api.HealthCheckResponse, error) {
+func (m *MockAPIServiceServer) IsHealth(arg0 context.Context, arg1 *empty.Empty) (*x.HealthCheckResponse, error) {
 	ret := m.ctrl.Call(m, "IsHealth", arg0, arg1)
-	ret0, _ := ret[0].(*api.HealthCheckResponse)
+	ret0, _ := ret[0].(*x.HealthCheckResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

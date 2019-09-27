@@ -5,9 +5,9 @@
 package mock_committee
 
 import (
+	x "."
 	context "context"
 	gomock "github.com/golang/mock/gomock"
-	committee "github.com/iotexproject/iotex-election/committee"
 	types "github.com/iotexproject/iotex-election/types"
 	reflect "reflect"
 	time "time"
@@ -61,42 +61,29 @@ func (mr *MockCommitteeMockRecorder) Stop(arg0 interface{}) *gomock.Call {
 }
 
 // ResultByHeight mocks base method
-func (m *MockCommittee) ResultByHeight(height uint64) (*types.ElectionResult, error) {
-	ret := m.ctrl.Call(m, "ResultByHeight", height)
+func (m *MockCommittee) ResultByHeight(arg0 uint64) (*types.ElectionResult, error) {
+	ret := m.ctrl.Call(m, "ResultByHeight", arg0)
 	ret0, _ := ret[0].(*types.ElectionResult)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ResultByHeight indicates an expected call of ResultByHeight
-func (mr *MockCommitteeMockRecorder) ResultByHeight(height interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResultByHeight", reflect.TypeOf((*MockCommittee)(nil).ResultByHeight), height)
-}
-
-// FetchResultByHeight mocks base method
-func (m *MockCommittee) FetchResultByHeight(height uint64) (*types.ElectionResult, error) {
-	ret := m.ctrl.Call(m, "FetchResultByHeight", height)
-	ret0, _ := ret[0].(*types.ElectionResult)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// FetchResultByHeight indicates an expected call of FetchResultByHeight
-func (mr *MockCommitteeMockRecorder) FetchResultByHeight(height interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchResultByHeight", reflect.TypeOf((*MockCommittee)(nil).FetchResultByHeight), height)
+func (mr *MockCommitteeMockRecorder) ResultByHeight(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResultByHeight", reflect.TypeOf((*MockCommittee)(nil).ResultByHeight), arg0)
 }
 
 // HeightByTime mocks base method
-func (m *MockCommittee) HeightByTime(timestamp time.Time) (uint64, error) {
-	ret := m.ctrl.Call(m, "HeightByTime", timestamp)
+func (m *MockCommittee) HeightByTime(arg0 time.Time) (uint64, error) {
+	ret := m.ctrl.Call(m, "HeightByTime", arg0)
 	ret0, _ := ret[0].(uint64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // HeightByTime indicates an expected call of HeightByTime
-func (mr *MockCommitteeMockRecorder) HeightByTime(timestamp interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HeightByTime", reflect.TypeOf((*MockCommittee)(nil).HeightByTime), timestamp)
+func (mr *MockCommitteeMockRecorder) HeightByTime(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HeightByTime", reflect.TypeOf((*MockCommittee)(nil).HeightByTime), arg0)
 }
 
 // LatestHeight mocks base method
@@ -112,13 +99,38 @@ func (mr *MockCommitteeMockRecorder) LatestHeight() *gomock.Call {
 }
 
 // Status mocks base method
-func (m *MockCommittee) Status() committee.STATUS {
+func (m *MockCommittee) Status() x.STATUS {
 	ret := m.ctrl.Call(m, "Status")
-	ret0, _ := ret[0].(committee.STATUS)
+	ret0, _ := ret[0].(x.STATUS)
 	return ret0
 }
 
 // Status indicates an expected call of Status
 func (mr *MockCommitteeMockRecorder) Status() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Status", reflect.TypeOf((*MockCommittee)(nil).Status))
+}
+
+// PutNativePoll mocks base method
+func (m *MockCommittee) PutNativePoll(arg0 uint64, arg1 time.Time, arg2 []*types.Bucket) error {
+	ret := m.ctrl.Call(m, "PutNativePoll", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// PutNativePoll indicates an expected call of PutNativePoll
+func (mr *MockCommitteeMockRecorder) PutNativePoll(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutNativePoll", reflect.TypeOf((*MockCommittee)(nil).PutNativePoll), arg0, arg1, arg2)
+}
+
+// NativeBucketsByEpoch mocks base method
+func (m *MockCommittee) NativeBucketsByEpoch(arg0 uint64) ([]*types.Bucket, error) {
+	ret := m.ctrl.Call(m, "NativeBucketsByEpoch", arg0)
+	ret0, _ := ret[0].([]*types.Bucket)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// NativeBucketsByEpoch indicates an expected call of NativeBucketsByEpoch
+func (mr *MockCommitteeMockRecorder) NativeBucketsByEpoch(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NativeBucketsByEpoch", reflect.TypeOf((*MockCommittee)(nil).NativeBucketsByEpoch), arg0)
 }

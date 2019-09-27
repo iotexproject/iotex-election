@@ -84,6 +84,10 @@ type (
 		LatestHeight() uint64
 		// Status returns the committee status
 		Status() STATUS
+		// PutNativePoll puts one native poll record on IoTeX chain
+		PutNativePoll(uint64, time.Time, []*types.Bucket) error
+		// NativeBucketsByEpoch returns a list of Bucket of a given epoch number
+		NativeBucketsByEpoch(uint64) ([]*types.Bucket, error)
 	}
 
 	committee struct {
@@ -265,6 +269,14 @@ func (ec *committee) Sync(tipHeight uint64) error {
 	defer ec.mutex.Unlock()
 
 	return ec.storeInBatch(data)
+}
+
+func (ec *committee) PutNativePoll(epochNum uint64, mintTime time.Time, buckets []*types.Bucket) error {
+	return ec.archive.PutNativePoll(epochNum, mintTime, buckets)
+}
+
+func (ec *committee) NativeBucketsByEpoch(epochNum uint64) ([]*types.Bucket, error) {
+	return ec.archive.NativeBuckets(epochNum)
 }
 
 func (ec *committee) nextHeight() uint64 {

@@ -78,6 +78,8 @@ type (
 		Stop(context.Context) error
 		// ResultByHeight returns the result on a specific ethereum height
 		ResultByHeight(uint64) (*types.ElectionResult, error)
+		//RawDataByHeight returns the bucket list and registration list and mintTime
+		RawDataByHeight(uint64) ([]*types.Bucket, []*types.Registration, time.Time, error)
 		// HeightByTime returns the nearest result before time
 		HeightByTime(time.Time) (uint64, error)
 		// LatestHeight returns the height with latest result
@@ -340,6 +342,12 @@ func (ec *committee) storeInBatch(data map[uint64]*rawData) error {
 	return nil
 }
 
+
+func (ec *committee) Archive() PollArchive {	
+	return ec.archive	
+}	
+
+
 func (ec *committee) LatestHeight() uint64 {
 	ec.mutex.RLock()
 	defer ec.mutex.RUnlock()
@@ -360,6 +368,28 @@ func (ec *committee) HeightByTime(ts time.Time) (uint64, error) {
 	// Make sure that we already got a block after the timestamp, such that the height
 	// we return here is the last one before ts
 	return ec.archive.HeightBefore(ts)
+}
+
+func (ec *committee) RawDataByHeight (height uint64) ([]*types.Bucket, []*types.Registration, time.Time, error) {
+	ec.mutex.RLock()
+	defer ec.mutex.RUnlock()
+	return ec.rawDataByHeight(height)
+}
+
+func (ec *committee) rawDataByHeight(height uint64) ([]*types.Bucket, []*types.Registration, time.Time, error) {
+	timestamp, err := ec.archive.MintTime(height)
+	if err != nil {
+		return nil, nil, time.Time{}, err
+	}
+	regs, err := ec.archive.Registrations(height)
+	if err != nil {
+		return nil, nil, time.Time{}, err
+	}
+	buckets, err := ec.archive.Buckets(height)
+	if err != nil {
+		return nil, nil, time.Time{}, err
+	}
+	return buckets, regs, timestamp, nil 
 }
 
 func (ec *committee) ResultByHeight(height uint64) (*types.ElectionResult, error) {

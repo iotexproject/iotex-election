@@ -362,16 +362,7 @@ func (s *server) GetRawData(ctx context.Context, request *api.GetRawDataRequest)
 	if err != nil {
 		return nil, err
 	}
-	archive := s.electionCommittee.Archive()
-	timestamp, err := archive.MintTime(height)
-	if err != nil {
-		return nil, err
-	}
-	regs, err := archive.Registrations(height)
-	if err != nil {
-		return nil, err
-	}
-	buckets, err := archive.Buckets(height)
+	buckets, regs, timestamp, err := s.electionCommittee.RawDataByHeight(height)
 	if err != nil {
 		return nil, err
 	}

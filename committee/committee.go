@@ -342,12 +342,6 @@ func (ec *committee) storeInBatch(data map[uint64]*rawData) error {
 	return nil
 }
 
-
-func (ec *committee) Archive() PollArchive {	
-	return ec.archive	
-}	
-
-
 func (ec *committee) LatestHeight() uint64 {
 	ec.mutex.RLock()
 	defer ec.mutex.RUnlock()

@@ -12,6 +12,7 @@
 //      protoc --go_out=plugins=grpc:. *.proto
 syntax = "proto3";
 package election;
+option go_package = "github.com/iotexproject/iotex-election/pb/election";
 
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";

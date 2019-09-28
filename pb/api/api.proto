@@ -12,8 +12,11 @@
 //      protoc --go_out=plugins=grpc:. *.proto
 syntax = "proto3";
 package api;
+option go_package = "github.com/iotexproject/iotex-election/pb/api";
 
 import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+import "pb/election/election.proto";
 
 // The APIService service definition
 service APIService {
@@ -34,6 +37,9 @@ service APIService {
 
 	// health endpoint
 	rpc isHealth(google.protobuf.Empty) returns (HealthCheckResponse) {}
+
+	//get raw data by height
+	rpc getRawData(GetRawDataRequest) returns (RawDataResponse) {}
 }
 
 message ChainMeta {
@@ -101,4 +107,14 @@ message CandidateResponse {
 
 message BucketResponse {
 	repeated Bucket buckets = 1;
+}
+
+message GetRawDataRequest {
+	string height = 1;
+}
+
+message RawDataResponse {
+	google.protobuf.Timestamp timestamp = 1;
+	repeated election.Bucket buckets = 2;
+	repeated election.Registration registrations = 3;
 }

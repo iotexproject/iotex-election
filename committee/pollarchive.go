@@ -65,15 +65,15 @@ type archive struct {
 
 // NewArchive creates a new arch of poll
 func NewArchive(newDB *sql.DB, startHeight uint64, interval uint64, oldDB db.KVStoreWithNamespace) (PollArchive, error) {
-	bucketTableOperator, err := NewBucketTableOperator("buckets", interval)
+	bucketTableOperator, err := NewBucketTableOperator("buckets")
 	if err != nil {
 		return nil, err
 	}
-	nativeBucketTableOperator, err := NewBucketTableOperator("native_buckets", 1)
+	nativeBucketTableOperator, err := NewBucketTableOperator("native_buckets")
 	if err != nil {
 		return nil, err
 	}
-	registrationTableOperator, err := NewRegistrationTableOperator("registrations", interval)
+	registrationTableOperator, err := NewRegistrationTableOperator("registrations")
 	if err != nil {
 		return nil, err
 	}

@@ -28,6 +28,7 @@ import (
 	"github.com/iotexproject/iotex-proto/golang/iotexapi"
 )
 
+//VoteSync defines fields used in VoteSync
 type VoteSync struct {
 	service                iotex.AuthedClient
 	vpsContract            iotex.Contract
@@ -51,6 +52,7 @@ type VoteSync struct {
 	terminate              chan bool
 }
 
+//Config defines the configs for VoteSync
 type Config struct {
 	GravityChainAPIs         []string      `yaml:"gravityChainAPIs"`
 	GravityChainTimeInterval time.Duration `yaml:"gravityChainTimeInterval"`
@@ -67,11 +69,13 @@ type Config struct {
 	DiscordReminder          string        `yaml:"discordReminder"`
 }
 
+//WeightedVote defines voter and votes for weighted vote 
 type WeightedVote struct {
 	Voter []byte
 	Votes *big.Int
 }
 
+//toIoAddress converts ethAddress to ioAddress
 func toIoAddress(addr common.Address) (address.Address, error) {
 	pkhash, err := hexutil.Decode(addr.String())
 	if err != nil {
@@ -80,6 +84,7 @@ func toIoAddress(addr common.Address) (address.Address, error) {
 	return address.FromBytes(pkhash)
 }
 
+//NewVoteSync instantiates new VoteSync 
 func NewVoteSync(cfg Config) (*VoteSync, error) {
 	ctx := context.Background()
 	carrier, err := carrier.NewEthereumVoteCarrier(
@@ -240,6 +245,7 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 	}, nil
 }
 
+//Start starts voteSync
 func (vc *VoteSync) Start(ctx context.Context) {
 	tipChan := make(chan uint64)
 	errChan := make(chan error)
@@ -298,6 +304,7 @@ func (vc *VoteSync) Start(ctx context.Context) {
 	vc.carrier.SubscribeNewBlock(tipChan, errChan, vc.terminate)
 }
 
+//Stop stops voteSync
 func (vc *VoteSync) Stop(ctx context.Context) {
 	vc.terminate <- true
 	vc.carrier.Close()

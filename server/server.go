@@ -15,6 +15,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"log"
+	"os"
 	"math"
 	"math/big"
 	"net"
@@ -86,11 +87,18 @@ func NewServer(cfg *Config) (Server, error) {
 		dbPath = "election.db"
 	}
 	var c committee.Committee
+	var archive committee.PollArchive
 	sqldb, err := sql.Open("sqlite3", "sqlite.db")
 	if err != nil {
 		return nil, err
 	}
-	archive, err := committee.NewArchive(sqldb, cfg.Committee.GravityChainStartHeight, cfg.Committee.GravityChainHeightInterval, db.NewBoltDB(cfg.DB))
+	if _, err = os.Stat(dbPath); err != nil{
+		if os.IsNotExist(err) {
+			archive, err = committee.NewArchive(sqldb, cfg.Committee.GravityChainStartHeight, cfg.Committee.GravityChainHeightInterval, nil)
+		}
+	}else {
+		archive, err = committee.NewArchive(sqldb, cfg.Committee.GravityChainStartHeight, cfg.Committee.GravityChainHeightInterval, db.NewBoltDB(cfg.DB))
+	}
 	if err != nil {
 		return nil, err
 	}

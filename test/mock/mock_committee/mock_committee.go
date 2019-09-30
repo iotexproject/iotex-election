@@ -79,6 +79,23 @@ func (mr *MockCommitteeMockRecorder) ResultByHeight(arg0 interface{}) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResultByHeight", reflect.TypeOf((*MockCommittee)(nil).ResultByHeight), arg0)
 }
 
+// RawDataByHeight mocks base method
+func (m *MockCommittee) RawDataByHeight(arg0 uint64) ([]*types.Bucket, []*types.Registration, time.Time, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RawDataByHeight", arg0)
+	ret0, _ := ret[0].([]*types.Bucket)
+	ret1, _ := ret[1].([]*types.Registration)
+	ret2, _ := ret[2].(time.Time)
+	ret3, _ := ret[3].(error)
+	return ret0, ret1, ret2, ret3
+}
+
+// RawDataByHeight indicates an expected call of RawDataByHeight
+func (mr *MockCommitteeMockRecorder) RawDataByHeight(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RawDataByHeight", reflect.TypeOf((*MockCommittee)(nil).RawDataByHeight), arg0)
+}
+
 // HeightByTime mocks base method
 func (m *MockCommittee) HeightByTime(arg0 time.Time) (uint64, error) {
 	m.ctrl.T.Helper()

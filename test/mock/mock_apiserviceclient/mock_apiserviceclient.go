@@ -156,6 +156,26 @@ func (mr *MockAPIServiceClientMockRecorder) IsHealth(ctx, in interface{}, opts .
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsHealth", reflect.TypeOf((*MockAPIServiceClient)(nil).IsHealth), varargs...)
 }
 
+// GetRawData mocks base method
+func (m *MockAPIServiceClient) GetRawData(ctx context.Context, in *api.GetRawDataRequest, opts ...grpc.CallOption) (*api.RawDataResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetRawData", varargs...)
+	ret0, _ := ret[0].(*api.RawDataResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRawData indicates an expected call of GetRawData
+func (mr *MockAPIServiceClientMockRecorder) GetRawData(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRawData", reflect.TypeOf((*MockAPIServiceClient)(nil).GetRawData), varargs...)
+}
+
 // MockAPIServiceServer is a mock of APIServiceServer interface
 type MockAPIServiceServer struct {
 	ctrl     *gomock.Controller
@@ -267,4 +287,19 @@ func (m *MockAPIServiceServer) IsHealth(arg0 context.Context, arg1 *empty.Empty)
 func (mr *MockAPIServiceServerMockRecorder) IsHealth(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsHealth", reflect.TypeOf((*MockAPIServiceServer)(nil).IsHealth), arg0, arg1)
+}
+
+// GetRawData mocks base method
+func (m *MockAPIServiceServer) GetRawData(arg0 context.Context, arg1 *api.GetRawDataRequest) (*api.RawDataResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRawData", arg0, arg1)
+	ret0, _ := ret[0].(*api.RawDataResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRawData indicates an expected call of GetRawData
+func (mr *MockAPIServiceServerMockRecorder) GetRawData(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRawData", reflect.TypeOf((*MockAPIServiceServer)(nil).GetRawData), arg0, arg1)
 }

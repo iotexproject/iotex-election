@@ -31,12 +31,18 @@ type PollArchive interface {
 	HeightBefore(time.Time) (uint64, error)
 	// Buckets returns a list of Bucket of a given height
 	Buckets(uint64) ([]*types.Bucket, error)
+	// NativeBuckets returns a list of Bucket of a given epoch number
+	NativeBuckets(uint64) ([]*types.Bucket, error)
 	// Registrations returns a list of Registration of a given height
 	Registrations(uint64) ([]*types.Registration, error)
 	// MintTime returns the mint time of a given height
 	MintTime(uint64) (time.Time, error)
+	// NativeMintTime returns the mint time of a given epoch number
+	NativeMintTime(uint64) (time.Time, error)
 	// PutPoll puts one poll record
 	PutPoll(uint64, time.Time, []*types.Registration, []*types.Bucket) error
+	// PutNativePoll puts one native poll record on IoTeX chain
+	PutNativePoll(uint64, time.Time, []*types.Bucket) error
 	// TipHeight returns the tip height stored in archive
 	TipHeight() (uint64, error)
 	// Start starts the archive
@@ -50,14 +56,20 @@ type archive struct {
 	interval                  uint64
 	db                        *sql.DB
 	bucketTableOperator       Operator
+	nativeBucketTableOperator Operator
 	registrationTableOperator Operator
 	timeTableOperator         *TimeTableOperator
+	nativeTimeTableOperator   *TimeTableOperator
 	oldDB                     db.KVStoreWithNamespace
 }
 
 // NewArchive creates a new arch of poll
 func NewArchive(newDB *sql.DB, startHeight uint64, interval uint64, oldDB db.KVStoreWithNamespace) (PollArchive, error) {
 	bucketTableOperator, err := NewBucketTableOperator("buckets")
+	if err != nil {
+		return nil, err
+	}
+	nativeBucketTableOperator, err := NewBucketTableOperator("native_buckets")
 	if err != nil {
 		return nil, err
 	}
@@ -70,8 +82,10 @@ func NewArchive(newDB *sql.DB, startHeight uint64, interval uint64, oldDB db.KVS
 		startHeight:               startHeight,
 		interval:                  interval,
 		bucketTableOperator:       bucketTableOperator,
+		nativeBucketTableOperator: nativeBucketTableOperator,
 		registrationTableOperator: registrationTableOperator,
 		timeTableOperator:         NewTimeTableOperator("mint_time"),
+		nativeTimeTableOperator:   NewTimeTableOperator("native_mint_time"),
 		oldDB:                     oldDB,
 	}, nil
 }
@@ -100,6 +114,18 @@ func (arch *archive) Buckets(height uint64) ([]*types.Bucket, error) {
 	return records, nil
 }
 
+func (arch *archive) NativeBuckets(epochNum uint64) ([]*types.Bucket, error) {
+	value, err := arch.nativeBucketTableOperator.Get(epochNum, arch.db, nil)
+	if err != nil {
+		return nil, err
+	}
+	records, ok := value.([]*types.Bucket)
+	if !ok {
+		return nil, errors.Errorf("Unexpected type %s", reflect.TypeOf(value))
+	}
+	return records, nil
+}
+
 func (arch *archive) PutPoll(height uint64, mintTime time.Time, regs []*types.Registration, buckets []*types.Bucket) (err error) {
 	tx, err := arch.db.Begin()
 	if err != nil {
@@ -118,6 +144,21 @@ func (arch *archive) PutPoll(height uint64, mintTime time.Time, regs []*types.Re
 	return tx.Commit()
 }
 
+func (arch *archive) PutNativePoll(epochNum uint64, mintTime time.Time, buckets []*types.Bucket) (err error) {
+	tx, err := arch.db.Begin()
+	if err != nil {
+		return err
+	}
+	if err := arch.nativeBucketTableOperator.Put(epochNum, buckets, tx); err != nil {
+		return err
+	}
+	if err := arch.nativeTimeTableOperator.Put(epochNum, mintTime, tx); err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	return tx.Commit()
+}
+
 func (arch *archive) TipHeight() (uint64, error) {
 	return arch.timeTableOperator.TipHeight(arch.db, nil)
 }
@@ -128,6 +169,18 @@ func (arch *archive) HeightBefore(ts time.Time) (uint64, error) {
 
 func (arch *archive) MintTime(height uint64) (time.Time, error) {
 	value, err := arch.timeTableOperator.Get(height, arch.db, nil)
+	if err != nil {
+		return time.Time{}, err
+	}
+	mintTime, ok := value.(time.Time)
+	if !ok {
+		return time.Time{}, errors.Errorf("Unexpected type %s", reflect.TypeOf(value))
+	}
+	return mintTime, nil
+}
+
+func (arch *archive) NativeMintTime(epochNum uint64) (time.Time, error) {
+	value, err := arch.nativeTimeTableOperator.Get(epochNum, arch.db, nil)
 	if err != nil {
 		return time.Time{}, err
 	}

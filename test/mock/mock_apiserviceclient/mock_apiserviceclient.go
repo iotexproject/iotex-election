@@ -38,6 +38,7 @@ func (m *MockAPIServiceClient) EXPECT() *MockAPIServiceClientMockRecorder {
 
 // GetMeta mocks base method
 func (m *MockAPIServiceClient) GetMeta(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*api.ChainMeta, error) {
+	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -50,12 +51,14 @@ func (m *MockAPIServiceClient) GetMeta(ctx context.Context, in *empty.Empty, opt
 
 // GetMeta indicates an expected call of GetMeta
 func (mr *MockAPIServiceClientMockRecorder) GetMeta(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMeta", reflect.TypeOf((*MockAPIServiceClient)(nil).GetMeta), varargs...)
 }
 
 // GetCandidates mocks base method
 func (m *MockAPIServiceClient) GetCandidates(ctx context.Context, in *api.GetCandidatesRequest, opts ...grpc.CallOption) (*api.CandidateResponse, error) {
+	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -68,12 +71,14 @@ func (m *MockAPIServiceClient) GetCandidates(ctx context.Context, in *api.GetCan
 
 // GetCandidates indicates an expected call of GetCandidates
 func (mr *MockAPIServiceClientMockRecorder) GetCandidates(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCandidates", reflect.TypeOf((*MockAPIServiceClient)(nil).GetCandidates), varargs...)
 }
 
 // GetCandidateByName mocks base method
 func (m *MockAPIServiceClient) GetCandidateByName(ctx context.Context, in *api.GetCandidateByNameRequest, opts ...grpc.CallOption) (*api.Candidate, error) {
+	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -86,12 +91,14 @@ func (m *MockAPIServiceClient) GetCandidateByName(ctx context.Context, in *api.G
 
 // GetCandidateByName indicates an expected call of GetCandidateByName
 func (mr *MockAPIServiceClientMockRecorder) GetCandidateByName(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCandidateByName", reflect.TypeOf((*MockAPIServiceClient)(nil).GetCandidateByName), varargs...)
 }
 
 // GetBucketsByCandidate mocks base method
 func (m *MockAPIServiceClient) GetBucketsByCandidate(ctx context.Context, in *api.GetBucketsByCandidateRequest, opts ...grpc.CallOption) (*api.BucketResponse, error) {
+	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -104,12 +111,34 @@ func (m *MockAPIServiceClient) GetBucketsByCandidate(ctx context.Context, in *ap
 
 // GetBucketsByCandidate indicates an expected call of GetBucketsByCandidate
 func (mr *MockAPIServiceClientMockRecorder) GetBucketsByCandidate(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBucketsByCandidate", reflect.TypeOf((*MockAPIServiceClient)(nil).GetBucketsByCandidate), varargs...)
 }
 
+// GetBuckets mocks base method
+func (m *MockAPIServiceClient) GetBuckets(ctx context.Context, in *api.GetBucketsRequest, opts ...grpc.CallOption) (*api.BucketResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetBuckets", varargs...)
+	ret0, _ := ret[0].(*api.BucketResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetBuckets indicates an expected call of GetBuckets
+func (mr *MockAPIServiceClientMockRecorder) GetBuckets(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBuckets", reflect.TypeOf((*MockAPIServiceClient)(nil).GetBuckets), varargs...)
+}
+
 // IsHealth mocks base method
 func (m *MockAPIServiceClient) IsHealth(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*api.HealthCheckResponse, error) {
+	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -122,8 +151,29 @@ func (m *MockAPIServiceClient) IsHealth(ctx context.Context, in *empty.Empty, op
 
 // IsHealth indicates an expected call of IsHealth
 func (mr *MockAPIServiceClientMockRecorder) IsHealth(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsHealth", reflect.TypeOf((*MockAPIServiceClient)(nil).IsHealth), varargs...)
+}
+
+// GetRawData mocks base method
+func (m *MockAPIServiceClient) GetRawData(ctx context.Context, in *api.GetRawDataRequest, opts ...grpc.CallOption) (*api.RawDataResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetRawData", varargs...)
+	ret0, _ := ret[0].(*api.RawDataResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRawData indicates an expected call of GetRawData
+func (mr *MockAPIServiceClientMockRecorder) GetRawData(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRawData", reflect.TypeOf((*MockAPIServiceClient)(nil).GetRawData), varargs...)
 }
 
 // MockAPIServiceServer is a mock of APIServiceServer interface
@@ -151,6 +201,7 @@ func (m *MockAPIServiceServer) EXPECT() *MockAPIServiceServerMockRecorder {
 
 // GetMeta mocks base method
 func (m *MockAPIServiceServer) GetMeta(arg0 context.Context, arg1 *empty.Empty) (*api.ChainMeta, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetMeta", arg0, arg1)
 	ret0, _ := ret[0].(*api.ChainMeta)
 	ret1, _ := ret[1].(error)
@@ -159,11 +210,13 @@ func (m *MockAPIServiceServer) GetMeta(arg0 context.Context, arg1 *empty.Empty) 
 
 // GetMeta indicates an expected call of GetMeta
 func (mr *MockAPIServiceServerMockRecorder) GetMeta(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMeta", reflect.TypeOf((*MockAPIServiceServer)(nil).GetMeta), arg0, arg1)
 }
 
 // GetCandidates mocks base method
 func (m *MockAPIServiceServer) GetCandidates(arg0 context.Context, arg1 *api.GetCandidatesRequest) (*api.CandidateResponse, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetCandidates", arg0, arg1)
 	ret0, _ := ret[0].(*api.CandidateResponse)
 	ret1, _ := ret[1].(error)
@@ -172,11 +225,13 @@ func (m *MockAPIServiceServer) GetCandidates(arg0 context.Context, arg1 *api.Get
 
 // GetCandidates indicates an expected call of GetCandidates
 func (mr *MockAPIServiceServerMockRecorder) GetCandidates(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCandidates", reflect.TypeOf((*MockAPIServiceServer)(nil).GetCandidates), arg0, arg1)
 }
 
 // GetCandidateByName mocks base method
 func (m *MockAPIServiceServer) GetCandidateByName(arg0 context.Context, arg1 *api.GetCandidateByNameRequest) (*api.Candidate, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetCandidateByName", arg0, arg1)
 	ret0, _ := ret[0].(*api.Candidate)
 	ret1, _ := ret[1].(error)
@@ -185,11 +240,13 @@ func (m *MockAPIServiceServer) GetCandidateByName(arg0 context.Context, arg1 *ap
 
 // GetCandidateByName indicates an expected call of GetCandidateByName
 func (mr *MockAPIServiceServerMockRecorder) GetCandidateByName(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCandidateByName", reflect.TypeOf((*MockAPIServiceServer)(nil).GetCandidateByName), arg0, arg1)
 }
 
 // GetBucketsByCandidate mocks base method
 func (m *MockAPIServiceServer) GetBucketsByCandidate(arg0 context.Context, arg1 *api.GetBucketsByCandidateRequest) (*api.BucketResponse, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetBucketsByCandidate", arg0, arg1)
 	ret0, _ := ret[0].(*api.BucketResponse)
 	ret1, _ := ret[1].(error)
@@ -198,11 +255,28 @@ func (m *MockAPIServiceServer) GetBucketsByCandidate(arg0 context.Context, arg1 
 
 // GetBucketsByCandidate indicates an expected call of GetBucketsByCandidate
 func (mr *MockAPIServiceServerMockRecorder) GetBucketsByCandidate(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBucketsByCandidate", reflect.TypeOf((*MockAPIServiceServer)(nil).GetBucketsByCandidate), arg0, arg1)
+}
+
+// GetBuckets mocks base method
+func (m *MockAPIServiceServer) GetBuckets(arg0 context.Context, arg1 *api.GetBucketsRequest) (*api.BucketResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBuckets", arg0, arg1)
+	ret0, _ := ret[0].(*api.BucketResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetBuckets indicates an expected call of GetBuckets
+func (mr *MockAPIServiceServerMockRecorder) GetBuckets(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBuckets", reflect.TypeOf((*MockAPIServiceServer)(nil).GetBuckets), arg0, arg1)
 }
 
 // IsHealth mocks base method
 func (m *MockAPIServiceServer) IsHealth(arg0 context.Context, arg1 *empty.Empty) (*api.HealthCheckResponse, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IsHealth", arg0, arg1)
 	ret0, _ := ret[0].(*api.HealthCheckResponse)
 	ret1, _ := ret[1].(error)
@@ -211,5 +285,21 @@ func (m *MockAPIServiceServer) IsHealth(arg0 context.Context, arg1 *empty.Empty)
 
 // IsHealth indicates an expected call of IsHealth
 func (mr *MockAPIServiceServerMockRecorder) IsHealth(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsHealth", reflect.TypeOf((*MockAPIServiceServer)(nil).IsHealth), arg0, arg1)
+}
+
+// GetRawData mocks base method
+func (m *MockAPIServiceServer) GetRawData(arg0 context.Context, arg1 *api.GetRawDataRequest) (*api.RawDataResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRawData", arg0, arg1)
+	ret0, _ := ret[0].(*api.RawDataResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRawData indicates an expected call of GetRawData
+func (mr *MockAPIServiceServerMockRecorder) GetRawData(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRawData", reflect.TypeOf((*MockAPIServiceServer)(nil).GetRawData), arg0, arg1)
 }

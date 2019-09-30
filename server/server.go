@@ -22,6 +22,8 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/ptypes/empty"
+	"github.com/golang/protobuf/ptypes"
+
 	// require sqlite 3
 	_ "github.com/mattn/go-sqlite3"
 	"go.uber.org/zap"
@@ -33,9 +35,11 @@ import (
 	"github.com/iotexproject/iotex-election/committee"
 	"github.com/iotexproject/iotex-election/db"
 	"github.com/iotexproject/iotex-election/pb/api"
+	electionpb "github.com/iotexproject/iotex-election/pb/election"
 	"github.com/iotexproject/iotex-election/types"
 	"github.com/iotexproject/iotex-election/util"
 	"github.com/iotexproject/iotex-election/votesync"
+
 )
 
 // Config defines the config for server
@@ -350,4 +354,46 @@ func (s *server) GetBuckets(ctx context.Context, request *api.GetBucketsRequest)
 	}
 
 	return s.toBucketResponse(votes, offset, request.Limit, result.MintTime()), nil
+}
+
+
+func (s *server) GetRawData(ctx context.Context, request *api.GetRawDataRequest) (*api.RawDataResponse, error) {
+	height, err := strconv.ParseUint(request.Height, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	buckets, regs, timestamp, err := s.electionCommittee.RawDataByHeight(height)
+	if err != nil {
+		return nil, err
+	}
+	return s.toRawDataResponse(timestamp, regs, buckets)
+}
+
+
+func (s *server) toRawDataResponse(mintTime time.Time, regs []*types.Registration, buckets []*types.Bucket) (*api.RawDataResponse, error) {
+	response := &api.RawDataResponse{
+		Buckets: make([]*electionpb.Bucket, len(buckets)),
+		Registrations: make([]*electionpb.Registration, len(regs)),
+	}
+	for i := 0; i < len(buckets); i++ {
+		bucketPb, err := buckets[i].ToProtoMsg()
+		if err != nil {
+			return nil, err
+		}
+		response.Buckets[i] = bucketPb
+	}
+
+	for i := 0; i < len(regs); i++ {
+		regPb, err := regs[i].ToProtoMsg()
+		if err != nil {
+			return nil, err
+		}
+		response.Registrations[i] = regPb
+	}
+	t, err := ptypes.TimestampProto(mintTime)
+	if err != nil {
+		return nil, err
+	}
+	response.Timestamp = t
+	return response, nil
 }

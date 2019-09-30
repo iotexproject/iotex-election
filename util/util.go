@@ -19,20 +19,25 @@ import (
 )
 
 
-const MaxUint = ^uint(0) 
-const MaxInt = int64(MaxUint >> 1) 
+const (
+	maxUint = ^uint(0) 
+	maxInt = int64(maxUint >> 1) 
+) 
 
+//Uint64ToInt64 converts uint64 to int64
 func Uint64ToInt64(u uint64) int64 {
-	if u > uint64(MaxInt) {
+	if u > uint64(maxInt) {
 		zap.L().Panic("Height can't be converted to int64")
 	}
 	return int64(u)
 }
 
+//TimeToBytes converts time to []byte
 func TimeToBytes(t time.Time) ([]byte, error) {
 	return t.MarshalBinary()
 }
 
+//BytesToTime converts []byte to time
 func BytesToTime(b []byte) (time.Time, error) {
 	var t time.Time
 	if err := t.UnmarshalBinary(b); err != nil {
@@ -41,6 +46,7 @@ func BytesToTime(b []byte) (time.Time, error) {
 	return t, nil
 }
 
+//Uint64ToBytes converts uint64 to []byte
 func Uint64ToBytes(u uint64) []byte {
 	retval := make([]byte, 8)
 	binary.LittleEndian.PutUint64(retval, u)
@@ -48,10 +54,12 @@ func Uint64ToBytes(u uint64) []byte {
 	return retval
 }
 
+//BytesToUint64 converts []byte to uint64
 func BytesToUint64(b []byte) uint64 {
 	return binary.LittleEndian.Uint64(b)
 }
 
+//CopyBytes copy []byte to another []byte
 func CopyBytes(b []byte) []byte {
 	c := make([]byte, len(b))
 	copy(c, b)

@@ -122,18 +122,18 @@ func (mr *MockCommitteeMockRecorder) Status() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Status", reflect.TypeOf((*MockCommittee)(nil).Status))
 }
 
-// PutNativePoll mocks base method
-func (m *MockCommittee) PutNativePoll(arg0 uint64, arg1 time.Time, arg2 []*types.Bucket) error {
+// PutNativePollByEpoch mocks base method
+func (m *MockCommittee) PutNativePollByEpoch(arg0 uint64, arg1 time.Time, arg2 []*types.Bucket) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PutNativePoll", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "PutNativePollByEpoch", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// PutNativePoll indicates an expected call of PutNativePoll
-func (mr *MockCommitteeMockRecorder) PutNativePoll(arg0, arg1, arg2 interface{}) *gomock.Call {
+// PutNativePollByEpoch indicates an expected call of PutNativePollByEpoch
+func (mr *MockCommitteeMockRecorder) PutNativePollByEpoch(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutNativePoll", reflect.TypeOf((*MockCommittee)(nil).PutNativePoll), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutNativePollByEpoch", reflect.TypeOf((*MockCommittee)(nil).PutNativePollByEpoch), arg0, arg1, arg2)
 }
 
 // NativeBucketsByEpoch mocks base method

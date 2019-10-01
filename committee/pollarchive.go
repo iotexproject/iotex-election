@@ -223,7 +223,7 @@ func (arch *archive) Stop(_ context.Context) (err error) {
 	return nil
 }
 
-func (arch *archive) migrateResult(height uint64, r *types.ElectionResult) error {
+func (arch *archive) migrateResult(height uint64, r *ElectionResult) error {
 	candidates := r.Delegates()
 	regs := make([]*types.Registration, 0, len(candidates))
 	for _, candidate := range candidates {
@@ -277,7 +277,7 @@ func (arch *archive) migrate(ctx context.Context) (err error) {
 		if err != nil {
 			return err
 		}
-		r := &types.ElectionResult{}
+		r := &ElectionResult{}
 		if err = r.Deserialize(data); err != nil {
 			return err
 		}

@@ -8,66 +8,38 @@
 // You should have received a copy of the GNU General Public License along with this program. If
 // not, see <http://www.gnu.org/licenses/>.
 
-package types
+package committee
 
 import (
 	"bytes"
 	"encoding/hex"
 	"math/big"
-	"sort"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/pkg/errors"
-	"golang.org/x/crypto/blake2b"
 
+	"github.com/iotexproject/iotex-election/types"
 	"github.com/iotexproject/iotex-election/util"
 )
-
-type item struct {
-	Key      string
-	Value    *big.Int
-	Priority uint64
-}
-
-type itemList []item
-
-func (p itemList) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
-func (p itemList) Len() int      { return len(p) }
-func (p itemList) Less(i, j int) bool {
-	switch p[i].Value.Cmp(p[j].Value) {
-	case -1:
-		return false
-	case 1:
-		return true
-	}
-	switch {
-	case p[i].Priority < p[j].Priority:
-		return false
-	case p[i].Priority > p[j].Priority:
-		return true
-	}
-	// This is a corner case, which rarely happens.
-	return strings.Compare(p[i].Key, p[j].Key) > 0
-}
 
 const candidateZero = "000000000000000000000000"
 
 // BucketFilterFunc defines the function to filter vote
-type BucketFilterFunc func(*Bucket) bool
+type BucketFilterFunc func(*types.Bucket) bool
 
 // CandidateFilterFunc defines the function to filter candidate
-type CandidateFilterFunc func(*Candidate) bool
+type CandidateFilterFunc func(*types.Candidate) bool
 
 // ResultCalculator defines a calculator for a set of votes
 type ResultCalculator struct {
-	calcScore        func(*Bucket, time.Time) *big.Int
-	candidateFilter  func(*Candidate) bool
-	bucketFilter     func(*Bucket) bool
+	calcScore        func(*types.Bucket, time.Time) *big.Int
+	candidateFilter  func(*types.Candidate) bool
+	bucketFilter     func(*types.Bucket) bool
 	mintTime         time.Time
-	candidates       map[string]*Candidate
-	candidateVotes   map[string][]*Vote
+	candidates       map[string]*types.Candidate
+	candidateVotes   map[string][]*types.Vote
 	totalVotes       *big.Int
 	totalVotedStakes *big.Int
 	calculated       bool
@@ -80,7 +52,7 @@ func NewResultCalculator(
 	mintTime time.Time,
 	skipManified bool,
 	bucketFilter BucketFilterFunc, // filter buckets before calculating
-	calcScore func(*Bucket, time.Time) *big.Int,
+	calcScore func(*types.Bucket, time.Time) *big.Int,
 	candidateFilter CandidateFilterFunc, // filter candidates during calculating
 ) *ResultCalculator {
 	return &ResultCalculator{
@@ -88,8 +60,8 @@ func NewResultCalculator(
 		candidateFilter:  candidateFilter,
 		bucketFilter:     bucketFilter,
 		mintTime:         mintTime.UTC(),
-		candidates:       map[string]*Candidate{},
-		candidateVotes:   map[string][]*Vote{},
+		candidates:       map[string]*types.Candidate{},
+		candidateVotes:   map[string][]*types.Vote{},
 		totalVotedStakes: big.NewInt(0),
 		totalVotes:       big.NewInt(0),
 		calculated:       false,
@@ -98,7 +70,7 @@ func NewResultCalculator(
 }
 
 // AddRegistrations adds candidates to result
-func (calculator *ResultCalculator) AddRegistrations(candidates []*Registration) error {
+func (calculator *ResultCalculator) AddRegistrations(candidates []*types.Registration) error {
 	calculator.mutex.Lock()
 	defer calculator.mutex.Unlock()
 	if calculator.calculated {
@@ -115,14 +87,14 @@ func (calculator *ResultCalculator) AddRegistrations(candidates []*Registration)
 		if c.SelfStakingWeight() > uint64(1) && calculator.skipManified {
 			continue
 		}
-		calculator.candidates[name] = NewCandidate(c, big.NewInt(0), big.NewInt(0))
-		calculator.candidateVotes[name] = []*Vote{}
+		calculator.candidates[name] = types.NewCandidate(c, big.NewInt(0), big.NewInt(0))
+		calculator.candidateVotes[name] = []*types.Vote{}
 	}
 	return nil
 }
 
 // AddBuckets adds bucket to result
-func (calculator *ResultCalculator) AddBuckets(buckets []*Bucket) error {
+func (calculator *ResultCalculator) AddBuckets(buckets []*types.Bucket) error {
 	calculator.mutex.Lock()
 	defer calculator.mutex.Unlock()
 	if calculator.calculated {
@@ -143,19 +115,19 @@ func (calculator *ResultCalculator) AddBuckets(buckets []*Bucket) error {
 		amount := bucket.Amount()
 		score := calculator.calcScore(bucket, calculator.mintTime)
 		if candidate, exists := calculator.candidates[nameHex]; exists {
-			if bytes.Equal(bucket.Voter(), candidate.address) {
-				selfStakingWeight := new(big.Int).SetUint64(candidate.selfStakingWeight)
+			if bytes.Equal(bucket.Voter(), candidate.Address()) {
+				selfStakingWeight := new(big.Int).SetUint64(candidate.SelfStakingWeight())
 				amount.Mul(amount, selfStakingWeight)
-				if err := candidate.addSelfStakingTokens(amount); err != nil {
+				if err := candidate.AddSelfStakingTokens(amount); err != nil {
 					return err
 				}
 				score.Mul(score, selfStakingWeight)
 			}
-			cVote, err := NewVote(bucket, score)
+			cVote, err := types.NewVote(bucket, score)
 			if err != nil {
 				return err
 			}
-			if err := candidate.addScore(score); err != nil {
+			if err := candidate.AddScore(score); err != nil {
 				return err
 			}
 			calculator.candidateVotes[nameHex] = append(calculator.candidateVotes[nameHex], cVote)
@@ -174,8 +146,8 @@ func (calculator *ResultCalculator) Calculate() (*ElectionResult, error) {
 		return nil, errors.New("Cannot modify a calculated result")
 	}
 	qualifiers := calculator.filterAndSortCandidates()
-	candidates := make([]*Candidate, len(qualifiers))
-	votes := map[string][]*Vote{}
+	candidates := make([]*types.Candidate, len(qualifiers))
+	votes := map[string][]*types.Vote{}
 	for i, name := range qualifiers {
 		candidates[i] = calculator.candidates[name]
 		votes[name] = calculator.candidateVotes[name]
@@ -192,26 +164,19 @@ func (calculator *ResultCalculator) Calculate() (*ElectionResult, error) {
 }
 
 func (calculator *ResultCalculator) filterAndSortCandidates() []string {
-	p := make(itemList, len(calculator.candidates))
-	num := 0
-	tsBytes := util.Uint64ToBytes(uint64(calculator.mintTime.Unix()))
+	candidates := make(map[string]*big.Int, len(calculator.candidates))
 	for name, candidate := range calculator.candidates {
-		if !calculator.candidateFilter(candidate) {
-			priority := blake2b.Sum256(append([]byte(name), tsBytes...))
-			p[num] = item{
-				Key:      name,
-				Value:    candidate.score,
-				Priority: util.BytesToUint64(priority[:8]),
-			}
+		candidates[name] = candidate.Score()
+	}
+	qualifiers := util.Sort(candidates, uint64(calculator.mintTime.Unix()))
+	num := 0
+	for i, name := range qualifiers {
+		if !calculator.candidateFilter(calculator.candidates[name]) {
+			qualifiers[num] = qualifiers[i]
 			num++
 		}
 	}
-	sort.Stable(p[:num])
-	qualifiers := make([]string, num)
-	for i := 0; i < num; i++ {
-		qualifiers[i] = p[i].Key
-	}
-	return qualifiers
+	return qualifiers[:num]
 }
 
 func (calculator *ResultCalculator) hex(name []byte) string {

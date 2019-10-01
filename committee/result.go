@@ -8,7 +8,7 @@
 // You should have received a copy of the GNU General Public License along with this program. If
 // not, see <http://www.gnu.org/licenses/>.
 
-package types
+package committee
 
 import (
 	"bytes"
@@ -23,6 +23,7 @@ import (
 	"github.com/pkg/errors"
 
 	pb "github.com/iotexproject/iotex-election/pb/election"
+	"github.com/iotexproject/iotex-election/types"
 )
 
 // ErrInvalidProto indicates a format error of an election proto
@@ -31,8 +32,8 @@ var ErrInvalidProto = errors.New("Invalid election proto")
 // ElectionResult defines the collection of voting result on a height
 type ElectionResult struct {
 	mintTime         time.Time
-	delegates        []*Candidate
-	votes            map[string][]*Vote
+	delegates        []*types.Candidate
+	votes            map[string][]*types.Vote
 	totalVotes       *big.Int
 	totalVotedStakes *big.Int
 }
@@ -43,18 +44,18 @@ func (r *ElectionResult) MintTime() time.Time {
 }
 
 // Delegates returns a list of sorted delegates
-func (r *ElectionResult) Delegates() []*Candidate {
+func (r *ElectionResult) Delegates() []*types.Candidate {
 	return r.delegates
 }
 
 // VotesByDelegate returns a list of votes for a given delegate
-func (r *ElectionResult) VotesByDelegate(name []byte) []*Vote {
+func (r *ElectionResult) VotesByDelegate(name []byte) []*types.Vote {
 	return r.votes[hex.EncodeToString(name)]
 }
 
 // Votes returns all votes
-func (r *ElectionResult) Votes() []*Vote {
-	votes := []*Vote{}
+func (r *ElectionResult) Votes() []*types.Vote {
+	votes := []*types.Vote{}
 	for _, vs := range r.votes {
 		votes = append(votes, vs...)
 	}
@@ -62,7 +63,7 @@ func (r *ElectionResult) Votes() []*Vote {
 }
 
 // DelegateByName returns the candidate details
-func (r *ElectionResult) DelegateByName(name []byte) *Candidate {
+func (r *ElectionResult) DelegateByName(name []byte) *types.Candidate {
 	for _, candidate := range r.delegates {
 		if bytes.Equal(candidate.Name(), name) {
 			return candidate
@@ -137,10 +138,10 @@ func (r *ElectionResult) FromProtoMsg(rPb *pb.ElectionResult) (err error) {
 			len(rPb.DelegateVotes),
 		)
 	}
-	r.votes = map[string][]*Vote{}
-	r.delegates = make([]*Candidate, len(rPb.Delegates))
+	r.votes = map[string][]*types.Vote{}
+	r.delegates = make([]*types.Candidate, len(rPb.Delegates))
 	for i, cPb := range rPb.Delegates {
-		r.delegates[i] = &Candidate{}
+		r.delegates[i] = &types.Candidate{}
 		if err := r.delegates[i].FromProtoMsg(cPb); err != nil {
 			return err
 		}
@@ -153,9 +154,9 @@ func (r *ElectionResult) FromProtoMsg(rPb *pb.ElectionResult) (err error) {
 			)
 		}
 		voteList := rPb.DelegateVotes[i]
-		r.votes[name] = make([]*Vote, len(voteList.Votes))
+		r.votes[name] = make([]*types.Vote, len(voteList.Votes))
 		for j, vPb := range voteList.Votes {
-			r.votes[name][j] = &Vote{}
+			r.votes[name][j] = &types.Vote{}
 			if err := r.votes[name][j].FromProtoMsg(vPb); err != nil {
 				return err
 			}
@@ -194,11 +195,11 @@ func (r *ElectionResult) String() string {
 			&builder,
 			"%d: %s %x\n\toperator address: %s\n\treward: %s\n\tvotes: %s\n",
 			i,
-			string(d.name),
-			d.name,
-			string(d.operatorAddress),
-			string(d.rewardAddress),
-			d.score,
+			string(d.Name()),
+			d.Name(),
+			string(d.OperatorAddress()),
+			string(d.RewardAddress()),
+			d.Score(),
 		)
 	}
 	return builder.String()
@@ -227,7 +228,7 @@ func (r *ElectionResult) Equal(result *ElectionResult) bool {
 	if len(r.delegates) != len(result.delegates) {
 		return false
 	}
-	diff := make(map[string]*Candidate, len(r.delegates))
+	diff := make(map[string]*types.Candidate, len(r.delegates))
 	for _, delegate := range r.delegates {
 		diff[hex.EncodeToString(delegate.Registration.Name())] = delegate
 	}
@@ -249,7 +250,7 @@ func (r *ElectionResult) Equal(result *ElectionResult) bool {
 			if len(compareVal) != len(val) {
 				return false
 			}
-			diff := make(map[string]*Vote, len(val))
+			diff := make(map[string]*types.Vote, len(val))
 			for _, vote := range val {
 				byte, _ := vote.Serialize()
 				diff[string(byte)] = vote
@@ -277,33 +278,33 @@ func NewElectionResultForTest(
 ) *ElectionResult {
 	return &ElectionResult{
 		mintTime: mintTime,
-		delegates: []*Candidate{
-			&Candidate{
-				Registration{
-					name:              []byte("name1"),
-					address:           []byte("address1"),
-					operatorAddress:   []byte("io1kfpsvefk74cqxd245j2h5t2pld2wtxzyg6tqrt"),
-					rewardAddress:     []byte("io1kfpsvefk74cqxd245j2h5t2pld2wtxzyg6tqrt"),
-					selfStakingWeight: 1,
-				},
+		delegates: []*types.Candidate{
+			types.NewCandidate(
+				types.NewRegistration(
+					[]byte("name1"),
+					[]byte("address1"),
+					[]byte("io1kfpsvefk74cqxd245j2h5t2pld2wtxzyg6tqrt"),
+					[]byte("io1kfpsvefk74cqxd245j2h5t2pld2wtxzyg6tqrt"),
+					1,
+				),
 				big.NewInt(15),
 				big.NewInt(0),
-			},
-			&Candidate{
-				Registration{
-					name:              []byte("name2"),
-					address:           []byte("address2"),
-					operatorAddress:   []byte("io1llr6zs37gxrwmvnczexpg35dptta2mdvjv6w2q"),
-					rewardAddress:     []byte("io1llr6zs37gxrwmvnczexpg35dptta2mdvjv6w2q"),
-					selfStakingWeight: 1,
-				},
+			),
+			types.NewCandidate(
+				types.NewRegistration(
+					[]byte("name2"),
+					[]byte("address2"),
+					[]byte("io1llr6zs37gxrwmvnczexpg35dptta2mdvjv6w2q"),
+					[]byte("io1llr6zs37gxrwmvnczexpg35dptta2mdvjv6w2q"),
+					1,
+				),
 				big.NewInt(14),
 				big.NewInt(0),
-			},
+			),
 		},
-		votes: map[string][]*Vote{
-			"name1": []*Vote{},
-			"name2": []*Vote{},
+		votes: map[string][]*types.Vote{
+			"name1": []*types.Vote{},
+			"name2": []*types.Vote{},
 		},
 	}
 }

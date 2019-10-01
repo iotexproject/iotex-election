@@ -8,7 +8,7 @@
 // You should have received a copy of the GNU General Public License along with this program. If
 // not, see <http://www.gnu.org/licenses/>.
 
-package types
+package committee
 
 import (
 	"crypto/sha256"
@@ -18,50 +18,49 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/iotexproject/iotex-election/types"
 )
 
 func TestPoll(t *testing.T) {
 	require := require.New(t)
 	t.Run("without-data", func(t *testing.T) {
-		result := &Poll{
-			regs:    [][]byte{},
-			buckets: [][]byte{},
-		}
+		result := types.NewPoll([][]byte{}, [][]byte{})
 		b, err := result.Serialize()
 		require.NoError(err)
-		clone := &Poll{}
+		clone := &types.Poll{}
 		require.NoError(clone.Deserialize(b))
-		require.Equal(0, len(clone.regs))
-		require.Equal(0, len(clone.buckets))
+		require.Equal(0, len(clone.Registrations()))
+		require.Equal(0, len(clone.Buckets()))
 	})
 	t.Run("with-data", func(t *testing.T) {
 		candidates := genTestCandidates()
-		votes := []*Vote{}
+		votes := []*types.Vote{}
 		for _, c := range candidates {
-			b1, err := NewBucket(
+			b1, err := types.NewBucket(
 				time.Now(),
 				2*time.Hour,
 				big.NewInt(int64(rand.Intn(10000000))),
 				[]byte("voter1"),
-				c.name,
+				c.Name(),
 				false,
 			)
 			require.NoError(err)
-			v1, err := NewVote(
+			v1, err := types.NewVote(
 				b1,
 				big.NewInt(int64(rand.Intn(10000000))),
 			)
 			require.NoError(err)
-			b2, err := NewBucket(
+			b2, err := types.NewBucket(
 				time.Now(),
 				5*time.Hour,
 				big.NewInt(int64(rand.Intn(10000000))),
 				[]byte("voter2"),
-				c.name,
+				c.Name(),
 				true,
 			)
 			require.NoError(err)
-			v2, err := NewVote(
+			v2, err := types.NewVote(
 				b2,
 				big.NewInt(int64(rand.Intn(10000000))),
 			)
@@ -93,13 +92,10 @@ func TestPoll(t *testing.T) {
 			candidatesKey = append(candidatesKey, hashbytes)
 		}
 
-		result := &Poll{
-			regs:    candidatesKey,
-			buckets: votesKey,
-		}
+		result := types.NewPoll(votesKey, candidatesKey)
 		b, err := result.Serialize()
 		require.NoError(err)
-		clone := &Poll{}
+		clone := &types.Poll{}
 		require.NoError(clone.Deserialize(b))
 		require.Equal(len(result.Registrations()), 4)
 		require.Equal(len(clone.Registrations()), 4)
@@ -109,30 +105,30 @@ func TestPoll(t *testing.T) {
 	})
 }
 
-func genTestCandidates() []*Registration {
-	return []*Registration{
-		NewRegistration(
+func genTestCandidates() []*types.Registration {
+	return []*types.Registration{
+		types.NewRegistration(
 			[]byte("candidate1"),
 			[]byte("voter1"),
 			[]byte("operatorPubKey1"),
 			[]byte("rewardPubKey1"),
 			1,
 		),
-		NewRegistration(
+		types.NewRegistration(
 			[]byte("candidate2"),
 			[]byte("voter2"),
 			[]byte("operatorPubKey2"),
 			[]byte("rewardPubKey2"),
 			1,
 		),
-		NewRegistration(
+		types.NewRegistration(
 			[]byte("candidate3"),
 			[]byte("voter3"),
 			[]byte("operatorPubKey3"),
 			[]byte("rewardPubKey3"),
 			10,
 		),
-		NewRegistration(
+		types.NewRegistration(
 			[]byte("candidate4"),
 			[]byte("voter4"),
 			[]byte("operatorPubKey4"),

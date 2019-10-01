@@ -77,8 +77,8 @@ type (
 		// Stop stops the committee service
 		Stop(context.Context) error
 		// ResultByHeight returns the result on a specific ethereum height
-		ResultByHeight(uint64) (*types.ElectionResult, error)
-		//RawDataByHeight returns the bucket list and registration list and mintTime
+		ResultByHeight(uint64) (*ElectionResult, error)
+		// RawDataByHeight returns the bucket list and registration list and mintTime
 		RawDataByHeight(uint64) ([]*types.Bucket, []*types.Registration, time.Time, error)
 		// HeightByTime returns the nearest result before time
 		HeightByTime(time.Time) (uint64, error)
@@ -376,7 +376,7 @@ func (ec *committee) HeightByTime(ts time.Time) (uint64, error) {
 	return ec.archive.HeightBefore(ts)
 }
 
-func (ec *committee) RawDataByHeight (height uint64) ([]*types.Bucket, []*types.Registration, time.Time, error) {
+func (ec *committee) RawDataByHeight(height uint64) ([]*types.Bucket, []*types.Registration, time.Time, error) {
 	ec.mutex.RLock()
 	defer ec.mutex.RUnlock()
 	return ec.rawDataByHeight(height)
@@ -395,16 +395,16 @@ func (ec *committee) rawDataByHeight(height uint64) ([]*types.Bucket, []*types.R
 	if err != nil {
 		return nil, nil, time.Time{}, err
 	}
-	return buckets, regs, timestamp, nil 
+	return buckets, regs, timestamp, nil
 }
 
-func (ec *committee) ResultByHeight(height uint64) (*types.ElectionResult, error) {
+func (ec *committee) ResultByHeight(height uint64) (*ElectionResult, error) {
 	ec.mutex.RLock()
 	defer ec.mutex.RUnlock()
 	return ec.resultByHeight(height)
 }
 
-func (ec *committee) resultByHeight(height uint64) (*types.ElectionResult, error) {
+func (ec *committee) resultByHeight(height uint64) (*ElectionResult, error) {
 	zap.L().Info("fetch result from DB and calculate", zap.Uint64("height", height))
 	if height < ec.startHeight {
 		return nil, errors.Errorf(
@@ -421,7 +421,7 @@ func (ec *committee) resultByHeight(height uint64) (*types.ElectionResult, error
 	}
 
 	if cacheResult, ok := ec.cache.Get(height); ok {
-		if result, as := cacheResult.(*types.ElectionResult); as {
+		if result, as := cacheResult.(*ElectionResult); as {
 			return result, nil
 		}
 		return nil, errors.Errorf(
@@ -527,7 +527,7 @@ func (ec *committee) getMintTimeByHeight(height uint64) (time.Time, error) {
 	return mintTime, nil
 }
 
-func (ec *committee) calculator(height uint64, dbflag bool) (*types.ResultCalculator, error) {
+func (ec *committee) calculator(height uint64, dbflag bool) (*ResultCalculator, error) {
 	var timestamp time.Time
 	var err error
 	if dbflag {
@@ -539,7 +539,7 @@ func (ec *committee) calculator(height uint64, dbflag bool) (*types.ResultCalcul
 		return nil, err
 	}
 
-	return types.NewResultCalculator(
+	return NewResultCalculator(
 		timestamp,
 		ec.skipManifiedCandidate,
 		ec.bucketFilter,
@@ -570,7 +570,7 @@ func (ec *committee) fetchRegistrationsByHeight(height uint64) ([]*types.Registr
 	return allCandidates, nil
 }
 
-func (ec *committee) FetchResultByHeight(height uint64) (*types.ElectionResult, error) {
+func (ec *committee) FetchResultByHeight(height uint64) (*ElectionResult, error) {
 	if height == 0 {
 		var err error
 		height, err = ec.carrier.Tip()
@@ -581,7 +581,7 @@ func (ec *committee) FetchResultByHeight(height uint64) (*types.ElectionResult, 
 	return ec.fetchResultByHeight(height)
 }
 
-func (ec *committee) fetchResultByHeight(height uint64) (*types.ElectionResult, error) {
+func (ec *committee) fetchResultByHeight(height uint64) (*ElectionResult, error) {
 	zap.L().Info("fetch result from ethereum", zap.Uint64("height", height))
 	calculator, err := ec.calculator(height, false)
 	if err != nil {

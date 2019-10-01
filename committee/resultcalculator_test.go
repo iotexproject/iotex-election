@@ -8,7 +8,7 @@
 // You should have received a copy of the GNU General Public License along with this program. If
 // not, see <http://www.gnu.org/licenses/>.
 
-package types
+package committee
 
 import (
 	"math"
@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/iotexproject/iotex-election/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -57,7 +58,7 @@ func TestResultCalculator(t *testing.T) {
 	candidates := genTestCandidates()
 	votes := genTestVotes(mintTime, require)
 	t.Run("add-candidates", func(t *testing.T) {
-		c := NewRegistration(
+		c := types.NewRegistration(
 			[]byte("new candidate"),
 			[]byte("new gravity pub key"),
 			[]byte("new operator pub key"),
@@ -74,7 +75,7 @@ func TestResultCalculator(t *testing.T) {
 			)
 			require.NoError(calculator.AddRegistrations(candidates))
 			require.NoError(calculator.AddBuckets(votes))
-			require.Error(calculator.AddRegistrations([]*Registration{c}))
+			require.Error(calculator.AddRegistrations([]*types.Registration{c}))
 		})
 		t.Run("fail-to-add-duplicate", func(t *testing.T) {
 			calculator := NewResultCalculator(
@@ -108,7 +109,7 @@ func TestResultCalculator(t *testing.T) {
 			)
 			require.NoError(calculator.AddRegistrations(candidates))
 			require.Equal(len(candidates), len(calculator.candidates))
-			require.NoError(calculator.AddRegistrations([]*Registration{c}))
+			require.NoError(calculator.AddRegistrations([]*types.Registration{c}))
 			require.Equal(len(candidates)+1, len(calculator.candidates))
 		})
 	})
@@ -120,7 +121,7 @@ func TestResultCalculator(t *testing.T) {
 			mockCalcWeight,
 			mockCandidateFilter(2000, 1000),
 		)
-		calculator.AddRegistrations([]*Registration{NewRegistration(
+		calculator.AddRegistrations([]*types.Registration{types.NewRegistration(
 			[]byte("candidate1"),
 			[]byte("voter1"),
 			[]byte("operator"),
@@ -128,7 +129,7 @@ func TestResultCalculator(t *testing.T) {
 			2,
 		)})
 		t.Run("vote-for-candidate-not-in-pool", func(t *testing.T) {
-			vote, err := NewBucket(
+			vote, err := types.NewBucket(
 				now.Add(-20*time.Hour),
 				time.Hour*3,
 				big.NewInt(10),
@@ -137,11 +138,11 @@ func TestResultCalculator(t *testing.T) {
 				false,
 			)
 			require.NoError(err)
-			require.NoError(calculator.AddBuckets([]*Bucket{vote}))
+			require.NoError(calculator.AddBuckets([]*types.Bucket{vote}))
 			require.Equal(0, big.NewInt(40).Cmp(calculator.totalVotes))
 		})
 		t.Run("vote-not-qualified", func(t *testing.T) {
-			vote, err := NewBucket(
+			vote, err := types.NewBucket(
 				now.Add(-20*time.Hour),
 				time.Hour*3,
 				big.NewInt(9),
@@ -150,7 +151,7 @@ func TestResultCalculator(t *testing.T) {
 				false,
 			)
 			require.NoError(err)
-			calculator.AddBuckets([]*Bucket{vote})
+			calculator.AddBuckets([]*types.Bucket{vote})
 			require.Equal(0, big.NewInt(40).Cmp(calculator.totalVotes))
 		})
 		t.Run("after-calculated", func(t *testing.T) {
@@ -173,7 +174,7 @@ func TestResultCalculator(t *testing.T) {
 			mockCalcWeight,
 			mockCandidateFilter(2000, 1000),
 		)
-		candidate5 := NewRegistration(
+		candidate5 := types.NewRegistration(
 			[]byte("candidate5"),
 			[]byte("voter5"),
 			[]byte("operatorPubKey5"),
@@ -181,23 +182,23 @@ func TestResultCalculator(t *testing.T) {
 			2,
 		)
 		require.NoError(calculator.AddRegistrations(candidates))
-		require.NoError(calculator.AddRegistrations([]*Registration{candidate5}))
+		require.NoError(calculator.AddRegistrations([]*types.Registration{candidate5}))
 		require.NoError(calculator.AddBuckets(votes))
 		result, err := calculator.Calculate()
 		require.NoError(err)
 		delegates := result.Delegates()
 		require.Equal(2, len(delegates))
-		ec4 := NewCandidate(
+		ec4 := types.NewCandidate(
 			candidates[2],
 			big.NewInt(2051),
 			big.NewInt(1000),
 		)
-		ec5 := NewCandidate(
+		ec5 := types.NewCandidate(
 			candidate5,
 			big.NewInt(3755),
 			big.NewInt(1010),
 		)
-		expectedDelegates := []*Candidate{ec5, ec4}
+		expectedDelegates := []*types.Candidate{ec5, ec4}
 		expectedVotes := [][]*big.Int{
 			[]*big.Int{big.NewInt(1960), big.NewInt(660), big.NewInt(1135)},
 			[]*big.Int{big.NewInt(700), big.NewInt(900), big.NewInt(451)},
@@ -214,7 +215,7 @@ func TestResultCalculator(t *testing.T) {
 	})
 }
 
-func mockCalcWeight(v *Bucket, t time.Time) *big.Int {
+func mockCalcWeight(v *types.Bucket, t time.Time) *big.Int {
 	if t.Before(v.StartTime()) {
 		return big.NewInt(0)
 	}
@@ -223,7 +224,7 @@ func mockCalcWeight(v *Bucket, t time.Time) *big.Int {
 	if remainingTime > 0 {
 		weight += math.Ceil(remainingTime / time.Hour.Seconds())
 	}
-	amount := new(big.Float).SetInt(v.amount)
+	amount := new(big.Float).SetInt(v.Amount())
 	weightedAmount, _ := amount.Mul(amount, big.NewFloat(weight)).Int(nil)
 	return weightedAmount
 }
@@ -232,23 +233,23 @@ func mockCandidateFilter(
 	ScoreThreshold int64,
 	SelfStakingTokenThreshold int64,
 ) CandidateFilterFunc {
-	return func(c *Candidate) bool {
+	return func(c *types.Candidate) bool {
 		return c.Score().Cmp(big.NewInt(ScoreThreshold)) < 0 ||
 			c.SelfStakingTokens().Cmp(big.NewInt(SelfStakingTokenThreshold)) < 0
 	}
 }
 
 func mockVoteFilter(VoteThreshold int64) BucketFilterFunc {
-	return func(v *Bucket) bool {
+	return func(v *types.Bucket) bool {
 		return v.Amount().Cmp(big.NewInt(VoteThreshold)) < 0
 	}
 }
 
-func genTestVotes(mintTime time.Time, require *require.Assertions) []*Bucket {
-	votes := []*Bucket{}
+func genTestVotes(mintTime time.Time, require *require.Assertions) []*types.Bucket {
+	votes := []*types.Bucket{}
 	// votes from voter1
 	// (2 + 1) * 100 = 300
-	vote, err := NewBucket(
+	vote, err := types.NewBucket(
 		mintTime.Add(-2*time.Hour),
 		4*time.Hour,
 		big.NewInt(100),
@@ -259,7 +260,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*Bucket {
 	require.NoError(err)
 	votes = append(votes, vote)
 	// will be filtered with low amount
-	vote, err = NewBucket(
+	vote, err = types.NewBucket(
 		mintTime.Add(-85*time.Hour),
 		100*time.Hour,
 		big.NewInt(9),
@@ -271,7 +272,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*Bucket {
 	votes = append(votes, vote)
 	// votes from voter2
 	// (1 + 1) * 100 = 200
-	vote, err = NewBucket(
+	vote, err = types.NewBucket(
 		mintTime.Add(-10*time.Hour),
 		1*time.Hour,
 		big.NewInt(100),
@@ -284,7 +285,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*Bucket {
 	// votes from voter3
 	// 70 * 10 = 700
 	// 1 * 70 * 10 = 700
-	vote, err = NewBucket(
+	vote, err = types.NewBucket(
 		mintTime.Add(-3*time.Hour),
 		1*time.Hour,
 		big.NewInt(70),
@@ -296,7 +297,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*Bucket {
 	votes = append(votes, vote)
 	// 30 * 10 = 300
 	// (2 + 1) * 30 * 10 = 600
-	vote, err = NewBucket(
+	vote, err = types.NewBucket(
 		mintTime.Add(-1*time.Hour),
 		2*time.Hour,
 		big.NewInt(30),
@@ -308,7 +309,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*Bucket {
 	votes = append(votes, vote)
 	// votes from voter4
 	// (9 + 1) * 50 = 500
-	vote, err = NewBucket(
+	vote, err = types.NewBucket(
 		mintTime.Add(-10*time.Hour),
 		9*time.Hour,
 		big.NewInt(50),
@@ -319,7 +320,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*Bucket {
 	require.NoError(err)
 	votes = append(votes, vote)
 	// (40 + 1) * 20 = 820
-	vote, err = NewBucket(
+	vote, err = types.NewBucket(
 		mintTime.Add(-60*time.Hour),
 		100*time.Hour,
 		big.NewInt(20),
@@ -332,7 +333,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*Bucket {
 	// votes from voter5
 	// 490 * 2 = 980
 	// (1 + 1) * 490 * 2 = 1960
-	vote, err = NewBucket(
+	vote, err = types.NewBucket(
 		mintTime.Add(-6*time.Hour),
 		7*time.Hour,
 		big.NewInt(490),
@@ -344,7 +345,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*Bucket {
 	votes = append(votes, vote)
 	// 15 * 2 = 30
 	// (21 + 1) * 15 * 2 = 660
-	vote, err = NewBucket(
+	vote, err = types.NewBucket(
 		mintTime.Add(-10*time.Hour),
 		21*time.Hour,
 		big.NewInt(15),
@@ -356,7 +357,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*Bucket {
 	votes = append(votes, vote)
 	// votes from voter6
 	// 1 * 35 = 35
-	vote, err = NewBucket(
+	vote, err = types.NewBucket(
 		mintTime.Add(-3*time.Hour),
 		0,
 		big.NewInt(1135),
@@ -368,7 +369,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*Bucket {
 	votes = append(votes, vote)
 	// votes from voter7
 	// start time > mint time, filtered
-	vote, err = NewBucket(
+	vote, err = types.NewBucket(
 		mintTime.Add(1*time.Hour),
 		21*time.Hour,
 		big.NewInt(45),
@@ -379,7 +380,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*Bucket {
 	require.NoError(err)
 	votes = append(votes, vote)
 	// (21 + 1) * 90 = 1980
-	vote, err = NewBucket(
+	vote, err = types.NewBucket(
 		mintTime.Add(-1*time.Hour),
 		21*time.Hour,
 		big.NewInt(90),
@@ -390,7 +391,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*Bucket {
 	require.NoError(err)
 	votes = append(votes, vote)
 	// (11 + 1) * 41 = 492
-	vote, err = NewBucket(
+	vote, err = types.NewBucket(
 		mintTime.Add(-1*time.Hour),
 		11*time.Hour,
 		big.NewInt(41),
@@ -401,7 +402,7 @@ func genTestVotes(mintTime time.Time, require *require.Assertions) []*Bucket {
 	require.NoError(err)
 	votes = append(votes, vote)
 	// (10 + 1) * 70 = 770
-	vote, err = NewBucket(
+	vote, err = types.NewBucket(
 		mintTime.Add(-10*time.Hour),
 		20*time.Hour,
 		big.NewInt(70),

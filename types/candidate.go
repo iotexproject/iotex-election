@@ -73,7 +73,8 @@ func (c *Candidate) reset() *Candidate {
 	return c
 }
 
-func (c *Candidate) addScore(s *big.Int) error {
+// AddScore adds score to a candidate
+func (c *Candidate) AddScore(s *big.Int) error {
 	if s.Cmp(big.NewInt(0)) < 0 {
 		return errors.New("score cannot be negative")
 	}
@@ -81,7 +82,8 @@ func (c *Candidate) addScore(s *big.Int) error {
 	return nil
 }
 
-func (c *Candidate) addSelfStakingTokens(s *big.Int) error {
+// AddSelfStakingTokens adds self staking tokens to a candidate
+func (c *Candidate) AddSelfStakingTokens(s *big.Int) error {
 	if s.Cmp(big.NewInt(0)) < 0 {
 		return errors.New("score cannot be negative")
 	}

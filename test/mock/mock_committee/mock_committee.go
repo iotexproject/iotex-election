@@ -65,10 +65,10 @@ func (mr *MockCommitteeMockRecorder) Stop(arg0 interface{}) *gomock.Call {
 }
 
 // ResultByHeight mocks base method
-func (m *MockCommittee) ResultByHeight(arg0 uint64) (*types.ElectionResult, error) {
+func (m *MockCommittee) ResultByHeight(arg0 uint64) (*committee.ElectionResult, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ResultByHeight", arg0)
-	ret0, _ := ret[0].(*types.ElectionResult)
+	ret0, _ := ret[0].(*committee.ElectionResult)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

@@ -12,17 +12,19 @@ package util
 
 import (
 	"encoding/binary"
+	"math/big"
+	"sort"
+	"strings"
 	"time"
 
+	"github.com/minio/blake2b-simd"
 	"go.uber.org/zap"
-
 )
 
-
 const (
-	maxUint = ^uint(0) 
-	maxInt = int64(maxUint >> 1) 
-) 
+	maxUint = ^uint(0)
+	maxInt  = int64(maxUint >> 1)
+)
 
 //Uint64ToInt64 converts uint64 to int64
 func Uint64ToInt64(u uint64) int64 {
@@ -75,4 +77,51 @@ func IsAllZeros(b []byte) bool {
 		}
 	}
 	return true
+}
+
+type item struct {
+	Key      string
+	Value    *big.Int
+	Priority uint64
+}
+
+type itemList []item
+
+func (p itemList) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
+func (p itemList) Len() int      { return len(p) }
+func (p itemList) Less(i, j int) bool {
+	switch p[i].Value.Cmp(p[j].Value) {
+	case -1:
+		return false
+	case 1:
+		return true
+	}
+	switch {
+	case p[i].Priority < p[j].Priority:
+		return false
+	case p[i].Priority > p[j].Priority:
+		return true
+	}
+	// This is a corner case, which rarely happens.
+	return strings.Compare(p[i].Key, p[j].Key) > 0
+}
+
+// Sort sorts candidates, with ts to resolve the equal case
+func Sort(candidates map[string]*big.Int, seed uint64) []string {
+	p := make(itemList, 0, len(candidates))
+	suffix := Uint64ToBytes(seed)
+	for name, score := range candidates {
+		priority := blake2b.Sum256(append([]byte(name), suffix...))
+		p = append(p, item{
+			Key:      name,
+			Value:    score,
+			Priority: BytesToUint64(priority[:8]),
+		})
+	}
+	sort.Stable(p)
+	qualifiers := make([]string, len(p))
+	for i, item := range p {
+		qualifiers[i] = item.Key
+	}
+	return qualifiers
 }

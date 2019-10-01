@@ -201,10 +201,16 @@ func (arch *archive) Start(ctx context.Context) (err error) {
 	if err = arch.bucketTableOperator.CreateTables(tx); err != nil {
 		return err
 	}
+	if err = arch.nativeBucketTableOperator.CreateTables(tx); err != nil {
+		return err
+	}
 	if err = arch.registrationTableOperator.CreateTables(tx); err != nil {
 		return err
 	}
 	if err = arch.timeTableOperator.CreateTables(tx); err != nil {
+		return err
+	}
+	if err = arch.nativeTimeTableOperator.CreateTables(tx); err != nil {
 		return err
 	}
 	if err = tx.Commit(); err != nil {

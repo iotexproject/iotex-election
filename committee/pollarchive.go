@@ -66,34 +66,8 @@ type archive struct {
 	oldDB                     db.KVStoreWithNamespace
 }
 
-// NewArchive creates a new arch of poll
-func NewArchive(newDB *sql.DB, startHeight uint64, interval uint64, oldDB db.KVStoreWithNamespace) (PollArchive, error) {
-	bucketTableOperator, err := NewBucketTableOperator("buckets")
-	if err != nil {
-		return nil, err
-	}
-	nativeBucketTableOperator, err := NewBucketTableOperator("native_buckets")
-	if err != nil {
-		return nil, err
-	}
-	registrationTableOperator, err := NewRegistrationTableOperator("registrations")
-	if err != nil {
-		return nil, err
-	}
-	return &archive{
-		db:                        newDB,
-		startHeight:               startHeight,
-		interval:                  interval,
-		bucketTableOperator:       bucketTableOperator,
-		nativeBucketTableOperator: nativeBucketTableOperator,
-		registrationTableOperator: registrationTableOperator,
-		timeTableOperator:         NewTimeTableOperator("mint_time"),
-		nativeTimeTableOperator:   NewTimeTableOperator("native_mint_time"),
-		oldDB:                     oldDB,
-	}, nil
-}
-
-func NewArchiveFromConfig(dbPath string, numOfRetries uint8, startHeight uint64, interval uint64) (PollArchive, error) {
+// NewArchive creates a new archive of poll
+func NewArchive(dbPath string, numOfRetries uint8, startHeight uint64, interval uint64) (PollArchive, error) {
 	fileExists := func(path string) bool {
 		_, err := os.Stat(path)
 		if os.IsNotExist(err) {

@@ -78,7 +78,7 @@ func NewServer(cfg *Config) (Server, error) {
 		log.Panic("Failed to init zap global logger, no zap log will be shown till zap is properly initialized: ", err)
 	}
 	zap.ReplaceGlobals(l)
-	archive, err := committee.NewArchiveFromConfig(cfg.DB.DBPath, cfg.DB.NumOfRetries, cfg.Committee.GravityChainStartHeight, cfg.Committee.GravityChainHeightInterval)	
+	archive, err := committee.NewArchive(cfg.DB.DBPath, cfg.DB.NumOfRetries, cfg.Committee.GravityChainStartHeight, cfg.Committee.GravityChainHeightInterval)	
 	if err != nil {	
 		return nil, err	
 	}	

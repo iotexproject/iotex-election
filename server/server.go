@@ -11,11 +11,9 @@
 package server
 
 import (
-	"database/sql"
 	"encoding/hex"
 	"errors"
 	"log"
-	"os"
 	"math"
 	"math/big"
 	"net"
@@ -25,9 +23,6 @@ import (
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/golang/protobuf/ptypes"
 
-	// require sqlite 3
-	_ "github.com/mattn/go-sqlite3"
-	bolt "go.etcd.io/bbolt"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/net/context"
@@ -83,7 +78,14 @@ func NewServer(cfg *Config) (Server, error) {
 		log.Panic("Failed to init zap global logger, no zap log will be shown till zap is properly initialized: ", err)
 	}
 	zap.ReplaceGlobals(l)
-	c, err := createCommittee(cfg)
+	archive, err := committee.NewArchiveFromConfig(cfg.DB.DBPath, cfg.DB.NumOfRetries, cfg.Committee.GravityChainStartHeight, cfg.Committee.GravityChainHeightInterval)	
+	if err != nil {	
+		return nil, err	
+	}	
+	c, err := committee.NewCommittee(archive, cfg.Committee)	
+	if err != nil {	
+		return nil, err	
+	}
 	var vs *votesync.VoteSync
 	if cfg.EnableVoteSync {
 		vs, err = votesync.NewVoteSync(cfg.VoteSync)
@@ -111,61 +113,6 @@ func NewServer(cfg *Config) (Server, error) {
 	reflection.Register(s.grpcServer)
 
 	return s, nil
-}
-
-func createCommittee(cfg *Config) (committee.Committee, error) {
-	fileExists := func(path string) bool {
-		_, err := os.Stat(path)
-		if os.IsNotExist(err) {
-			return false
-		}
-		if err != nil {
-			zap.L().Panic("unexpected error", zap.Error(err))
-		}
-		return true
-	}
-	isOldCommitteeDB := func(dbCfg db.Config) bool {
-		if !fileExists(dbCfg.DBPath) {
-			return false
-		}
-		db, err := bolt.Open(dbCfg.DBPath, 0666, nil)
-		if err != nil {
-			if err == bolt.ErrInvalid {
-				return false
-			}
-			zap.L().Panic("unexpected error", zap.Error(err))
-		}
-		if err = db.Close(); err != nil {
-			zap.L().Panic("unexpected error", zap.Error(err))
-		}
-		return true
-	}
-
-	oldDbCfg := cfg.DB
-	oldDbCfg.DBPath = oldDbCfg.DBPath + ".bolt"
-	var kvstore db.KVStoreWithNamespace
-	if isOldCommitteeDB(cfg.DB) {
-		if err := os.Rename(cfg.DB.DBPath, oldDbCfg.DBPath); err != nil {
-			return nil, err
-		}
-	}
-	if fileExists(oldDbCfg.DBPath) {
-		kvstore = db.NewBoltDB(oldDbCfg)
-	}
-	sqlDB, err := sql.Open("sqlite3", cfg.DB.DBPath)
-	if err != nil {
-		return nil, err
-	}
-	arch, err := committee.NewArchive(
-		sqlDB,
-		cfg.Committee.GravityChainStartHeight, 
-		cfg.Committee.GravityChainHeightInterval,
-		kvstore,
-	)
-	if err != nil {
-		return nil, err
-	}
-	return committee.NewCommittee(arch, cfg.Committee)
 }
 
 func (s *server) Start(ctx context.Context) error {

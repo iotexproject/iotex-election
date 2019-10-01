@@ -14,9 +14,12 @@ import (
 	"context"
 	"database/sql"
 	"reflect"
+	"os"
 	"time"
 
+	bolt "go.etcd.io/bbolt"
 	"go.uber.org/zap"
+	
 	// require sqlite3 driver
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
@@ -63,8 +66,48 @@ type archive struct {
 	oldDB                     db.KVStoreWithNamespace
 }
 
-// NewArchive creates a new arch of poll
-func NewArchive(newDB *sql.DB, startHeight uint64, interval uint64, oldDB db.KVStoreWithNamespace) (PollArchive, error) {
+// NewArchive creates a new archive of poll
+func NewArchive(dbPath string, numOfRetries uint8, startHeight uint64, interval uint64) (PollArchive, error) {
+	fileExists := func(path string) bool {
+		_, err := os.Stat(path)
+		if os.IsNotExist(err) {
+			return false
+		}
+		if err != nil {
+			zap.L().Panic("unexpected error", zap.Error(err))
+		}
+		return true
+	}
+	isOldCommitteeDB := func(oldDbPath string) bool {
+		if !fileExists(oldDbPath) {
+			return false
+		}
+		db, err := bolt.Open(oldDbPath, 0666, nil)
+		if err != nil {
+			if err == bolt.ErrInvalid {
+				return false
+			}
+			zap.L().Panic("unexpected error", zap.Error(err))
+		}
+		if err = db.Close(); err != nil {
+			zap.L().Panic("unexpected error", zap.Error(err))
+		}
+		return true
+	}
+	oldDbPath := dbPath + ".bolt"
+	var kvstore db.KVStoreWithNamespace
+	if isOldCommitteeDB(dbPath) {
+		if err := os.Rename(dbPath, oldDbPath); err != nil {
+			return nil, err
+		}
+	}
+	if fileExists(oldDbPath) {
+		kvstore = db.NewBoltDB(oldDbPath, numOfRetries)
+	}
+	sqlDB, err := sql.Open("sqlite3", dbPath)
+	if err != nil {
+		return nil, err
+	}
 	bucketTableOperator, err := NewBucketTableOperator("buckets")
 	if err != nil {
 		return nil, err
@@ -78,7 +121,7 @@ func NewArchive(newDB *sql.DB, startHeight uint64, interval uint64, oldDB db.KVS
 		return nil, err
 	}
 	return &archive{
-		db:                        newDB,
+		db:                        sqlDB,
 		startHeight:               startHeight,
 		interval:                  interval,
 		bucketTableOperator:       bucketTableOperator,
@@ -86,9 +129,10 @@ func NewArchive(newDB *sql.DB, startHeight uint64, interval uint64, oldDB db.KVS
 		registrationTableOperator: registrationTableOperator,
 		timeTableOperator:         NewTimeTableOperator("mint_time"),
 		nativeTimeTableOperator:   NewTimeTableOperator("native_mint_time"),
-		oldDB:                     oldDB,
+		oldDB:                     kvstore,
 	}, nil
 }
+
 
 func (arch *archive) Registrations(height uint64) ([]*types.Registration, error) {
 	value, err := arch.registrationTableOperator.Get(height, arch.db, nil)

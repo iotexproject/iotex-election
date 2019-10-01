@@ -363,7 +363,6 @@ func QueryBuckets(tableName string, frequencies map[int64]int, sdb *sql.DB, tx *
 		ids = append(ids, id)
 		size += f
 	}
-	fmt.Println(tableName, BucketRecordQuery)
 	if tx != nil {
 		rows, err = tx.Query(fmt.Sprintf(BucketRecordQuery, tableName, atos(ids)))
 	} else {

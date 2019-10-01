@@ -177,10 +177,10 @@ type boltDB struct {
 }
 
 // NewBoltDB creates a new boltDB
-func NewBoltDB(cfg Config) KVStoreWithNamespace {
+func NewBoltDB(dbPath string, numOfRetries uint8) KVStoreWithNamespace {
 	return &boltDB{
-		numRetries: cfg.NumOfRetries,
-		path:       cfg.DBPath,
+		numRetries: numOfRetries,
+		path:       dbPath,
 	}
 }
 

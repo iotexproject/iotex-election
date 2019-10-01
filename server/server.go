@@ -11,7 +11,6 @@
 package server
 
 import (
-	"database/sql"
 	"encoding/hex"
 	"errors"
 	"log"
@@ -24,13 +23,12 @@ import (
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/golang/protobuf/ptypes"
 
-	// require sqlite 3
-	_ "github.com/mattn/go-sqlite3"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+
 
 	"github.com/iotexproject/iotex-election/committee"
 	"github.com/iotexproject/iotex-election/db"
@@ -80,25 +78,14 @@ func NewServer(cfg *Config) (Server, error) {
 		log.Panic("Failed to init zap global logger, no zap log will be shown till zap is properly initialized: ", err)
 	}
 	zap.ReplaceGlobals(l)
-
-	dbPath := cfg.DB.DBPath
-	if dbPath == "" {
-		dbPath = "election.db"
+	archive, err := committee.NewArchive(cfg.DB.DBPath, cfg.DB.NumOfRetries, cfg.Committee.GravityChainStartHeight, cfg.Committee.GravityChainHeightInterval)	
+	if err != nil {	
+		return nil, err	
+	}	
+	c, err := committee.NewCommittee(archive, cfg.Committee)	
+	if err != nil {	
+		return nil, err	
 	}
-	var c committee.Committee
-	sqldb, err := sql.Open("sqlite3", "sqlite.db")
-	if err != nil {
-		return nil, err
-	}
-	archive, err := committee.NewArchive(sqldb, cfg.Committee.GravityChainStartHeight, cfg.Committee.GravityChainHeightInterval, db.NewBoltDB(cfg.DB))
-	if err != nil {
-		return nil, err
-	}
-	c, err = committee.NewCommittee(archive, cfg.Committee)
-	if err != nil {
-		return nil, err
-	}
-
 	var vs *votesync.VoteSync
 	if cfg.EnableVoteSync {
 		vs, err = votesync.NewVoteSync(cfg.VoteSync)

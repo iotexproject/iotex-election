@@ -13,13 +13,13 @@ package committee
 import (
 	"context"
 	"database/sql"
-	"reflect"
 	"os"
+	"reflect"
 	"time"
 
 	bolt "go.etcd.io/bbolt"
 	"go.uber.org/zap"
-	
+
 	// require sqlite3 driver
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
@@ -132,7 +132,6 @@ func NewArchive(dbPath string, numOfRetries uint8, startHeight uint64, interval 
 		oldDB:                     kvstore,
 	}, nil
 }
-
 
 func (arch *archive) Registrations(height uint64) ([]*types.Registration, error) {
 	value, err := arch.registrationTableOperator.Get(height, arch.db, nil)

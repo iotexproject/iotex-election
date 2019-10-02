@@ -46,7 +46,7 @@ func NewTimeTableOperator(tableName string) *TimeTableOperator {
 
 // TipHeight returns the tip height in the time table
 func (operator *TimeTableOperator) TipHeight(sdb *sql.DB, tx *sql.Tx) (uint64, error) {
-	var val int64
+	var val sql.NullInt64
 	var err error
 	if tx != nil {
 		err = tx.QueryRow(operator.tipHeightQuery).Scan(&val)
@@ -57,7 +57,10 @@ func (operator *TimeTableOperator) TipHeight(sdb *sql.DB, tx *sql.Tx) (uint64, e
 	case sql.ErrNoRows:
 		return 0, db.ErrNotExist
 	case nil:
-		return uint64(val), nil
+		if val.Valid {
+			return uint64(val.Int64), nil
+		}
+		return 0, db.ErrNotExist
 	default:
 		return 0, err
 	}

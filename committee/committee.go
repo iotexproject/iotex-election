@@ -376,7 +376,7 @@ func (ec *committee) HeightByTime(ts time.Time) (uint64, error) {
 	return ec.archive.HeightBefore(ts)
 }
 
-func (ec *committee) RawDataByHeight (height uint64) ([]*types.Bucket, []*types.Registration, time.Time, error) {
+func (ec *committee) RawDataByHeight(height uint64) ([]*types.Bucket, []*types.Registration, time.Time, error) {
 	ec.mutex.RLock()
 	defer ec.mutex.RUnlock()
 	return ec.rawDataByHeight(height)
@@ -395,7 +395,7 @@ func (ec *committee) rawDataByHeight(height uint64) ([]*types.Bucket, []*types.R
 	if err != nil {
 		return nil, nil, time.Time{}, err
 	}
-	return buckets, regs, timestamp, nil 
+	return buckets, regs, timestamp, nil
 }
 
 func (ec *committee) ResultByHeight(height uint64) (*types.ElectionResult, error) {

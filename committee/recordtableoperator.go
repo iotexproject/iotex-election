@@ -100,7 +100,7 @@ func NewRecordTableOperator(
 		hashQuery:                  fmt.Sprintf("SELECT id, hash FROM %s WHERE id IN (%s)", tableName, "%s"),
 		idQuery:                    fmt.Sprintf("SELECT id, hash FROM %s WHERE hash IN ('%s')", tableName, "%s"),
 		identicalQuery:             fmt.Sprintf("SELECT identical_to FROM identical_%s WHERE height = ?", tableName),
-		lastHeightQuery:            fmt.Sprintf("SELECT height FROM identical_%s WHERE height < ? ORDER BY height DESC LIMIT 1", tableName),
+		lastHeightQuery:            fmt.Sprintf("SELECT MAX(max_height) FROM (SELECT MAX(height) AS max_height FROM identical_%s WHERE height < ? UNION SELECT MAX(height) AS max_height FROM height_to_%s WHERE height < ?)", tableName, tableName),
 		insertHeightToRecordsQuery: fmt.Sprintf("INSERT OR REPLACE INTO height_to_%s (height, ids, frequencies) VALUES (?, ?, ?)", tableName),
 		insertIdenticalQuery:       fmt.Sprintf("INSERT OR IGNORE INTO identical_%s (height, identical_to) VALUES (?, ?)", tableName),
 		insertRecordsFunc:          insertRecordsFunc,
@@ -305,11 +305,14 @@ func (arch *recordTableOperator) identicalTo(height uint64, sdb *sql.DB, tx *sql
 }
 
 func (arch *recordTableOperator) lastHeight(height uint64, tx *sql.Tx) (uint64, error) {
-	var val int64
-	err := tx.QueryRow(arch.lastHeightQuery, util.Uint64ToInt64(height)).Scan(&val)
+	var val sql.NullInt64
+	err := tx.QueryRow(arch.lastHeightQuery, util.Uint64ToInt64(height), util.Uint64ToInt64(height)).Scan(&val)
 	switch err {
 	case nil:
-		return uint64(val), nil
+		if val.Valid {
+			return uint64(val.Int64), nil
+		}
+		return 0, nil
 	case sql.ErrNoRows:
 		return 0, nil
 	default:

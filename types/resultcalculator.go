@@ -14,43 +14,14 @@ import (
 	"bytes"
 	"encoding/hex"
 	"math/big"
-	"sort"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/pkg/errors"
-	"golang.org/x/crypto/blake2b"
 
 	"github.com/iotexproject/iotex-election/util"
 )
-
-type item struct {
-	Key      string
-	Value    *big.Int
-	Priority uint64
-}
-
-type itemList []item
-
-func (p itemList) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
-func (p itemList) Len() int      { return len(p) }
-func (p itemList) Less(i, j int) bool {
-	switch p[i].Value.Cmp(p[j].Value) {
-	case -1:
-		return false
-	case 1:
-		return true
-	}
-	switch {
-	case p[i].Priority < p[j].Priority:
-		return false
-	case p[i].Priority > p[j].Priority:
-		return true
-	}
-	// This is a corner case, which rarely happens.
-	return strings.Compare(p[i].Key, p[j].Key) > 0
-}
 
 const candidateZero = "000000000000000000000000"
 
@@ -192,25 +163,18 @@ func (calculator *ResultCalculator) Calculate() (*ElectionResult, error) {
 }
 
 func (calculator *ResultCalculator) filterAndSortCandidates() []string {
-	p := make(itemList, len(calculator.candidates))
-	num := 0
-	tsBytes := util.Uint64ToBytes(uint64(calculator.mintTime.Unix()))
+	candidates := make(map[string]*big.Int, len(calculator.candidates))
 	for name, candidate := range calculator.candidates {
-		if !calculator.candidateFilter(candidate) {
-			priority := blake2b.Sum256(append([]byte(name), tsBytes...))
-			p[num] = item{
-				Key:      name,
-				Value:    candidate.score,
-				Priority: util.BytesToUint64(priority[:8]),
-			}
-			num++
+		candidates[name] = candidate.Score()
+	}
+	sorted := util.Sort(candidates, uint64(calculator.mintTime.Unix()))
+	var qualifiers []string
+	for i, name := range sorted {
+		if !calculator.candidateFilter(calculator.candidates[name]) {
+			qualifiers = append(qualifiers, sorted[i])
 		}
 	}
-	sort.Stable(p[:num])
-	qualifiers := make([]string, num)
-	for i := 0; i < num; i++ {
-		qualifiers[i] = p[i].Key
-	}
+
 	return qualifiers
 }
 

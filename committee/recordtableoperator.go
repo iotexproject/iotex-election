@@ -148,9 +148,9 @@ func (arch *recordTableOperator) Put(height uint64, records interface{}, tx *sql
 		for h := range hash2Frequencies {
 			recordHashes = append(recordHashes, hex.EncodeToString(h[:]))
 		}
+		ids := make([]int64, 0, len(recordHashes))
+		frequencies := make(map[int64]int)
 		if len(recordHashes) != 0 {
-			ids := make([]int64, 0, len(recordHashes))
-			frequencies := make(map[int64]int)
 			var id int64
 			var val string
 			rows, err := tx.Query(fmt.Sprintf(arch.idQuery, strings.Join(recordHashes, "','")))
@@ -177,17 +177,17 @@ func (arch *recordTableOperator) Put(height uint64, records interface{}, tx *sql
 			if len(ids) != len(recordHashes) {
 				return errors.New("wrong number of records")
 			}
-			bidBytes, err := json.Marshal(ids)
-			if err != nil {
-				return err
-			}
-			freqBytes, err := json.Marshal(frequencies)
-			if err != nil {
-				return err
-			}
-			if _, err := tx.Exec(arch.insertHeightToRecordsQuery, height, bidBytes, freqBytes); err != nil {
-				return err
-			}
+		}
+		bidBytes, err := json.Marshal(ids)
+		if err != nil {
+			return err
+		}
+		freqBytes, err := json.Marshal(frequencies)
+		if err != nil {
+			return err
+		}
+		if _, err := tx.Exec(arch.insertHeightToRecordsQuery, height, bidBytes, freqBytes); err != nil {
+			return err
 		}
 	}
 

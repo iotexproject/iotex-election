@@ -58,7 +58,7 @@ type recordTableOperator struct {
 	hashQuery                  string
 	idQuery                    string
 	identicalQuery             string
-	lastHeightQuery			   string
+	lastHeightQuery            string
 	insertHeightToRecordsQuery string
 	insertIdenticalQuery       string
 	tableCreations             []string
@@ -100,7 +100,7 @@ func NewRecordTableOperator(
 		hashQuery:                  fmt.Sprintf("SELECT id, hash FROM %s WHERE id IN (%s)", tableName, "%s"),
 		idQuery:                    fmt.Sprintf("SELECT id, hash FROM %s WHERE hash IN ('%s')", tableName, "%s"),
 		identicalQuery:             fmt.Sprintf("SELECT identical_to FROM identical_%s WHERE height = ?", tableName),
-		lastHeightQuery:			fmt.Sprintf("SELECT height FROM identical_%s WHERE height < ? ORDER BY height DESC LIMIT 1", tableName),
+		lastHeightQuery:            fmt.Sprintf("SELECT height FROM identical_%s WHERE height < ? ORDER BY height DESC LIMIT 1", tableName),
 		insertHeightToRecordsQuery: fmt.Sprintf("INSERT OR REPLACE INTO height_to_%s (height, ids, frequencies) VALUES (?, ?, ?)", tableName),
 		insertIdenticalQuery:       fmt.Sprintf("INSERT OR IGNORE INTO identical_%s (height, identical_to) VALUES (?, ?)", tableName),
 		insertRecordsFunc:          insertRecordsFunc,
@@ -311,7 +311,7 @@ func (arch *recordTableOperator) lastHeight(height uint64, tx *sql.Tx) (uint64, 
 	case nil:
 		return uint64(val), nil
 	case sql.ErrNoRows:
-		return 0, nil 
+		return 0, nil
 	default:
 		return 0, err
 	}
@@ -401,6 +401,13 @@ const InsertBucketsQuery = "INSERT OR IGNORE INTO %s (hash, start_time, duration
 
 // InsertBuckets inserts bucket records into table by tx
 func InsertBuckets(tableName string, records interface{}, tx *sql.Tx) (frequencies map[hash.Hash256]int, err error) {
+	buckets, ok := records.([]*types.Bucket)
+	if !ok {
+		return nil, errors.Errorf("invalid record type %s, *types.Bucket expected", reflect.TypeOf(records))
+	}
+	if buckets == nil {
+		return nil, nil
+	}
 	var stmt *sql.Stmt
 	if stmt, err = tx.Prepare(fmt.Sprintf(InsertBucketsQuery, tableName)); err != nil {
 		return nil, err
@@ -412,10 +419,6 @@ func InsertBuckets(tableName string, records interface{}, tx *sql.Tx) (frequenci
 		}
 	}()
 	frequencies = make(map[hash.Hash256]int)
-	buckets, ok := records.([]*types.Bucket)
-	if !ok {
-		return nil, errors.Errorf("invalid record type %s, *types.Bucket expected", reflect.TypeOf(records))
-	}
 	for _, bucket := range buckets {
 		h, err := bucket.Hash()
 		if err != nil {
@@ -491,6 +494,13 @@ const InsertRegistrationQuery = "INSERT OR IGNORE INTO %s (hash, name, address, 
 
 // InsertRegistrations inserts registration records into table by tx
 func InsertRegistrations(tableName string, records interface{}, tx *sql.Tx) (frequencies map[hash.Hash256]int, err error) {
+	regs, ok := records.([]*types.Registration)
+	if !ok {
+		return nil, errors.Errorf("Unexpected type %s", reflect.TypeOf(records))
+	}
+	if regs == nil {
+		return nil, nil
+	}
 	var regStmt *sql.Stmt
 	if regStmt, err = tx.Prepare(fmt.Sprintf(InsertRegistrationQuery, tableName)); err != nil {
 		return nil, err
@@ -502,10 +512,6 @@ func InsertRegistrations(tableName string, records interface{}, tx *sql.Tx) (fre
 		}
 	}()
 	frequencies = make(map[hash.Hash256]int)
-	regs, ok := records.([]*types.Registration)
-	if !ok {
-		return nil, errors.Errorf("Unexpected type %s", reflect.TypeOf(records))
-	}
 	for _, reg := range regs {
 		var h hash.Hash256
 		if h, err = reg.Hash(); err != nil {

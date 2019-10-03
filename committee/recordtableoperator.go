@@ -112,7 +112,7 @@ func NewRecordTableOperator(
 ) (Operator, error) {
 	var insertHeightToRecordsQuery, insertIdenticalQuery string 
 	if !isSqliteDriver {
-		insertHeightToRecordsQuery = fmt.Sprintf("INSERT REPLACE INTO height_to_%s (height, ids, frequencies) VALUES (?, ?, ?)", tableName)
+		insertHeightToRecordsQuery = fmt.Sprintf("REPLACE INTO height_to_%s (height, ids, frequencies) VALUES (?, ?, ?)", tableName)
 		insertIdenticalQuery = fmt.Sprintf("INSERT IGNORE INTO identical_%s (height, identical_to) VALUES (?, ?)", tableName)
 	} else {
 		insertHeightToRecordsQuery = fmt.Sprintf("INSERT OR REPLACE INTO height_to_%s (height, ids, frequencies) VALUES (?, ?, ?)", tableName)

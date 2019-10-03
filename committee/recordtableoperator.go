@@ -69,24 +69,36 @@ type recordTableOperator struct {
 }
 
 // NewBucketTableOperator creates an operator for bucket table
-func NewBucketTableOperator(tableName string) (Operator, error) {
+func NewBucketTableOperator(tableName string, isSqliteDriver bool) (Operator, error) {
+	var creation string
+	if isSqliteDriver {
+		creation = "CREATE TABLE IF NOT EXISTS %s (id INTEGER PRIMARY KEY AUTOINCREMENT, hash TEXT UNIQUE, start_time TIMESTAMP, duration TEXT, amount BLOB, decay INTEGER, voter BLOB, candidate BLOB)"
+	} else {
+		creation = "CREATE TABLE IF NOT EXISTS %s (id INTEGER PRIMARY KEY AUTO_INCREMENT, hash VARCHAR(200) UNIQUE, start_time TIMESTAMP, duration TEXT, amount BLOB, decay INTEGER, voter BLOB, candidate BLOB)"
+	}
 	return NewRecordTableOperator(
 		tableName,
-		true,
+		isSqliteDriver,
 		InsertBuckets,
 		QueryBuckets,
-		"CREATE TABLE IF NOT EXISTS %s (id INTEGER PRIMARY KEY AUTOINCREMENT, hash TEXT UNIQUE, start_time TIMESTAMP, duration TEXT, amount BLOB, decay INTEGER, voter BLOB, candidate BLOB)",
+		creation,
 	)
 }
 
 // NewRegistrationTableOperator create an operator for registration table
-func NewRegistrationTableOperator(tableName string) (Operator, error) {
+func NewRegistrationTableOperator(tableName string, isSqliteDriver bool) (Operator, error) {
+	var creation string
+	if isSqliteDriver {
+		creation = "CREATE TABLE IF NOT EXISTS %s (id INTEGER PRIMARY KEY AUTOINCREMENT, hash TEXT UNIQUE, name BLOB, address BLOB, operator_address BLOB, reward_address BLOB, self_staking_weight INTEGER)"
+	} else {
+		creation = "CREATE TABLE IF NOT EXISTS %s (id INTEGER PRIMARY KEY AUTO_INCREMENT, hash VARCHAR(200) UNIQUE, start_time TIMESTAMP, duration TEXT, amount BLOB, decay INTEGER, voter BLOB, candidate BLOB)"
+	}
 	return NewRecordTableOperator(
 		tableName,
-		true,
+		isSqliteDriver,
 		InsertRegistrations,
 		QueryRegistrations,
-		"CREATE TABLE IF NOT EXISTS %s (id INTEGER PRIMARY KEY AUTOINCREMENT, hash TEXT UNIQUE, name BLOB, address BLOB, operator_address BLOB, reward_address BLOB, self_staking_weight INTEGER)",
+		creation,
 	)
 }
 

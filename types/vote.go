@@ -49,7 +49,6 @@ func (v *Vote) Clone() *Vote {
 	}
 }
 
-
 // Equal returns true if two candidates are identical
 func (v *Vote) Equal(vote *Vote) bool {
 	if v == vote {

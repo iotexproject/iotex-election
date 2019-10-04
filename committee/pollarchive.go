@@ -108,15 +108,15 @@ func NewArchive(dbPath string, numOfRetries uint8, startHeight uint64, interval 
 	if err != nil {
 		return nil, err
 	}
-	bucketTableOperator, err := NewBucketTableOperator("buckets")
+	bucketTableOperator, err := NewBucketTableOperator("buckets", SQLITE)
 	if err != nil {
 		return nil, err
 	}
-	nativeBucketTableOperator, err := NewBucketTableOperator("native_buckets")
+	nativeBucketTableOperator, err := NewBucketTableOperator("native_buckets", SQLITE)
 	if err != nil {
 		return nil, err
 	}
-	registrationTableOperator, err := NewRegistrationTableOperator("registrations")
+	registrationTableOperator, err := NewRegistrationTableOperator("registrations", SQLITE)
 	if err != nil {
 		return nil, err
 	}
@@ -127,8 +127,8 @@ func NewArchive(dbPath string, numOfRetries uint8, startHeight uint64, interval 
 		bucketTableOperator:       bucketTableOperator,
 		nativeBucketTableOperator: nativeBucketTableOperator,
 		registrationTableOperator: registrationTableOperator,
-		timeTableOperator:         NewTimeTableOperator("mint_time"),
-		nativeTimeTableOperator:   NewTimeTableOperator("native_mint_time"),
+		timeTableOperator:         NewTimeTableOperator("mint_time", SQLITE),
+		nativeTimeTableOperator:   NewTimeTableOperator("native_mint_time", SQLITE),
 		oldDB:                     kvstore,
 	}, nil
 }

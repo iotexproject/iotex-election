@@ -34,11 +34,20 @@ type TimeTableOperator struct {
 }
 
 // NewTimeTableOperator returns an operator to time table
-func NewTimeTableOperator(tableName string) *TimeTableOperator {
+func NewTimeTableOperator(tableName string, driverName DRIVERTYPE) *TimeTableOperator {
+	var insertMintTimeQuery string
+	switch driverName {
+	case SQLITE:
+		insertMintTimeQuery = fmt.Sprintf("INSERT OR IGNORE INTO %s (height, time) VALUES (?, ?)", tableName)
+	case MYSQL:
+		insertMintTimeQuery = fmt.Sprintf("INSERT IGNORE INTO %s (height, time) VALUES (?, ?)", tableName)
+	default:
+		return nil
+	}
 	return &TimeTableOperator{
+		insertMintTimeQuery: insertMintTimeQuery,
 		createTableQuery:    fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (height INTEGER PRIMARY KEY, time TIMESTAMP)", tableName),
 		heightQuery:         fmt.Sprintf("SELECT MAX(height) FROM %s WHERE ? >= time AND EXISTS (SELECT * FROM %s WHERE ? <= time)", tableName, tableName),
-		insertMintTimeQuery: fmt.Sprintf("INSERT OR IGNORE INTO %s (height, time) VALUES (?, ?)", tableName),
 		mintTimeQuery:       fmt.Sprintf("SELECT time FROM %s WHERE height = ?", tableName),
 		tipHeightQuery:      fmt.Sprintf("SELECT MAX(height) FROM %s", tableName),
 	}

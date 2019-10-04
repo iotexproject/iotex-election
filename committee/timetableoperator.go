@@ -34,12 +34,15 @@ type TimeTableOperator struct {
 }
 
 // NewTimeTableOperator returns an operator to time table
-func NewTimeTableOperator(tableName string, isSqliteDriver bool) *TimeTableOperator {
+func NewTimeTableOperator(tableName string, driverName DRIVERTYPE) *TimeTableOperator {
 	var insertMintTimeQuery string
-	if !isSqliteDriver {
-		insertMintTimeQuery = fmt.Sprintf("INSERT IGNORE INTO %s (height, time) VALUES (?, ?)", tableName)
-	} else {
+	switch driverName {
+	case SQLITE:
 		insertMintTimeQuery = fmt.Sprintf("INSERT OR IGNORE INTO %s (height, time) VALUES (?, ?)", tableName)
+	case MYSQL:
+		insertMintTimeQuery = fmt.Sprintf("INSERT IGNORE INTO %s (height, time) VALUES (?, ?)", tableName)
+	default:
+		return nil
 	}
 	return &TimeTableOperator{
 		insertMintTimeQuery: insertMintTimeQuery,

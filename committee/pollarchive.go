@@ -192,13 +192,13 @@ func (arch *archive) PutNativePoll(epochNum uint64, mintTime time.Time, buckets 
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback()
 	if err := arch.nativeBucketTableOperator.Put(epochNum, buckets, tx); err != nil {
 		return err
 	}
 	if err := arch.nativeTimeTableOperator.Put(epochNum, mintTime, tx); err != nil {
 		return err
 	}
-	defer tx.Rollback()
 	return tx.Commit()
 }
 

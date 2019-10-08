@@ -15,6 +15,7 @@ import (
 	"database/sql"
 	"os"
 	"reflect"
+	"sync"
 	"time"
 
 	bolt "go.etcd.io/bbolt"
@@ -64,6 +65,9 @@ type archive struct {
 	timeTableOperator         *TimeTableOperator
 	nativeTimeTableOperator   *TimeTableOperator
 	oldDB                     db.KVStoreWithNamespace
+	// Put (native) polls are synchronized to get rid of the risk of reading uncommitted changes from other tx on the
+	// same connection.
+	mutex sync.Mutex
 }
 
 // NewArchive creates a new archive of poll
@@ -170,6 +174,9 @@ func (arch *archive) NativeBuckets(epochNum uint64) ([]*types.Bucket, error) {
 }
 
 func (arch *archive) PutPoll(height uint64, mintTime time.Time, regs []*types.Registration, buckets []*types.Bucket) (err error) {
+	arch.mutex.Lock()
+	defer arch.mutex.Unlock()
+
 	tx, err := arch.db.Begin()
 	if err != nil {
 		return err
@@ -188,6 +195,9 @@ func (arch *archive) PutPoll(height uint64, mintTime time.Time, regs []*types.Re
 }
 
 func (arch *archive) PutNativePoll(epochNum uint64, mintTime time.Time, buckets []*types.Bucket) (err error) {
+	arch.mutex.Lock()
+	defer arch.mutex.Unlock()
+
 	tx, err := arch.db.Begin()
 	if err != nil {
 		return err
@@ -263,7 +273,7 @@ func (arch *archive) Start(ctx context.Context) (err error) {
 }
 
 func (arch *archive) Stop(_ context.Context) (err error) {
-	return nil
+	return arch.db.Close()
 }
 
 func (arch *archive) migrateResult(height uint64, r *types.ElectionResult) error {

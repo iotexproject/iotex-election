@@ -12,6 +12,7 @@ package committee
 
 import (
 	"context"
+	"encoding/hex"
 	"math"
 	"math/big"
 	"sort"
@@ -67,6 +68,9 @@ const (
 	// INACTIVE stands for an inactive status
 	INACTIVE
 )
+
+// EthHardForkHeight stands for the height of ethereum hard fork
+const EthHardForkHeight = 8581700
 
 type (
 	// Committee defines an interface of an election committee
@@ -452,6 +456,9 @@ func (ec *committee) resultByHeight(height uint64) (*types.ElectionResult, error
 	if err != nil {
 		return nil, err
 	}
+	if err := ec.handleEthereumHardFork(height, result); err != nil{
+		return nil, err
+	}
 	ec.cache.Add(height, result)
 
 	return result, nil
@@ -601,8 +608,14 @@ func (ec *committee) fetchResultByHeight(height uint64) (*types.ElectionResult, 
 	if err := calculator.AddBuckets(buckets); err != nil {
 		return nil, err
 	}
-
-	return calculator.Calculate()
+	res, err := calculator.Calculate()
+	if err != nil {
+		return nil, err
+	}
+	if err := ec.handleEthereumHardFork(height, res); err != nil {
+		return nil, err
+	}
+	return res, nil
 }
 
 func (ec *committee) fetchDataByHeight(height uint64) (*rawData, error) {
@@ -638,6 +651,74 @@ func atos(a []int64) string {
 		b[i] = strconv.FormatInt(v, 10)
 	}
 	return strings.Join(b, ",")
+}
+
+func (ec *committee) handleEthereumHardFork(height uint64, result *types.ElectionResult) error {
+	if height == EthHardForkHeight { 
+		for _, delegate := range result.Delegates() {
+			name := hex.EncodeToString(delegate.Name())
+	    	switch name {
+	    	case "000000696f746578636f7265":
+	    		score, ok := new(big.Int).SetString("85373235544231218078559584", 10)
+	    		if ok {
+	    			delegate.SetScore(score)
+	    		}
+	    	case "00000000006d6574616e7978":
+	    		score, ok := new(big.Int).SetString("59632560935643656968902530", 10)
+	    		if ok {
+	    			delegate.SetScore(score)
+	    		}
+	    	case "67616d6566616e7461737900":
+	    		score, ok := new(big.Int).SetString("53200765151851838442704552", 10)
+	    		if ok {
+	    			delegate.SetScore(score)
+	    		}
+	    	case "00000000707265616e67656c":
+	    		score, ok := new(big.Int).SetString("50419789330925706718338211", 10)
+	    		if ok {
+	    			delegate.SetScore(score)
+	    		}
+	    	case "00007976616c696461746f72":
+	    		score, ok := new(big.Int).SetString("49956076291800440218188229", 10)
+	    		if ok {
+	    			delegate.SetScore(score)
+	    		}
+	    	case "000000636f696e6765636b6f":
+	    		score, ok := new(big.Int).SetString("45541967921325925112783154", 10)
+	    		if ok {
+	    			delegate.SetScore(score)
+	    		}
+	    	case "000000696f7465787465616d":
+	    		score, ok := new(big.Int).SetString("42048368188254741149181523", 10)
+	    		if ok {
+	    			delegate.SetScore(score)
+	    		}
+	    	case "0000626c6f636b666f6c696f":
+	    		score, ok := new(big.Int).SetString("40118847473353343676639849", 10)
+	    		if ok {
+	    			delegate.SetScore(score)
+	    		}
+	    	case "696f7478706c6f726572696f":
+	    		score, ok := new(big.Int).SetString("38637407472542613934244717", 10)
+	    		if ok {
+	    			delegate.SetScore(score)
+	    		}
+	    	case "0068756f626977616c6c6574":
+	    		score, ok := new(big.Int).SetString("19826333897499304850764901", 10)
+	    		if ok {
+	    			delegate.SetScore(score)
+	    		}
+	    	case "636f6e73656e7375736e6574":
+	    		score, ok := new(big.Int).SetString("4562820963931216603918007", 10)
+	    		if ok {
+	    			delegate.SetScore(score)
+	    		}
+	    	default:
+	    		continue
+	    	}
+		}
+	}
+	return nil
 }
 
 func (ec *committee) retryFetchDataByHeight(height uint64) (data *rawData, err error) {

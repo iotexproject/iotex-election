@@ -194,10 +194,10 @@ func (r *ElectionResult) String() string {
 			&builder,
 			"%d: %s %x\n\toperator address: %s\n\treward: %s\n\tvotes: %s\n",
 			i,
-			string(d.name),
+			hex.EncodeToString(d.name),
 			d.name,
-			string(d.operatorAddress),
-			string(d.rewardAddress),
+			hex.EncodeToString(d.operatorAddress),
+			hex.EncodeToString(d.rewardAddress),
 			d.score,
 		)
 	}

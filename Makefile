@@ -53,4 +53,4 @@ run:
 
 .PHONY: docker
 docker:
-	$(DOCKERCMD) build -t $(USER)/iotex-analytics:latest .
+	$(DOCKERCMD) build -t $(USER)/iotex-election:latest .

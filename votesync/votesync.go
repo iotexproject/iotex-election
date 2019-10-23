@@ -69,7 +69,7 @@ type Config struct {
 	DiscordReminder          string        `yaml:"discordReminder"`
 }
 
-//WeightedVote defines voter and votes for weighted vote 
+//WeightedVote defines voter and votes for weighted vote
 type WeightedVote struct {
 	Voter []byte
 	Votes *big.Int
@@ -84,7 +84,7 @@ func toIoAddress(addr common.Address) (address.Address, error) {
 	return address.FromBytes(pkhash)
 }
 
-//NewVoteSync instantiates new VoteSync 
+//NewVoteSync instantiates new VoteSync
 func NewVoteSync(cfg Config) (*VoteSync, error) {
 	ctx := context.Background()
 	carrier, err := carrier.NewEthereumVoteCarrier(

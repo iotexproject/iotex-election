@@ -51,19 +51,19 @@ type InsertRecordsFunc func(string, DRIVERTYPE, interface{}, *sql.Tx) (map[hash.
 // QueryRecordsFunc defines an api to query records
 type QueryRecordsFunc func(string, map[int64]int, *sql.DB, *sql.Tx) (interface{}, error)
 
-//DRIVERTYPE represents the type of sql driver 
+//DRIVERTYPE represents the type of sql driver
 type DRIVERTYPE uint8
 
 const (
-	//SQLITE stands for a Sqlite driver 
-	SQLITE DRIVERTYPE = iota 
+	//SQLITE stands for a Sqlite driver
+	SQLITE DRIVERTYPE = iota
 	//MYSQL stands for a mysql driver
-	MYSQL  
+	MYSQL
 )
 
 type recordTableOperator struct {
-	tableName 		string
-	driverName 		DRIVERTYPE
+	tableName  string
+	driverName DRIVERTYPE
 
 	frequencyQuery             string
 	hashQuery                  string
@@ -126,7 +126,7 @@ func NewRecordTableOperator(
 	queryRecordsFunc QueryRecordsFunc,
 	recordTableCreation string,
 ) (Operator, error) {
-	var insertHeightToRecordsQuery, insertIdenticalQuery string 
+	var insertHeightToRecordsQuery, insertIdenticalQuery string
 	switch driverName {
 	case SQLITE:
 		insertHeightToRecordsQuery = fmt.Sprintf("INSERT OR REPLACE INTO height_to_%s (height, ids, frequencies) VALUES (?, ?, ?)", tableName)
@@ -139,7 +139,7 @@ func NewRecordTableOperator(
 	}
 	return &recordTableOperator{
 		tableName:                  tableName,
-		driverName:				driverName,
+		driverName:                 driverName,
 		frequencyQuery:             fmt.Sprintf("SELECT ids, frequencies FROM height_to_%s WHERE height = ?", tableName),
 		hashQuery:                  fmt.Sprintf("SELECT id, hash FROM %s WHERE id IN (%s)", tableName, "%s"),
 		idQuery:                    fmt.Sprintf("SELECT id, hash FROM %s WHERE hash IN ('%s')", tableName, "%s"),
@@ -443,9 +443,10 @@ func QueryBuckets(tableName string, frequencies map[int64]int, sdb *sql.DB, tx *
 	return buckets, nil
 }
 
-// InsertBucketsQuery is query to insert buckets
-const InsertBucketsQuery = "INSERT OR IGNORE INTO %s (hash, start_time, duration, amount, decay, voter, candidate) VALUES (?, ?, ?, ?, ?, ?, ?)"
-const InsertBucketsQueryMySql = "INSERT IGNORE INTO %s (hash, start_time, duration, amount, decay, voter, candidate) VALUES (?, ?, ?, ?, ?, ?, ?)"
+// InsertBucketsQuerySQLITE is query to insert buckets in SQLITE driver
+const InsertBucketsQuerySQLITE = "INSERT OR IGNORE INTO %s (hash, start_time, duration, amount, decay, voter, candidate) VALUES (?, ?, ?, ?, ?, ?, ?)"
+// InsertBucketsQueryMySQL is query to insert buckets in MYSQL driver 
+const InsertBucketsQueryMySQL = "INSERT IGNORE INTO %s (hash, start_time, duration, amount, decay, voter, candidate) VALUES (?, ?, ?, ?, ?, ?, ?)"
 
 // InsertBuckets inserts bucket records into table by tx
 func InsertBuckets(tableName string, driverName DRIVERTYPE, records interface{}, tx *sql.Tx) (frequencies map[hash.Hash256]int, err error) {
@@ -459,9 +460,9 @@ func InsertBuckets(tableName string, driverName DRIVERTYPE, records interface{},
 	var stmt *sql.Stmt
 	switch driverName {
 	case SQLITE:
-		stmt, err = tx.Prepare(fmt.Sprintf(InsertBucketsQuery, tableName))
+		stmt, err = tx.Prepare(fmt.Sprintf(InsertBucketsQuerySQLITE, tableName))
 	case MYSQL:
-		stmt, err = tx.Prepare(fmt.Sprintf(InsertBucketsQueryMySql, tableName))
+		stmt, err = tx.Prepare(fmt.Sprintf(InsertBucketsQueryMySQL, tableName))
 	default:
 		return nil, errors.New("wrong driver type")
 	}
@@ -545,10 +546,10 @@ func QueryRegistrations(tableName string, frequencies map[int64]int, sdb *sql.DB
 	return registrations, nil
 }
 
-// InsertRegistrationQuery is query to insert registrations
-const InsertRegistrationQuery = "INSERT OR IGNORE INTO %s (hash, name, address, operator_address, reward_address, self_staking_weight) VALUES (?, ?, ?, ?, ?, ?)"
-const InsertRegistrationQueryMySql = "INSERT IGNORE INTO %s (hash, name, address, operator_address, reward_address, self_staking_weight) VALUES (?, ?, ?, ?, ?, ?)"
-
+// InsertRegistrationQuerySQLITE is query to insert registrations in SQLITE driver
+const InsertRegistrationQuerySQLITE = "INSERT OR IGNORE INTO %s (hash, name, address, operator_address, reward_address, self_staking_weight) VALUES (?, ?, ?, ?, ?, ?)"
+// InsertRegistrationQueryMySQL is query to insert registrations in MySQL driver 
+const InsertRegistrationQueryMySQL = "INSERT IGNORE INTO %s (hash, name, address, operator_address, reward_address, self_staking_weight) VALUES (?, ?, ?, ?, ?, ?)"
 
 // InsertRegistrations inserts registration records into table by tx
 func InsertRegistrations(tableName string, driverName DRIVERTYPE, records interface{}, tx *sql.Tx) (frequencies map[hash.Hash256]int, err error) {
@@ -562,9 +563,9 @@ func InsertRegistrations(tableName string, driverName DRIVERTYPE, records interf
 	var regStmt *sql.Stmt
 	switch driverName {
 	case SQLITE:
-		regStmt, err = tx.Prepare(fmt.Sprintf(InsertRegistrationQuery, tableName)) 
+		regStmt, err = tx.Prepare(fmt.Sprintf(InsertRegistrationQuerySQLITE, tableName))
 	case MYSQL:
-		regStmt, err = tx.Prepare(fmt.Sprintf(InsertRegistrationQueryMySql, tableName)) 
+		regStmt, err = tx.Prepare(fmt.Sprintf(InsertRegistrationQueryMySQL, tableName))
 	default:
 		return nil, errors.New("wrong driver type")
 	}

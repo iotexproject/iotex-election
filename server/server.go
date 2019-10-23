@@ -20,15 +20,14 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/empty"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-
 
 	"github.com/iotexproject/iotex-election/committee"
 	"github.com/iotexproject/iotex-election/db"
@@ -37,7 +36,6 @@ import (
 	"github.com/iotexproject/iotex-election/types"
 	"github.com/iotexproject/iotex-election/util"
 	"github.com/iotexproject/iotex-election/votesync"
-
 )
 
 // Config defines the config for server
@@ -78,13 +76,13 @@ func NewServer(cfg *Config) (Server, error) {
 		log.Panic("Failed to init zap global logger, no zap log will be shown till zap is properly initialized: ", err)
 	}
 	zap.ReplaceGlobals(l)
-	archive, err := committee.NewArchive(cfg.DB.DBPath, cfg.DB.NumOfRetries, cfg.Committee.GravityChainStartHeight, cfg.Committee.GravityChainHeightInterval)	
-	if err != nil {	
-		return nil, err	
-	}	
-	c, err := committee.NewCommittee(archive, cfg.Committee)	
-	if err != nil {	
-		return nil, err	
+	archive, err := committee.NewArchive(cfg.DB.DBPath, cfg.DB.NumOfRetries, cfg.Committee.GravityChainStartHeight, cfg.Committee.GravityChainHeightInterval)
+	if err != nil {
+		return nil, err
+	}
+	c, err := committee.NewCommittee(archive, cfg.Committee)
+	if err != nil {
+		return nil, err
 	}
 	var vs *votesync.VoteSync
 	if cfg.EnableVoteSync {
@@ -343,7 +341,6 @@ func (s *server) GetBuckets(ctx context.Context, request *api.GetBucketsRequest)
 	return s.toBucketResponse(votes, offset, request.Limit, result.MintTime()), nil
 }
 
-
 func (s *server) GetRawData(ctx context.Context, request *api.GetRawDataRequest) (*api.RawDataResponse, error) {
 	height, err := strconv.ParseUint(request.Height, 10, 64)
 	if err != nil {
@@ -356,10 +353,9 @@ func (s *server) GetRawData(ctx context.Context, request *api.GetRawDataRequest)
 	return s.toRawDataResponse(timestamp, regs, buckets)
 }
 
-
 func (s *server) toRawDataResponse(mintTime time.Time, regs []*types.Registration, buckets []*types.Bucket) (*api.RawDataResponse, error) {
 	response := &api.RawDataResponse{
-		Buckets: make([]*electionpb.Bucket, len(buckets)),
+		Buckets:       make([]*electionpb.Bucket, len(buckets)),
 		Registrations: make([]*electionpb.Registration, len(regs)),
 	}
 	for i := 0; i < len(buckets); i++ {

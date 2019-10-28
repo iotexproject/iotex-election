@@ -565,7 +565,7 @@ func (vc *VoteSync) fetchNativeBuckets(prevTs, currTs time.Time) ([]*types.Bucke
 	findEpoch := func(ctx context.Context, en uint64, t time.Time) (uint64, error) {
 		retryCounter := 0
 		for {
-			h = getEpochHeight(en)
+			h := getEpochHeight(en)
 			bt, err := vc.getIotexBlockTime(ctx, h)
 			if err != nil {
 				if retryCounter > 10 {
@@ -576,7 +576,7 @@ func (vc *VoteSync) fetchNativeBuckets(prevTs, currTs time.Time) ([]*types.Bucke
 				continue
 			}
 			en--
-			if bt.Before(currTs) {
+			if bt.Before(t) {
 				break
 			}
 		}

@@ -6,7 +6,7 @@ require (
 	github.com/apilayer/freegeoip v3.5.0+incompatible // indirect
 	github.com/aristanetworks/goarista v0.0.0-20190531155855-fef20d617fa7 // indirect
 	github.com/bwmarrin/discordgo v0.19.0
-	github.com/cenkalti/backoff v2.1.1+incompatible
+	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/docker/docker v1.13.1 // indirect
 	github.com/edsrzf/mmap-go v1.0.0 // indirect
 	github.com/elastic/gosigar v0.10.5 // indirect
@@ -23,7 +23,7 @@ require (
 	github.com/influxdata/influxdb v1.7.8 // indirect
 	github.com/iotexproject/go-pkgs v0.1.1
 	github.com/iotexproject/iotex-address v0.2.1
-	github.com/iotexproject/iotex-antenna-go/v2 v2.3.1
+	github.com/iotexproject/iotex-antenna-go/v2 v2.3.2
 	github.com/iotexproject/iotex-proto v0.2.1-0.20190814190638-f74c55ffedf5
 	github.com/jackpal/go-nat-pmp v1.0.1 // indirect
 	github.com/karalabe/usb v0.0.0-20190819132248-550797b1cad8 // indirect

@@ -409,7 +409,7 @@ func (ec *committee) ResultByHeight(height uint64) (*types.ElectionResult, error
 }
 
 func (ec *committee) resultByHeight(height uint64) (*types.ElectionResult, error) {
-	zap.L().Info("fetch result from DB and calculate", zap.Uint64("height", height))
+	zap.L().Debug("fetch result from DB and calculate", zap.Uint64("height", height))
 	if height < ec.startHeight {
 		return nil, errors.Errorf(
 			"height %d is lower than start height %d",

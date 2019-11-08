@@ -55,6 +55,7 @@ type VoteSync struct {
 	lastNativeEphoch       uint64
 	tempLastNativeEphoch   uint64
 	terminate              chan bool
+	dardanellesHeight      uint64
 }
 
 //Config defines the configs for VoteSync
@@ -72,6 +73,7 @@ type Config struct {
 	DiscordChannelID         string        `yaml:"discordChannelID"`
 	DiscordMsg               string        `yaml:"discordMsg"`
 	DiscordReminder          string        `yaml:"discordReminder"`
+	DardaenllesHeight        uint64        `yaml:"dardanellesHeight"`
 }
 
 //WeightedVote defines voter and votes for weighted vote
@@ -249,6 +251,7 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 		discordChannelID:       cfg.DiscordChannelID,
 		discordMsg:             cfg.DiscordMsg,
 		discordReminder:        cfg.DiscordReminder,
+		dardanellesHeight:      cfg.DardaenllesHeight,
 	}, nil
 }
 
@@ -565,7 +568,7 @@ func (vc *VoteSync) fetchNativeBuckets(prevTs, currTs time.Time) ([]*types.Bucke
 	findEpoch := func(ctx context.Context, en uint64, t time.Time) (uint64, error) {
 		retryCounter := 0
 		for {
-			h := getEpochHeight(en)
+			h := vc.getEpochHeight(en)
 			bt, err := vc.getIotexBlockTime(ctx, h)
 			if err != nil {
 				if retryCounter > 10 {
@@ -584,7 +587,7 @@ func (vc *VoteSync) fetchNativeBuckets(prevTs, currTs time.Time) ([]*types.Bucke
 	}
 
 	// get epoch number of the block we got
-	en := getEpochNum(h)
+	en := vc.getEpochNum(h)
 	// find a epoch start block which is the first one timestamp before currTs
 	currEn, err := findEpoch(ctx, en, currTs)
 	if err != nil {
@@ -689,18 +692,28 @@ func calWeightedVotes(curr []*types.Bucket, currTs time.Time) map[string]*Weight
 	return n
 }
 
-func getEpochNum(height uint64) uint64 {
+func (vc *VoteSync) getEpochNum(height uint64) uint64 {
 	if height == 0 {
 		return 0
 	}
-	return (height-1)/360 + 1
+	if vc.dardanellesHeight == 0 || height <= vc.dardanellesHeight {
+		return (height-1)/360 + 1
+	}
+	dardanellesEpoch := vc.getEpochNum(vc.dardanellesHeight)
+	dardanellesEpochHeight := vc.getEpochHeight(dardanellesEpoch)
+	return dardanellesEpoch + (height-dardanellesEpochHeight)/720
 }
 
-func getEpochHeight(epochNum uint64) uint64 {
+func (vc *VoteSync) getEpochHeight(epochNum uint64) uint64 {
 	if epochNum == 0 {
 		return 0
 	}
-	return (epochNum-1)*360 + 1
+	dardanellesEpoch := vc.getEpochNum(vc.dardanellesHeight)
+	if vc.dardanellesHeight == 0 || epochNum <= dardanellesEpoch {
+		return (epochNum-1)*360 + 1
+	}
+	dardanellesEpochHeight := vc.getEpochHeight(dardanellesEpoch)
+	return dardanellesEpochHeight + (epochNum-dardanellesEpoch)*720
 }
 
 func bucketfromIotexProtoMsg(vPb *iotextypes.ElectionBucket) (*types.Bucket, error) {

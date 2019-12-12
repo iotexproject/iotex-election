@@ -34,15 +34,28 @@ func main() {
 	if err := yaml.Unmarshal(data, &config); err != nil {
 		zap.L().Fatal("failed to unmarshal config", zap.Error(err))
 	}
-	rankingServer, err := server.NewServer(&config)
-	if err != nil {
-		zap.L().Fatal("failed to create server", zap.Error(err))
+	if config.EnableDummpyServer == true {
+		dummyServer, err := server.NewDummyServer(&config)
+		if err != nil {
+			zap.L().Fatal("failed to create dummy server", zap.Error(err))
+		}
+		zap.L().Info("New dummy server created")
+		if err := dummyServer.Start(context.Background()); err != nil {
+			zap.L().Fatal("failed to start dummy ranking server", zap.Error(err))
+		}
+		zap.L().Info("Service started")
+		defer dummyServer.Stop(context.Background())
+	} else {
+		rankingServer, err := server.NewServer(&config)
+		if err != nil {
+			zap.L().Fatal("failed to create server", zap.Error(err))
+		}
+		zap.L().Info("New server created")
+		if err := rankingServer.Start(context.Background()); err != nil {
+			zap.L().Fatal("failed to start ranking server", zap.Error(err))
+		}
+		zap.L().Info("Service started")
+		defer rankingServer.Stop(context.Background())
 	}
-	zap.L().Info("New server created")
-	if err := rankingServer.Start(context.Background()); err != nil {
-		zap.L().Fatal("failed to start ranking server", zap.Error(err))
-	}
-	zap.L().Info("Service started")
-	defer rankingServer.Stop(context.Background())
 	select {}
 }

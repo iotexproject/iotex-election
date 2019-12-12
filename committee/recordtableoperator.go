@@ -445,7 +445,8 @@ func QueryBuckets(tableName string, frequencies map[int64]int, sdb *sql.DB, tx *
 
 // InsertBucketsQuerySQLITE is query to insert buckets in SQLITE driver
 const InsertBucketsQuerySQLITE = "INSERT OR IGNORE INTO %s (hash, start_time, duration, amount, decay, voter, candidate) VALUES (?, ?, ?, ?, ?, ?, ?)"
-// InsertBucketsQueryMySQL is query to insert buckets in MYSQL driver 
+
+// InsertBucketsQueryMySQL is query to insert buckets in MYSQL driver
 const InsertBucketsQueryMySQL = "INSERT IGNORE INTO %s (hash, start_time, duration, amount, decay, voter, candidate) VALUES (?, ?, ?, ?, ?, ?, ?)"
 
 // InsertBuckets inserts bucket records into table by tx
@@ -548,7 +549,8 @@ func QueryRegistrations(tableName string, frequencies map[int64]int, sdb *sql.DB
 
 // InsertRegistrationQuerySQLITE is query to insert registrations in SQLITE driver
 const InsertRegistrationQuerySQLITE = "INSERT OR IGNORE INTO %s (hash, name, address, operator_address, reward_address, self_staking_weight) VALUES (?, ?, ?, ?, ?, ?)"
-// InsertRegistrationQueryMySQL is query to insert registrations in MySQL driver 
+
+// InsertRegistrationQueryMySQL is query to insert registrations in MySQL driver
 const InsertRegistrationQueryMySQL = "INSERT IGNORE INTO %s (hash, name, address, operator_address, reward_address, self_staking_weight) VALUES (?, ?, ?, ?, ?, ?)"
 
 // InsertRegistrations inserts registration records into table by tx

@@ -47,7 +47,7 @@ type Config struct {
 	ScoreThreshold       string           `yaml:"scoreThreshold"`
 	EnableVoteSync       bool             `yaml:"enableVoteSync"`
 	VoteSync             votesync.Config  `yaml:"voteSync"`
-	EnableDummpyServer   bool             `yaml:"enableDummpyServer"`
+	EnableDummyServer    bool             `yaml:"enableDummyServer"`
 }
 
 // Server defines the interface of the ranking server implementation

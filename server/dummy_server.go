@@ -42,7 +42,7 @@ type dummyServer struct {
 
 // NewDummyServer returns an implementation of ranking dummy server
 func NewDummyServer(cfg *Config) (DummyServer, error) {
-	if cfg.EnableDummpyServer == false {
+	if cfg.EnableDummyServer == false {
 		return nil, errors.New("not allow to create dummy server")
 	}
 	zapCfg := zap.NewDevelopmentConfig()

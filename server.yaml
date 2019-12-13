@@ -37,3 +37,4 @@ voteSync:
 
 scoreThreshold: "2000000000000000000000000"
 selfStakingThreshold: "120000000000000000000000"
+enableDummyServer: false

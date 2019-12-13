@@ -20,14 +20,14 @@ import (
 func TestCreateDummyServer(t *testing.T) {
 	r := require.New(t)
 	cfg1 := &Config{
-		EnableDummpyServer: true,
+		EnableDummyServer: true,
 	}
 	s, err := NewDummyServer(cfg1)
 	r.NoError(err)
 	r.True(s != nil)
 
 	cfg2 := &Config{
-		EnableDummpyServer: false,
+		EnableDummyServer: false,
 	}
 	s, err = NewDummyServer(cfg2)
 	r.Error(err)
@@ -37,8 +37,8 @@ func TestCreateDummyServer(t *testing.T) {
 func TestStartDummyServer(t *testing.T) {
 	r := require.New(t)
 	cfg := &Config{
-		Port:               32223,
-		EnableDummpyServer: true,
+		Port:              32223,
+		EnableDummyServer: true,
 	}
 	s, err := NewDummyServer(cfg)
 	r.NoError(err)

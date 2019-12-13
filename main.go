@@ -34,7 +34,7 @@ func main() {
 	if err := yaml.Unmarshal(data, &config); err != nil {
 		zap.L().Fatal("failed to unmarshal config", zap.Error(err))
 	}
-	if config.EnableDummpyServer == true {
+	if config.EnableDummyServer == true {
 		dummyServer, err := server.NewDummyServer(&config)
 		if err != nil {
 			zap.L().Fatal("failed to create dummy server", zap.Error(err))

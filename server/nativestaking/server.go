@@ -11,6 +11,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/hex"
 	"flag"
 	"io/ioutil"
@@ -154,7 +155,38 @@ func (s *server) GetCandidateByName(ctx context.Context, request *api.GetCandida
 
 // GetBucketsByCandidate returns the buckets
 func (s *server) GetBucketsByCandidate(ctx context.Context, request *api.GetBucketsByCandidateRequest) (*api.BucketResponse, error) {
-	return nil, ErrNotSupported
+	height, err := strconv.ParseUint(request.Height, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	mintTime, buckets, err := s.nativeCommittee.RawDataByHeight(height)
+	if err != nil {
+		return nil, err
+	}
+	name := []byte(request.Name)
+	if len(name) == 0 || len(name) > 12 {
+		return nil, errors.Errorf("invalid candidate name %s", request.Name)
+	}
+	for i := len(name) - 1; i >= 0; i-- {
+		if name[i] == 35 {
+			name[i] = 0
+		}
+	}
+	for len(name) < 12 {
+		name = append([]byte{0}, name...)
+	}
+	bucketsOfCandidate := []*types.Bucket{}
+	for _, bucket := range buckets {
+		if bytes.Equal(bucket.Candidate(), name) {
+			bucketsOfCandidate = append(bucketsOfCandidate, bucket)
+		}
+	}
+	offset := request.Offset
+	if int(offset) >= len(bucketsOfCandidate) {
+		return nil, errors.New("offset is out of range")
+	}
+
+	return s.toBucketResponse(mintTime, bucketsOfCandidate, offset, request.Limit), nil
 }
 
 func (s *server) toBucketResponse(mintTime time.Time, buckets []*types.Bucket, offset uint32, limit uint32) *api.BucketResponse {

@@ -169,6 +169,7 @@ func (nc *NativeCommittee) Start(ctx context.Context) error {
 			if err := nc.sync(h); err != nil {
 				zap.L().Error("failed to fetch data", zap.Error(err))
 			}
+			time.Sleep(10 * time.Second)
 		}
 		zap.L().Info("catching up to tip", zap.Uint64("height", tip))
 		if err := nc.sync(tip); err != nil {

@@ -1,0 +1,12 @@
+db:
+  numOfRetries: 8
+  dbPath: native_staking.db
+
+port: 8090
+
+committee:
+  numOfRetries: 8
+  startHeight: 3269520
+  interval: 720
+  stakingContractAddress: io1zn9mn4v63jg3047ylqx9nqaqz0ev659777q3xc
+  iotexAPI: api.iotex.one:443

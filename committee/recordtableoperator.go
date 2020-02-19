@@ -15,6 +15,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"math"
 	"math/big"
 	"reflect"
 	"strings"
@@ -38,6 +39,8 @@ type Operator interface {
 	Get(uint64, *sql.DB, *sql.Tx) (interface{}, error)
 	// Put writes value for height
 	Put(uint64, interface{}, *sql.Tx) error
+	// TipHeight returns the tip height
+	TipHeight(*sql.DB, *sql.Tx) (uint64, error)
 }
 
 // Record defines a record
@@ -157,6 +160,10 @@ func NewRecordTableOperator(
 	}, nil
 }
 
+func (arch *recordTableOperator) TipHeight(db *sql.DB, tx *sql.Tx) (uint64, error) {
+	return arch.lastHeight(uint64(math.MaxInt64), db, tx)
+}
+
 func (arch *recordTableOperator) Get(height uint64, db *sql.DB, tx *sql.Tx) (interface{}, error) {
 	height, err := arch.identicalTo(height, db, tx)
 	if err != nil {
@@ -176,7 +183,7 @@ func (arch *recordTableOperator) Put(height uint64, records interface{}, tx *sql
 	if hash2Frequencies, err = arch.insertRecordsFunc(arch.tableName, arch.driverName, records, tx); err != nil {
 		return err
 	}
-	if lastHeight, err = arch.lastHeight(height, tx); err != nil {
+	if lastHeight, err = arch.lastHeight(height, nil, tx); err != nil {
 		return err
 	}
 	lastIdenticalHeight, lastFrequencies, err := arch.hashes(lastHeight, nil, tx)
@@ -348,9 +355,14 @@ func (arch *recordTableOperator) identicalTo(height uint64, sdb *sql.DB, tx *sql
 	}
 }
 
-func (arch *recordTableOperator) lastHeight(height uint64, tx *sql.Tx) (uint64, error) {
+func (arch *recordTableOperator) lastHeight(height uint64, sdb *sql.DB, tx *sql.Tx) (uint64, error) {
 	var val sql.NullInt64
-	err := tx.QueryRow(arch.lastHeightQuery, util.Uint64ToInt64(height), util.Uint64ToInt64(height)).Scan(&val)
+	var err error
+	if tx != nil {
+		err = tx.QueryRow(arch.lastHeightQuery, util.Uint64ToInt64(height), util.Uint64ToInt64(height)).Scan(&val)
+	} else {
+		err = sdb.QueryRow(arch.lastHeightQuery, util.Uint64ToInt64(height), util.Uint64ToInt64(height)).Scan(&val)
+	}
 	switch err {
 	case nil:
 		if val.Valid {

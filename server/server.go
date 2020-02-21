@@ -13,7 +13,6 @@ package server
 import (
 	"encoding/hex"
 	"errors"
-	"log"
 	"math"
 	"math/big"
 	"net"
@@ -24,7 +23,6 @@ import (
 	"github.com/golang/protobuf/ptypes/empty"
 
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -35,7 +33,6 @@ import (
 	electionpb "github.com/iotexproject/iotex-election/pb/election"
 	"github.com/iotexproject/iotex-election/types"
 	"github.com/iotexproject/iotex-election/util"
-	"github.com/iotexproject/iotex-election/votesync"
 )
 
 // Config defines the config for server
@@ -45,9 +42,6 @@ type Config struct {
 	Committee            committee.Config `yaml:"committee"`
 	SelfStakingThreshold string           `yaml:"selfStakingThreshold"`
 	ScoreThreshold       string           `yaml:"scoreThreshold"`
-	EnableVoteSync       bool             `yaml:"enableVoteSync"`
-	VoteSync             votesync.Config  `yaml:"voteSync"`
-	EnableDummyServer    bool             `yaml:"enableDummyServer"`
 }
 
 // Server defines the interface of the ranking server implementation
@@ -64,19 +58,10 @@ type server struct {
 	grpcServer           *grpc.Server
 	selfStakingThreshold *big.Int
 	scoreThreshold       *big.Int
-	voteSync             *votesync.VoteSync
 }
 
 // NewServer returns an implementation of ranking server
 func NewServer(cfg *Config) (Server, error) {
-	zapCfg := zap.NewDevelopmentConfig()
-	zapCfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
-	zapCfg.Level.SetLevel(zap.InfoLevel)
-	l, err := zapCfg.Build()
-	if err != nil {
-		log.Panic("Failed to init zap global logger, no zap log will be shown till zap is properly initialized: ", err)
-	}
-	zap.ReplaceGlobals(l)
 	archive, err := committee.NewArchive(cfg.DB.DBPath, cfg.DB.NumOfRetries, cfg.Committee.GravityChainStartHeight, cfg.Committee.GravityChainHeightInterval)
 	if err != nil {
 		return nil, err
@@ -84,13 +69,6 @@ func NewServer(cfg *Config) (Server, error) {
 	c, err := committee.NewCommittee(archive, cfg.Committee)
 	if err != nil {
 		return nil, err
-	}
-	var vs *votesync.VoteSync
-	if cfg.EnableVoteSync {
-		vs, err = votesync.NewVoteSync(cfg.VoteSync)
-		if err != nil {
-			return nil, err
-		}
 	}
 	scoreThreshold, ok := new(big.Int).SetString(cfg.ScoreThreshold, 10)
 	if !ok {
@@ -105,7 +83,6 @@ func NewServer(cfg *Config) (Server, error) {
 		port:                 cfg.Port,
 		scoreThreshold:       scoreThreshold,
 		selfStakingThreshold: selfStakingThreshold,
-		voteSync:             vs,
 	}
 	s.grpcServer = grpc.NewServer()
 	api.RegisterAPIServiceServer(s.grpcServer, s)
@@ -128,20 +105,11 @@ func (s *server) Start(ctx context.Context) error {
 			zap.L().Fatal("Failed to serve", zap.Error(err))
 		}
 	}()
-	if err := s.electionCommittee.Start(ctx); err != nil {
-		return err
-	}
-	if s.voteSync != nil {
-		s.voteSync.Start(ctx)
-	}
-	return nil
+	return s.electionCommittee.Start(ctx)
 }
 
 func (s *server) Stop(ctx context.Context) error {
 	s.grpcServer.Stop()
-	if s.voteSync != nil {
-		s.voteSync.Stop(ctx)
-	}
 	return s.electionCommittee.Stop(ctx)
 }
 

@@ -23,7 +23,7 @@ var cfg = Config{
 
 func TestFetchVotesByHeight(t *testing.T) {
 	require := require.New(t)
-	vs, err := NewVoteSync(cfg)
+	vs, err := NewVoteSync(cfg, nil)
 	require.NoError(err)
 	re, err := vs.fetchBucketsByHeight(7858000)
 	require.NoError(err)
@@ -32,7 +32,7 @@ func TestFetchVotesByHeight(t *testing.T) {
 
 func TestFetchVoteUpdate(t *testing.T) {
 	require := require.New(t)
-	vs, err := NewVoteSync(cfg)
+	vs, err := NewVoteSync(cfg, nil)
 	require.NoError(err)
 	vs.carrier = &mockCarrier{}
 	ts, err := vs.carrier.BlockTimestamp(2)

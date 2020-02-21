@@ -115,7 +115,7 @@ var (
 	topicUnstake = "9954bdedc474e937b39bbb080fc136e2edf1cef61f0906d36203267f4930762e"
 )
 
-func NewNativeStaingCommittee(
+func NewNativeStakingCommittee(
 	archive *BucketArchive,
 	cfg NativeCommitteeConfig,
 ) (*NativeCommittee, error) {
@@ -223,7 +223,7 @@ func (nc *NativeCommittee) mintTime(height uint64) (time.Time, error) {
 }
 
 func (nc *NativeCommittee) fetchDataByHeight(height uint64) (*timeAndBuckets, error) {
-	zap.L().Info("fetch data", zap.Uint64("height", height))
+	zap.L().Info("fetch data", zap.Uint64("from", height), zap.Uint64("to", height+nc.interval-1))
 	mintTime, err := nc.mintTime(height + nc.interval - 1)
 	if err != nil {
 		return nil, err
@@ -332,9 +332,12 @@ func (nc *NativeCommittee) sync(tipHeight uint64) error {
 	return nc.storeInBatch(data)
 }
 
-func (nc *NativeCommittee) RawDataByHeight(height uint64) (time.Time, []*types.Bucket, error) {
+func (nc *NativeCommittee) DataByHeight(height uint64) (time.Time, []*types.Bucket, error) {
 	nc.mutex.RLock()
 	defer nc.mutex.RUnlock()
+	if height < nc.startHeight {
+		return time.Time{}, nil, nil
+	}
 	mintTime, err := nc.archive.MintTime(height)
 	if err != nil {
 		return time.Time{}, nil, err

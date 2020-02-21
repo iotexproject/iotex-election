@@ -8,14 +8,11 @@
 // You should have received a copy of the GNU General Public License along with this program. If
 // not, see <http://www.gnu.org/licenses/>.
 
-package main
+package server
 
 import (
 	"bytes"
 	"encoding/hex"
-	"flag"
-	"io/ioutil"
-	"log"
 	"math"
 	"math/big"
 	"net"
@@ -24,10 +21,7 @@ import (
 
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
-
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -41,22 +35,16 @@ import (
 
 var ErrNotSupported = errors.New("Not supported")
 
-// Config defines the config for server
-type Config struct {
+// NativeStakingConfig defines the config for native staking server
+type NativeStakingConfig struct {
 	DB        db.Config                       `yaml:"db"`
 	Port      int                             `yaml:"port"`
 	Committee committee.NativeCommitteeConfig `yaml:"committee"`
 }
 
-// Server defines the interface of the ranking server implementation
-type Server interface {
+// NativeStakingServer implements api.APIServiceServer.
+type NativeStakingServer struct {
 	api.APIServiceServer
-	Start(context.Context) error
-	Stop(context.Context) error
-}
-
-// server implements api.APIServiceServer.
-type server struct {
 	port                 int
 	nativeCommittee      *committee.NativeCommittee
 	grpcServer           *grpc.Server
@@ -65,25 +53,17 @@ type server struct {
 	voteSync             *votesync.VoteSync
 }
 
-// NewServer returns an implementation of ranking server
-func NewServer(cfg *Config) (Server, error) {
-	zapCfg := zap.NewDevelopmentConfig()
-	zapCfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
-	zapCfg.Level.SetLevel(zap.DebugLevel)
-	l, err := zapCfg.Build()
-	if err != nil {
-		log.Panic("Failed to init zap global logger, no zap log will be shown till zap is properly initialized: ", err)
-	}
-	zap.ReplaceGlobals(l)
+// NewNativeStakingServer returns an implementation of ranking server
+func NewNativeStakingServer(cfg *NativeStakingConfig) (*NativeStakingServer, error) {
 	archive, err := committee.NewBucketArchive(cfg.DB.DBPath, cfg.DB.NumOfRetries, cfg.Committee.StartHeight, cfg.Committee.Interval)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create archive")
 	}
-	c, err := committee.NewNativeStaingCommittee(archive, cfg.Committee)
+	c, err := committee.NewNativeStakingCommittee(archive, cfg.Committee)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create committee")
 	}
-	s := &server{
+	s := &NativeStakingServer{
 		nativeCommittee: c,
 		port:            cfg.Port,
 	}
@@ -94,8 +74,12 @@ func NewServer(cfg *Config) (Server, error) {
 	return s, nil
 }
 
-func (s *server) Start(ctx context.Context) error {
-	zap.L().Info("Start ranking server")
+func (s *NativeStakingServer) Committee() *committee.NativeCommittee {
+	return s.nativeCommittee
+}
+
+func (s *NativeStakingServer) Start(ctx context.Context) error {
+	zap.L().Info("Start native staking server")
 	zap.L().Info("Listen to port", zap.Int("port", s.port))
 	portStr := ":" + strconv.Itoa(s.port)
 	lis, err := net.Listen("tcp", portStr)
@@ -108,19 +92,16 @@ func (s *server) Start(ctx context.Context) error {
 			zap.L().Fatal("Failed to serve", zap.Error(err))
 		}
 	}()
-	if err := s.nativeCommittee.Start(ctx); err != nil {
-		return err
-	}
-	return nil
+	return s.nativeCommittee.Start(ctx)
 }
 
-func (s *server) Stop(ctx context.Context) error {
+func (s *NativeStakingServer) Stop(ctx context.Context) error {
 	s.grpcServer.Stop()
 	return s.nativeCommittee.Stop(ctx)
 }
 
 // GetMeta returns the meta of the chain
-func (s *server) GetMeta(ctx context.Context, empty *empty.Empty) (*api.ChainMeta, error) {
+func (s *NativeStakingServer) GetMeta(ctx context.Context, empty *empty.Empty) (*api.ChainMeta, error) {
 	height := s.nativeCommittee.TipHeight()
 
 	return &api.ChainMeta{
@@ -128,7 +109,7 @@ func (s *server) GetMeta(ctx context.Context, empty *empty.Empty) (*api.ChainMet
 	}, nil
 }
 
-func (s *server) IsHealth(ctx context.Context, empty *empty.Empty) (*api.HealthCheckResponse, error) {
+func (s *NativeStakingServer) IsHealth(ctx context.Context, empty *empty.Empty) (*api.HealthCheckResponse, error) {
 	var status api.HealthCheckResponse_Status
 	switch s.nativeCommittee.Status() {
 	case committee.STARTING:
@@ -144,22 +125,22 @@ func (s *server) IsHealth(ctx context.Context, empty *empty.Empty) (*api.HealthC
 }
 
 // GetCandidates returns a list of candidates sorted by weighted votes
-func (s *server) GetCandidates(ctx context.Context, request *api.GetCandidatesRequest) (*api.CandidateResponse, error) {
+func (s *NativeStakingServer) GetCandidates(ctx context.Context, request *api.GetCandidatesRequest) (*api.CandidateResponse, error) {
 	return nil, ErrNotSupported
 }
 
 // GetCandidateByName returns the candidate details
-func (s *server) GetCandidateByName(ctx context.Context, request *api.GetCandidateByNameRequest) (*api.Candidate, error) {
+func (s *NativeStakingServer) GetCandidateByName(ctx context.Context, request *api.GetCandidateByNameRequest) (*api.Candidate, error) {
 	return nil, ErrNotSupported
 }
 
 // GetBucketsByCandidate returns the buckets
-func (s *server) GetBucketsByCandidate(ctx context.Context, request *api.GetBucketsByCandidateRequest) (*api.BucketResponse, error) {
+func (s *NativeStakingServer) GetBucketsByCandidate(ctx context.Context, request *api.GetBucketsByCandidateRequest) (*api.BucketResponse, error) {
 	height, err := strconv.ParseUint(request.Height, 10, 64)
 	if err != nil {
 		return nil, err
 	}
-	mintTime, buckets, err := s.nativeCommittee.RawDataByHeight(height)
+	mintTime, buckets, err := s.nativeCommittee.DataByHeight(height)
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +170,7 @@ func (s *server) GetBucketsByCandidate(ctx context.Context, request *api.GetBuck
 	return s.toBucketResponse(mintTime, bucketsOfCandidate, offset, request.Limit), nil
 }
 
-func (s *server) toBucketResponse(mintTime time.Time, buckets []*types.Bucket, offset uint32, limit uint32) *api.BucketResponse {
+func (s *NativeStakingServer) toBucketResponse(mintTime time.Time, buckets []*types.Bucket, offset uint32, limit uint32) *api.BucketResponse {
 	// If limit is missing, return all buckets with indices starting from the offset
 	if limit == uint32(0) {
 		limit = math.MaxUint32
@@ -212,12 +193,12 @@ func (s *server) toBucketResponse(mintTime time.Time, buckets []*types.Bucket, o
 }
 
 // GetBuckets returns a list of buckets
-func (s *server) GetBuckets(ctx context.Context, request *api.GetBucketsRequest) (*api.BucketResponse, error) {
+func (s *NativeStakingServer) GetBuckets(ctx context.Context, request *api.GetBucketsRequest) (*api.BucketResponse, error) {
 	height, err := strconv.ParseUint(request.Height, 10, 64)
 	if err != nil {
 		return nil, err
 	}
-	mintTime, buckets, err := s.nativeCommittee.RawDataByHeight(height)
+	mintTime, buckets, err := s.nativeCommittee.DataByHeight(height)
 	if err != nil {
 		return nil, err
 	}
@@ -229,31 +210,6 @@ func (s *server) GetBuckets(ctx context.Context, request *api.GetBucketsRequest)
 	return s.toBucketResponse(mintTime, buckets, offset, request.Limit), nil
 }
 
-func (s *server) GetRawData(ctx context.Context, request *api.GetRawDataRequest) (*api.RawDataResponse, error) {
+func (s *NativeStakingServer) GetRawData(ctx context.Context, request *api.GetRawDataRequest) (*api.RawDataResponse, error) {
 	return nil, ErrNotSupported
-}
-
-func main() {
-	var configPath string
-	flag.StringVar(&configPath, "config", "native_committee_server.yaml", "path of server config file")
-	flag.Parse()
-
-	data, err := ioutil.ReadFile(configPath)
-	if err != nil {
-		zap.L().Fatal("failed to load config file", zap.Error(err))
-	}
-	var cfg Config
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		zap.L().Fatal("failed to unmarshal config", zap.Error(err))
-	}
-	s, err := NewServer(&cfg)
-	if err != nil {
-		zap.L().Fatal("failed to create server", zap.Error(err))
-	}
-	if err := s.Start(context.Background()); err != nil {
-		zap.L().Fatal("failed to start server", zap.Error(err))
-	}
-	zap.L().Info("Service started")
-	defer s.Stop(context.Background())
-	select {}
 }

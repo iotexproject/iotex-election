@@ -11,7 +11,6 @@
 package server
 
 import (
-	"errors"
 	"log"
 	"net"
 	"strconv"
@@ -41,10 +40,7 @@ type dummyServer struct {
 }
 
 // NewDummyServer returns an implementation of ranking dummy server
-func NewDummyServer(cfg *Config) (DummyServer, error) {
-	if cfg.EnableDummyServer == false {
-		return nil, errors.New("not allow to create dummy server")
-	}
+func NewDummyServer(port int) (DummyServer, error) {
 	zapCfg := zap.NewDevelopmentConfig()
 	zapCfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	zapCfg.Level.SetLevel(zap.InfoLevel)
@@ -54,7 +50,7 @@ func NewDummyServer(cfg *Config) (DummyServer, error) {
 	}
 	zap.ReplaceGlobals(l)
 	s := &dummyServer{
-		port: cfg.Port,
+		port: port,
 	}
 	s.grpcServer = grpc.NewServer()
 	api.RegisterAPIServiceServer(s.grpcServer, s)

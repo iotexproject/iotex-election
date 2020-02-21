@@ -24,6 +24,7 @@ import (
 	"github.com/iotexproject/iotex-antenna-go/v2/utils/unit"
 	"github.com/iotexproject/iotex-antenna-go/v2/utils/wait"
 	"github.com/iotexproject/iotex-election/carrier"
+	"github.com/iotexproject/iotex-election/committee"
 	"github.com/iotexproject/iotex-election/contract"
 	"github.com/iotexproject/iotex-election/types"
 	"github.com/iotexproject/iotex-proto/golang/iotexapi"
@@ -32,48 +33,51 @@ import (
 
 //VoteSync defines fields used in VoteSync
 type VoteSync struct {
-	service                iotex.AuthedClient
-	iotexAPI               iotexapi.APIServiceClient
-	vpsContract            iotex.Contract
-	brokerContract         iotex.Contract
-	clerkContract          iotex.Contract
-	discordBotToken        string
-	discordChannelID       string
-	discordMsg             string
-	discordReminder        string
-	discordReminded        bool
-	carrier                carrier.Carrier
-	lastViewHeight         uint64
-	lastViewTimestamp      time.Time
-	lastUpdateHeight       uint64
-	lastBrokerUpdateHeight uint64
-	lastClerkUpdateHeight  uint64
-	lastUpdateTimestamp    time.Time
-	timeInternal           time.Duration
-	paginationSize         uint8
-	brokerPaginationSize   uint8
-	lastNativeEphoch       uint64
-	tempLastNativeEphoch   uint64
-	terminate              chan bool
-	dardanellesHeight      uint64
+	service                   iotex.AuthedClient
+	iotexAPI                  iotexapi.APIServiceClient
+	vpsContract               iotex.Contract
+	brokerContract            iotex.Contract
+	clerkContract             iotex.Contract
+	discordBotToken           string
+	discordChannelID          string
+	discordMsg                string
+	discordReminder           string
+	discordReminded           bool
+	carrier                   carrier.Carrier
+	lastViewHeight            uint64
+	lastViewTimestamp         time.Time
+	lastUpdateHeight          uint64
+	lastBrokerUpdateHeight    uint64
+	lastClerkUpdateHeight     uint64
+	lastUpdateTimestamp       time.Time
+	timeInternal              time.Duration
+	paginationSize            uint8
+	brokerPaginationSize      uint8
+	lastNativeEphoch          uint64
+	tempLastNativeEphoch      uint64
+	terminate                 chan bool
+	dardanellesHeight         uint64
+	nativeCommittee           *committee.NativeCommittee
+	nativeCommitteeInitHeight uint64
 }
 
 //Config defines the configs for VoteSync
 type Config struct {
-	GravityChainAPIs         []string      `yaml:"gravityChainAPIs"`
-	GravityChainTimeInterval time.Duration `yaml:"gravityChainTimeInterval"`
-	OperatorPrivateKey       string        `yaml:"operatorPrivateKey"`
-	IoTeXAPI                 string        `yaml:"ioTeXAPI"`
-	RegisterContractAddress  string        `yaml:"registerContractAddress"`
-	StakingContractAddress   string        `yaml:"stakingContractAddress"`
-	PaginationSize           uint8         `yaml:"paginationSize"`
-	BrokerPaginationSize     uint8         `yaml:"brokerPaginationSize"`
-	VitaContractAddress      string        `yaml:"vitaContractAddress"`
-	DiscordBotToken          string        `yaml:"discordBotToken"`
-	DiscordChannelID         string        `yaml:"discordChannelID"`
-	DiscordMsg               string        `yaml:"discordMsg"`
-	DiscordReminder          string        `yaml:"discordReminder"`
-	DardaenllesHeight        uint64        `yaml:"dardanellesHeight"`
+	GravityChainAPIs          []string      `yaml:"gravityChainAPIs"`
+	GravityChainTimeInterval  time.Duration `yaml:"gravityChainTimeInterval"`
+	OperatorPrivateKey        string        `yaml:"operatorPrivateKey"`
+	IoTeXAPI                  string        `yaml:"ioTeXAPI"`
+	RegisterContractAddress   string        `yaml:"registerContractAddress"`
+	StakingContractAddress    string        `yaml:"stakingContractAddress"`
+	PaginationSize            uint8         `yaml:"paginationSize"`
+	BrokerPaginationSize      uint8         `yaml:"brokerPaginationSize"`
+	VitaContractAddress       string        `yaml:"vitaContractAddress"`
+	DiscordBotToken           string        `yaml:"discordBotToken"`
+	DiscordChannelID          string        `yaml:"discordChannelID"`
+	DiscordMsg                string        `yaml:"discordMsg"`
+	DiscordReminder           string        `yaml:"discordReminder"`
+	DardaenllesHeight         uint64        `yaml:"dardanellesHeight"`
+	NativeCommitteeInitHeight uint64        `yaml:"nativeCommitteeInitHeight"`
 }
 
 //WeightedVote defines voter and votes for weighted vote
@@ -92,11 +96,11 @@ func toIoAddress(addr common.Address) (address.Address, error) {
 }
 
 //NewVoteSync instantiates new VoteSync
-func NewVoteSync(cfg Config) (*VoteSync, error) {
+func NewVoteSync(cfg Config, nativeCommittee *committee.NativeCommittee) (*VoteSync, error) {
 	ctx := context.Background()
 	carrier, err := carrier.NewEthereumVoteCarrier(
 		12,
-		5*time.Minute,
+		1*time.Minute,
 		cfg.GravityChainAPIs,
 		common.HexToAddress(cfg.RegisterContractAddress),
 		common.HexToAddress(cfg.StakingContractAddress),
@@ -252,6 +256,7 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 		discordMsg:             cfg.DiscordMsg,
 		discordReminder:        cfg.DiscordReminder,
 		dardanellesHeight:      cfg.DardaenllesHeight,
+		nativeCommittee:        nativeCommittee,
 	}, nil
 }
 
@@ -653,6 +658,19 @@ func (vc *VoteSync) getNativeElectionBuckets(ctx context.Context, en uint64) ([]
 			return nil, errors.Wrap(err, "failed to convert iotextypes bucket to election bucket")
 		}
 		bkts = append(bkts, b)
+	}
+	if vc.nativeCommittee != nil {
+		epochHeight := vc.getEpochHeight(en)
+		if epochHeight >= vc.nativeCommitteeInitHeight {
+			zap.L().Info("get buckets from native committee", zap.Uint64("epoch height", epochHeight))
+			_, buckets, err := vc.nativeCommittee.DataByHeight(epochHeight)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to get buckets from native committee")
+			}
+			if buckets != nil && len(buckets) > 0 {
+				bkts = append(bkts, buckets...)
+			}
+		}
 	}
 	return bkts, nil
 }

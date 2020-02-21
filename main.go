@@ -14,14 +14,24 @@ import (
 	"context"
 	"flag"
 	"io/ioutil"
+	"log"
 
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	yaml "gopkg.in/yaml.v2"
 
 	"github.com/iotexproject/iotex-election/server"
 )
 
 func main() {
+	zapCfg := zap.NewDevelopmentConfig()
+	zapCfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+	zapCfg.Level.SetLevel(zap.InfoLevel)
+	l, err := zapCfg.Build()
+	if err != nil {
+		log.Panic("Failed to init zap global logger, no zap log will be shown till zap is properly initialized: ", err)
+	}
+	zap.ReplaceGlobals(l)
 	var configPath string
 	flag.StringVar(&configPath, "config", "server.yaml", "path of server config file")
 	flag.Parse()
@@ -30,32 +40,19 @@ func main() {
 	if err != nil {
 		zap.L().Fatal("failed to load config file", zap.Error(err))
 	}
-	var config server.Config
+	var config server.MixConfig
 	if err := yaml.Unmarshal(data, &config); err != nil {
 		zap.L().Fatal("failed to unmarshal config", zap.Error(err))
 	}
-	if config.EnableDummyServer == true {
-		dummyServer, err := server.NewDummyServer(&config)
-		if err != nil {
-			zap.L().Fatal("failed to create dummy server", zap.Error(err))
-		}
-		zap.L().Info("New dummy server created")
-		if err := dummyServer.Start(context.Background()); err != nil {
-			zap.L().Fatal("failed to start dummy ranking server", zap.Error(err))
-		}
-		zap.L().Info("Service started")
-		defer dummyServer.Stop(context.Background())
-	} else {
-		rankingServer, err := server.NewServer(&config)
-		if err != nil {
-			zap.L().Fatal("failed to create server", zap.Error(err))
-		}
-		zap.L().Info("New server created")
-		if err := rankingServer.Start(context.Background()); err != nil {
-			zap.L().Fatal("failed to start ranking server", zap.Error(err))
-		}
-		zap.L().Info("Service started")
-		defer rankingServer.Stop(context.Background())
+	sm, err := server.NewServerMix(config)
+	if err != nil {
+		zap.L().Fatal("failed to create server", zap.Error(err))
 	}
+	zap.L().Info("New server mix created")
+	if err := sm.Start(context.Background()); err != nil {
+		zap.L().Fatal("failed to start ranking server", zap.Error(err))
+	}
+	zap.L().Info("Service started")
+	defer sm.Stop(context.Background())
 	select {}
 }

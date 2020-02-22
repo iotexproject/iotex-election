@@ -393,7 +393,7 @@ func (vc *VoteSync) claimForClerk() error {
 
 func (vc *VoteSync) updateVotingPowers(addrs []common.Address, weights []*big.Int) error {
 	caller := vc.vpsContract.Execute("updateVotingPowers", addrs, weights).
-		SetGasPrice(big.NewInt(int64(1 * unit.Qev))).SetGasLimit(5000000)
+		SetGasPrice(big.NewInt(int64(1 * unit.Qev))).SetGasLimit(7000000)
 	return wait.Wait(context.Background(), caller)
 }
 

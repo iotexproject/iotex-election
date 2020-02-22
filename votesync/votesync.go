@@ -414,7 +414,7 @@ func (vc *VoteSync) sync(prevHeight, currHeight uint64, prevTs, currTs time.Time
 		addrs = append(addrs, common.BytesToAddress(vote.Voter))
 		weights = append(weights, vote.Votes)
 
-		if len(addrs)%int(vc.paginationSize/2) == 0 {
+		if len(addrs)%int(vc.paginationSize/4) == 0 {
 			if err := vc.updateVotingPowers(addrs, weights); err != nil {
 				return errors.Wrap(err, fmt.Sprintf("update vote error, reqNum:%d", reqNum))
 			}

@@ -1,4 +1,4 @@
-// Copyright (c) 2019 IoTeX
+// Copyright (c) 2020 IoTeX
 // This program is free software: you can redistribute it and/or modify it under the terms of the
 // GNU General Public License as published by the Free Software Foundation, either version 3 of
 // the License, or (at your option) any later version.
@@ -22,8 +22,10 @@ import (
 	"time"
 
 	// require sqlite3 driver
+	"github.com/iotexproject/iotex-core/pkg/log"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 
 	"github.com/iotexproject/go-pkgs/hash"
 	"github.com/iotexproject/iotex-election/db"
@@ -62,6 +64,11 @@ const (
 	SQLITE DRIVERTYPE = iota
 	//MYSQL stands for a mysql driver
 	MYSQL
+
+	// MaximumMediumBlobLen is the maximum length allowed for medium blob
+	MaximumMediumBlobLen = 16777215
+	// LengthWarningThreshold is the threshold for the warning that the length of a JSON blob is close to the maximum length allowed
+	LenghWarningThreshold = 1000
 )
 
 type recordTableOperator struct {
@@ -154,7 +161,7 @@ func NewRecordTableOperator(
 		queryRecordsFunc:           queryRecordsFunc,
 		tableCreations: []string{
 			fmt.Sprintf(recordTableCreation, tableName),
-			fmt.Sprintf("CREATE TABLE IF NOT EXISTS height_to_%s (height INTEGER PRIMARY KEY, ids BLOB, frequencies BLOB)", tableName),
+			fmt.Sprintf("CREATE TABLE IF NOT EXISTS height_to_%s (height INTEGER PRIMARY KEY, ids MEDIUMBLOB, frequencies MEDIUMBLOB)", tableName),
 			fmt.Sprintf("CREATE TABLE IF NOT EXISTS identical_%s (height INTEGER PRIMARY KEY, identical_to INTEGER)", tableName),
 		},
 	}, nil
@@ -233,9 +240,17 @@ func (arch *recordTableOperator) Put(height uint64, records interface{}, tx *sql
 		if err != nil {
 			return err
 		}
+		if MaximumMediumBlobLen-len(bidBytes) < LenghWarningThreshold {
+			log.L().Warn("Length of ids is too close to the maximum length allowed",
+				zap.Int("current length", len(bidBytes)), zap.Int("maximum length", MaximumMediumBlobLen))
+		}
 		freqBytes, err := json.Marshal(frequencies)
 		if err != nil {
 			return err
+		}
+		if MaximumMediumBlobLen-len(freqBytes) < LenghWarningThreshold {
+			log.L().Warn("Length of frequencies is too close to the maximum length allowed",
+				zap.Int("current length", len(freqBytes)), zap.Int("maximum length", MaximumMediumBlobLen))
 		}
 		if _, err := tx.Exec(arch.insertHeightToRecordsQuery, height, bidBytes, freqBytes); err != nil {
 			return err

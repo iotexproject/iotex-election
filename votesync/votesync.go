@@ -56,6 +56,7 @@ type VoteSync struct {
 	lastNativeEphoch          uint64
 	tempLastNativeEphoch      uint64
 	terminate                 chan bool
+	terminated                bool
 	dardanellesHeight         uint64
 	nativeCommittee           *committee.NativeCommittee
 	nativeCommitteeInitHeight uint64
@@ -251,6 +252,7 @@ func NewVoteSync(cfg Config, nativeCommittee *committee.NativeCommittee) (*VoteS
 		lastBrokerUpdateHeight: lastBrokerUpdateHeight.Uint64(),
 		lastClerkUpdateHeight:  lastClerkUpdateHeight.Uint64(),
 		terminate:              make(chan bool),
+		terminated:             false,
 		discordBotToken:        cfg.DiscordBotToken,
 		discordChannelID:       cfg.DiscordChannelID,
 		discordMsg:             cfg.DiscordMsg,
@@ -275,7 +277,6 @@ func (vc *VoteSync) Start(ctx context.Context) {
 		for {
 			select {
 			case <-vc.terminate:
-				vc.terminate <- true
 				return
 			case tip := <-tipChan:
 				blockTime, err := vc.carrier.BlockTimestamp(tip)
@@ -321,8 +322,12 @@ func (vc *VoteSync) Start(ctx context.Context) {
 
 //Stop stops voteSync
 func (vc *VoteSync) Stop(ctx context.Context) {
-	vc.terminate <- true
+	if vc.terminated {
+		return
+	}
+	close(vc.terminate)
 	vc.carrier.Close()
+	vc.terminated = true
 	return
 }
 

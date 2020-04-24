@@ -45,6 +45,7 @@ type Config struct {
 	GravityChainAPIs           []string `yaml:"gravityChainAPIs"`
 	GravityChainHeightInterval uint64   `yaml:"gravityChainHeightInterval"`
 	GravityChainStartHeight    uint64   `yaml:"gravityChainStartHeight"`
+	GravityChainCeilingHeight  uint64   `yaml:"gravityChainCeilingHeight"`
 	RegisterContractAddress    string   `yaml:"registerContractAddress"`
 	StakingContractAddress     string   `yaml:"stakingContractAddress"`
 	PaginationSize             uint8    `yaml:"paginationSize"`
@@ -112,8 +113,9 @@ type (
 
 		startHeight           uint64
 		currentHeight         uint64
+		ceilingHeight         uint64
 		lastUpdateTimestamp   int64
-		terminate             chan bool
+		terminate             chan struct{}
 		mutex                 sync.RWMutex
 		gravityChainBatchSize uint64
 	}
@@ -182,18 +184,19 @@ func NewCommittee(archive PollArchive, cfg Config) (Committee, error) {
 		voteThreshold:         voteThreshold,
 		scoreThreshold:        scoreThreshold,
 		selfStakingThreshold:  selfStakingThreshold,
-		terminate:             make(chan bool),
+		terminate:             make(chan struct{}),
 		startHeight:           cfg.GravityChainStartHeight,
+		ceilingHeight:         cfg.GravityChainCeilingHeight,
 		interval:              cfg.GravityChainHeightInterval,
 		currentHeight:         0,
 		gravityChainBatchSize: gravityChainBatchSize,
 	}, nil
 }
 
-func (ec *committee) Start(ctx context.Context) (err error) {
+func (ec *committee) Start(ctx context.Context) error {
 	ec.mutex.Lock()
 	defer ec.mutex.Unlock()
-	if err = ec.archive.Start(ctx); err != nil {
+	if err := ec.archive.Start(ctx); err != nil {
 		return err
 	}
 	tip, err := ec.carrier.Tip()
@@ -223,16 +226,20 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 			zap.L().Error("failed to catch up via network", zap.Error(err))
 		}
 		zap.L().Info("subscribing to new block")
-		ec.carrier.SubscribeNewBlock(tipChan, reportChan, ec.terminate)
+		ec.carrier.SubscribeNewBlock(tipChan, reportChan)
 		for {
 			select {
 			case <-ec.terminate:
-				ec.terminate <- true
+				ec.carrier.Close()
 				return
 			case tip := <-tipChan:
 				zap.L().Info("new ethereum block", zap.Uint64("height", tip))
 				if err := ec.Sync(tip); err != nil {
 					zap.L().Error("failed to sync", zap.Error(err))
+				}
+				if ec.currentHeight >= ec.ceilingHeight {
+					ec.carrier.Close()
+					return
 				}
 			case err := <-reportChan:
 				zap.L().Error("something goes wrong", zap.Error(err))
@@ -245,7 +252,7 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 func (ec *committee) Stop(ctx context.Context) error {
 	ec.mutex.Lock()
 	defer ec.mutex.Unlock()
-	ec.terminate <- true
+	close(ec.terminate)
 	ec.carrier.Close()
 
 	return ec.archive.Stop(ctx)

@@ -32,7 +32,7 @@ type Carrier interface {
 	// BlockTimestamp returns the timestamp of a block
 	BlockTimestamp(uint64) (time.Time, error)
 	// SubscribeNewBlock callbacks on new block created
-	SubscribeNewBlock(chan uint64, chan error, chan bool)
+	SubscribeNewBlock(chan uint64, chan error)
 	// HasStakingEvents returns true if there is any staking related events or error
 	HasStakingEvents(*big.Int, *big.Int) bool
 	// Tip returns the latest height and its timestamp
@@ -117,6 +117,7 @@ type ethereumCarrier struct {
 	ethClientPool           *EthClientPool
 	stakingContractAddress  common.Address
 	registerContractAddress common.Address
+	terminate               chan struct{}
 }
 
 // NewEthereumVoteCarrier defines a carrier to fetch votes from ethereum contract
@@ -136,10 +137,12 @@ func NewEthereumVoteCarrier(
 		ethClientPool:           NewEthClientPool(clientURLs),
 		stakingContractAddress:  stakingContractAddress,
 		registerContractAddress: registerContractAddress,
+		terminate:               make(chan struct{}),
 	}, nil
 }
 
 func (evc *ethereumCarrier) Close() {
+	close(evc.terminate)
 	evc.ethClientPool.Close()
 }
 
@@ -160,15 +163,13 @@ func (evc *ethereumCarrier) BlockTimestamp(height uint64) (ts time.Time, err err
 func (evc *ethereumCarrier) SubscribeNewBlock(
 	tipChan chan uint64,
 	report chan error,
-	unsubscribe chan bool,
 ) {
 	ticker := time.NewTicker(evc.tickerDuration)
 	lastHeight := uint64(0)
 	go func() {
 		for {
 			select {
-			case <-unsubscribe:
-				unsubscribe <- true
+			case <-evc.terminate:
 				return
 			case <-ticker.C:
 				if tip, err := evc.tip(lastHeight); err != nil {

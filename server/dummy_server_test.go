@@ -17,30 +17,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCreateDummyServer(t *testing.T) {
-	r := require.New(t)
-	cfg1 := &Config{
-		EnableDummyServer: true,
-	}
-	s, err := NewDummyServer(cfg1)
-	r.NoError(err)
-	r.True(s != nil)
-
-	cfg2 := &Config{
-		EnableDummyServer: false,
-	}
-	s, err = NewDummyServer(cfg2)
-	r.Error(err)
-	r.Nil(s)
-}
-
 func TestStartDummyServer(t *testing.T) {
 	r := require.New(t)
-	cfg := &Config{
-		Port:              32223,
-		EnableDummyServer: true,
-	}
-	s, err := NewDummyServer(cfg)
+	s, err := NewDummyServer(32223)
 	r.NoError(err)
 	r.True(s != nil)
 	ctx := context.Background()

@@ -23,7 +23,7 @@ import (
 )
 
 func TestStakingContract(t *testing.T) {
-	client, err := ethclient.Dial("https://kovan.infura.io/v3/7c2ccaaba3974b4da11877322cdb721f")
+	client, err := ethclient.Dial("https://kovan.infura.io/v3/e1f5217dc75d4b77bfede00ca895635b")
 	require.NoError(t, err)
 	caller, err := NewStakingCaller(
 		common.HexToAddress("0xdedf0c1610d8a75ca896d8c93a0dc39abf7daff4"),

@@ -23,7 +23,7 @@ import (
 )
 
 func TestRegisterContract(t *testing.T) {
-	client, err := ethclient.Dial("https://kovan.infura.io/v3/7c2ccaaba3974b4da11877322cdb721f")
+	client, err := ethclient.Dial("https://kovan.infura.io/v3/e1f5217dc75d4b77bfede00ca895635b")
 	require.NoError(t, err)
 	caller, err := NewRegisterCaller(
 		common.HexToAddress("0xb4ca6cf2fe760517a3f92120acbe577311252663"),

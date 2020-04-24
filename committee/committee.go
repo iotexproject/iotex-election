@@ -45,6 +45,7 @@ type Config struct {
 	GravityChainAPIs           []string `yaml:"gravityChainAPIs"`
 	GravityChainHeightInterval uint64   `yaml:"gravityChainHeightInterval"`
 	GravityChainStartHeight    uint64   `yaml:"gravityChainStartHeight"`
+	GravityChainCeilingHeight  uint64   `yaml:"gravityChainCeilingHeight"`
 	RegisterContractAddress    string   `yaml:"registerContractAddress"`
 	StakingContractAddress     string   `yaml:"stakingContractAddress"`
 	PaginationSize             uint8    `yaml:"paginationSize"`
@@ -114,8 +115,10 @@ type (
 		currentHeight         uint64
 		lastUpdateTimestamp   int64
 		terminate             chan bool
+		terminated            bool
 		mutex                 sync.RWMutex
 		gravityChainBatchSize uint64
+		ceilingHeight         uint64
 	}
 
 	rawData struct {
@@ -183,7 +186,9 @@ func NewCommittee(archive PollArchive, cfg Config) (Committee, error) {
 		scoreThreshold:        scoreThreshold,
 		selfStakingThreshold:  selfStakingThreshold,
 		terminate:             make(chan bool),
+		terminated:            false,
 		startHeight:           cfg.GravityChainStartHeight,
+		ceilingHeight:         cfg.GravityChainCeilingHeight,
 		interval:              cfg.GravityChainHeightInterval,
 		currentHeight:         0,
 		gravityChainBatchSize: gravityChainBatchSize,
@@ -227,9 +232,15 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 		for {
 			select {
 			case <-ec.terminate:
-				ec.terminate <- true
 				return
 			case tip := <-tipChan:
+				if ec.currentHeight >= ec.ceilingHeight {
+					if err := ec.Stop(context.Background()); err != nil {
+						zap.L().Error("failed to stop eth committee", zap.Error(err))
+					}
+					return
+				}
+
 				zap.L().Info("new ethereum block", zap.Uint64("height", tip))
 				if err := ec.Sync(tip); err != nil {
 					zap.L().Error("failed to sync", zap.Error(err))
@@ -245,7 +256,12 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 func (ec *committee) Stop(ctx context.Context) error {
 	ec.mutex.Lock()
 	defer ec.mutex.Unlock()
-	ec.terminate <- true
+
+	defer func() { ec.terminated = true }()
+	if ec.terminated {
+		return nil
+	}
+	close(ec.terminate)
 	ec.carrier.Close()
 
 	return ec.archive.Stop(ctx)

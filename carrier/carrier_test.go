@@ -28,7 +28,7 @@ func TestVoteCarrier(t *testing.T) {
 	carrier, err := NewEthereumVoteCarrier(
 		12,
 		time.Second,
-		[]string{"https://kovan.infura.io/v3/7c2ccaaba3974b4da11877322cdb721f"},
+		[]string{"https://kovan.infura.io/v3/e1f5217dc75d4b77bfede00ca895635b"},
 		common.HexToAddress("0xb4ca6cf2fe760517a3f92120acbe577311252663"),
 		common.HexToAddress("0xdedf0c1610d8a75ca896d8c93a0dc39abf7daff4"),
 	)

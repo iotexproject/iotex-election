@@ -168,7 +168,6 @@ func (evc *ethereumCarrier) SubscribeNewBlock(
 		for {
 			select {
 			case <-unsubscribe:
-				unsubscribe <- true
 				return
 			case <-ticker.C:
 				if tip, err := evc.tip(lastHeight); err != nil {

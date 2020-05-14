@@ -115,7 +115,7 @@ type (
 		currentHeight         uint64
 		lastUpdateTimestamp   int64
 		terminate             chan bool
-		terminated            bool
+		terminatedCarrier     bool
 		mutex                 sync.RWMutex
 		gravityChainBatchSize uint64
 		ceilingHeight         uint64
@@ -186,7 +186,7 @@ func NewCommittee(archive PollArchive, cfg Config) (Committee, error) {
 		scoreThreshold:        scoreThreshold,
 		selfStakingThreshold:  selfStakingThreshold,
 		terminate:             make(chan bool),
-		terminated:            false,
+		terminatedCarrier:     false,
 		startHeight:           cfg.GravityChainStartHeight,
 		ceilingHeight:         cfg.GravityChainCeilingHeight,
 		interval:              cfg.GravityChainHeightInterval,
@@ -203,7 +203,8 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 	}
 	if ec.latestHeightInArchive() >= ec.ceilingHeight {
 		zap.L().Info("stop syncing")
-		ec.terminated = true
+		ec.terminatedCarrier = true
+		close(ec.terminate)
 		ec.carrier.Close()
 		return nil
 	}
@@ -242,7 +243,7 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 			case tip := <-tipChan:
 				if ec.currentHeight >= ec.ceilingHeight {
 					zap.L().Info("stop syncing")
-					ec.terminated = true
+					ec.terminatedCarrier = true
 					close(ec.terminate)
 					ec.carrier.Close()
 					return
@@ -264,8 +265,8 @@ func (ec *committee) Stop(ctx context.Context) error {
 	ec.mutex.Lock()
 	defer ec.mutex.Unlock()
 
-	defer func() { ec.terminated = true }()
-	if !ec.terminated {
+	defer func() { ec.terminatedCarrier = true }()
+	if !ec.terminatedCarrier {
 		close(ec.terminate)
 		ec.carrier.Close()
 	}

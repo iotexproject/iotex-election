@@ -116,6 +116,7 @@ type (
 		lastUpdateTimestamp   int64
 		terminate             chan bool
 		terminatedCarrier     bool
+		terminatedArchive     bool
 		mutex                 sync.RWMutex
 		gravityChainBatchSize uint64
 		ceilingHeight         uint64
@@ -187,6 +188,7 @@ func NewCommittee(archive PollArchive, cfg Config) (Committee, error) {
 		selfStakingThreshold:  selfStakingThreshold,
 		terminate:             make(chan bool),
 		terminatedCarrier:     false,
+		terminatedArchive:     false,
 		startHeight:           cfg.GravityChainStartHeight,
 		ceilingHeight:         cfg.GravityChainCeilingHeight,
 		interval:              cfg.GravityChainHeightInterval,
@@ -203,9 +205,7 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 	}
 	if ec.latestHeightInArchive() >= ec.ceilingHeight {
 		zap.L().Info("stop syncing")
-		ec.terminatedCarrier = true
-		close(ec.terminate)
-		ec.carrier.Close()
+		ec.terminateCarrier(ctx)
 		return nil
 	}
 	tip, err := ec.carrier.Tip()
@@ -243,9 +243,7 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 			case tip := <-tipChan:
 				if ec.currentHeight >= ec.ceilingHeight {
 					zap.L().Info("stop syncing")
-					ec.terminatedCarrier = true
-					close(ec.terminate)
-					ec.carrier.Close()
+					ec.terminateCarrier(ctx)
 					return
 				}
 
@@ -261,17 +259,29 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 	return nil
 }
 
+func (ec *committee) terminateCarrier(ctx context.Context) {
+	if !ec.terminatedCarrier {
+		close(ec.terminate)
+		ec.carrier.Close()
+		ec.terminatedCarrier = true
+	}
+}
+
+func (ec *committee) terminateArchive(ctx context.Context) error {
+	if !ec.terminatedArchive {
+		ec.terminatedArchive = true
+		return ec.archive.Stop(ctx)
+	}
+	return nil
+}
+
 func (ec *committee) Stop(ctx context.Context) error {
 	ec.mutex.Lock()
 	defer ec.mutex.Unlock()
 
-	defer func() { ec.terminatedCarrier = true }()
-	if !ec.terminatedCarrier {
-		close(ec.terminate)
-		ec.carrier.Close()
-	}
+	ec.terminateCarrier(ctx)
+	return ec.terminateArchive(ctx)
 
-	return ec.archive.Stop(ctx)
 }
 
 func (ec *committee) Status() STATUS {

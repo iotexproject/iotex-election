@@ -203,7 +203,11 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 	if err = ec.archive.Start(ctx); err != nil {
 		return err
 	}
-	if ec.latestHeightInArchive() >= ec.ceilingHeight {
+	ceilingHeight := ec.ceilingHeight
+	if ceilingHeight > ec.interval {
+		ceilingHeight -= ec.interval
+	}
+	if ec.latestHeightInArchive() >= ceilingHeight {
 		zap.L().Info("stop syncing")
 		ec.terminateCarrier(ctx)
 		return nil

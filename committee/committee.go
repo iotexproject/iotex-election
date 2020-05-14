@@ -204,10 +204,10 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 		return err
 	}
 	ceilingHeight := ec.ceilingHeight
-	if ceilingHeight > ec.interval {
+	if ceilingHeight >= ec.interval {
 		ceilingHeight -= ec.interval
 	}
-	if ec.latestHeightInArchive() >= ceilingHeight {
+	if ec.latestHeightInArchive() >= ceilingHeight && ec.ceilingHeight != 0 {
 		zap.L().Info("stop syncing")
 		ec.terminateCarrier(ctx)
 		return nil
@@ -245,7 +245,7 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 			case <-ec.terminate:
 				return
 			case tip := <-tipChan:
-				if ec.currentHeight >= ec.ceilingHeight {
+				if ec.currentHeight >= ec.ceilingHeight && ec.ceilingHeight != 0 {
 					zap.L().Info("stop syncing")
 					ec.terminateCarrier(ctx)
 					return

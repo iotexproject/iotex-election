@@ -202,6 +202,9 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 		return err
 	}
 	if ec.latestHeightInArchive() >= ec.ceilingHeight {
+		zap.L().Info("stop syncing")
+		ec.terminated = true
+		ec.carrier.Close()
 		return nil
 	}
 	tip, err := ec.carrier.Tip()
@@ -238,9 +241,10 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 				return
 			case tip := <-tipChan:
 				if ec.currentHeight >= ec.ceilingHeight {
-					if err := ec.Stop(context.Background()); err != nil {
-						zap.L().Error("failed to stop eth committee", zap.Error(err))
-					}
+					zap.L().Info("stop syncing")
+					ec.terminated = true
+					close(ec.terminate)
+					ec.carrier.Close()
 					return
 				}
 
@@ -261,11 +265,10 @@ func (ec *committee) Stop(ctx context.Context) error {
 	defer ec.mutex.Unlock()
 
 	defer func() { ec.terminated = true }()
-	if ec.terminated {
-		return nil
+	if !ec.terminated {
+		close(ec.terminate)
+		ec.carrier.Close()
 	}
-	close(ec.terminate)
-	ec.carrier.Close()
 
 	return ec.archive.Stop(ctx)
 }

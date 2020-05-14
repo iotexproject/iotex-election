@@ -201,6 +201,9 @@ func (ec *committee) Start(ctx context.Context) (err error) {
 	if err = ec.archive.Start(ctx); err != nil {
 		return err
 	}
+	if ec.latestHeightInArchive() >= ec.ceilingHeight {
+		return nil
+	}
 	tip, err := ec.carrier.Tip()
 	if err != nil {
 		return errors.Wrap(err, "failed to get tip height")

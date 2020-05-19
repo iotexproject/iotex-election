@@ -8,7 +8,6 @@ import (
 
 type ServerMix struct {
 	ess      Server
-	nss      Server
 	voteSync *votesync.VoteSync
 }
 
@@ -35,13 +34,9 @@ func NewServerMix(mCfg MixConfig) (*ServerMix, error) {
 			return nil, err
 		}
 	}
-	nss, err := NewNativeStakingServer(&mCfg.NativeConfig)
-	if err != nil {
-		return nil, err
-	}
 	var vs *votesync.VoteSync
 	if mCfg.EnableVoteSync {
-		vs, err = votesync.NewVoteSync(mCfg.VoteSync, nss.Committee())
+		vs, err = votesync.NewVoteSync(mCfg.VoteSync)
 		if err != nil {
 			return nil, err
 		}
@@ -49,16 +44,12 @@ func NewServerMix(mCfg MixConfig) (*ServerMix, error) {
 
 	return &ServerMix{
 		ess:      ess,
-		nss:      nss,
 		voteSync: vs,
 	}, nil
 }
 
 func (sm *ServerMix) Start(ctx context.Context) error {
 	if err := sm.ess.Start(ctx); err != nil {
-		return err
-	}
-	if err := sm.nss.Start(ctx); err != nil {
 		return err
 	}
 	if sm.voteSync != nil {
@@ -69,8 +60,5 @@ func (sm *ServerMix) Start(ctx context.Context) error {
 
 func (sm *ServerMix) Stop(ctx context.Context) error {
 	sm.voteSync.Stop(ctx)
-	if err := sm.nss.Stop(ctx); err != nil {
-		return err
-	}
 	return sm.ess.Stop(ctx)
 }

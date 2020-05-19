@@ -31,6 +31,7 @@ voteSync:
   vitaContractAddress: "io1y9ndaezjrdlkw93hquqru7txh9jcsmtmrvt4yw"
   registerContractAddress: "0x95724986563028deb58f15c5fac19fa09304f32d"
   stakingContractAddress: "0x87c9dbff0016af23f5b1ab9b8e072124ab729193"
+  fairbankHeight: 5165641
   paginationSize: 100
   brokerPaginationSize: 20
 

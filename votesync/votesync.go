@@ -323,8 +323,9 @@ func (vc *VoteSync) Start(ctx context.Context) {
 		zap.Uint64("lastClerkUpdateHeight", vc.lastClerkUpdateHeight),
 		zap.Uint64("lastViewID", vc.lastViewHeight),
 	)
-	ticker := time.NewTicker(10 * time.Minute)
 	go func() {
+		ticker := time.NewTicker(10 * time.Minute)
+		defer ticker.Stop()
 		for {
 			select {
 			case <-vc.terminate:

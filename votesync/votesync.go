@@ -236,10 +236,12 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 	if err := d.Unmarshal(&lastViewHeight); err != nil {
 		return nil, err
 	}
-	// TODO fix this
-	lastViewHeight = new(big.Int).SetUint64(cfg.FairBankHeight)
+
 	if lastViewHeight.Uint64() > _viewIDOffsite {
 		lastViewHeight.Sub(lastViewHeight, new(big.Int).SetUint64(_viewIDOffsite))
+	}
+	if lastViewHeight.Uint64() < cfg.FairBankHeight {
+		lastViewHeight = new(big.Int).SetUint64(cfg.FairBankHeight)
 	}
 	lastViewTimestamp, err := iotexBlockTime(context.Background(), iotexAPI, lastViewHeight.Uint64())
 	if err != nil {
@@ -255,8 +257,6 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 		return nil, err
 	}
 
-	// TODO fix this
-	lastBrokerUpdateHeight = new(big.Int).SetUint64(cfg.FairBankHeight)
 	if lastBrokerUpdateHeight.Uint64() > _viewIDOffsite {
 		lastBrokerUpdateHeight.Sub(lastBrokerUpdateHeight, new(big.Int).SetUint64(_viewIDOffsite))
 	}
@@ -269,8 +269,7 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 	if err := d.Unmarshal(&lastClerkUpdateHeight); err != nil {
 		return nil, err
 	}
-	// TODO fix this
-	lastClerkUpdateHeight = new(big.Int).SetUint64(cfg.FairBankHeight)
+
 	if lastClerkUpdateHeight.Uint64() > _viewIDOffsite {
 		lastClerkUpdateHeight.Sub(lastClerkUpdateHeight, new(big.Int).SetUint64(_viewIDOffsite))
 	}

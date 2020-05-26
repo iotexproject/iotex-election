@@ -16,16 +16,17 @@ require (
 	github.com/go-logfmt/logfmt v0.4.0 // indirect
 	github.com/golang/mock v1.3.1
 	github.com/golang/protobuf v1.3.1
+	github.com/google/go-cmp v0.4.0 // indirect
 	github.com/graph-gophers/graphql-go v0.0.0-20190610161739-8f92f34fc598 // indirect
+	github.com/grpc-ecosystem/go-grpc-middleware v1.0.0
 	github.com/hashicorp/golang-lru v0.5.1
 	github.com/howeyc/fsnotify v0.9.0 // indirect
 	github.com/huin/goupnp v1.0.0 // indirect
 	github.com/influxdata/influxdb v1.7.8 // indirect
-	github.com/iotexproject/go-ethereum v1.7.3 // indirect
 	github.com/iotexproject/go-pkgs v0.1.1
 	github.com/iotexproject/iotex-address v0.2.1
 	github.com/iotexproject/iotex-antenna-go/v2 v2.3.2
-	github.com/iotexproject/iotex-proto v0.2.5
+	github.com/iotexproject/iotex-proto v0.3.1-0.20200517033504-27fc88c338bb
 	github.com/jackpal/go-nat-pmp v1.0.1 // indirect
 	github.com/karalabe/usb v0.0.0-20190819132248-550797b1cad8 // indirect
 	github.com/mattn/go-colorable v0.1.2 // indirect

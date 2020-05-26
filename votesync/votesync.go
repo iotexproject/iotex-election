@@ -2,9 +2,11 @@ package votesync
 
 import (
 	"context"
-	"encoding/hex"
+	"crypto/tls"
 	"fmt"
+	"math"
 	"math/big"
+	"strconv"
 	"strings"
 	"time"
 
@@ -13,9 +15,13 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
+	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 
 	"github.com/iotexproject/go-pkgs/crypto"
 	"github.com/iotexproject/iotex-address/address"
@@ -23,43 +29,48 @@ import (
 	"github.com/iotexproject/iotex-antenna-go/v2/iotex"
 	"github.com/iotexproject/iotex-antenna-go/v2/utils/unit"
 	"github.com/iotexproject/iotex-antenna-go/v2/utils/wait"
-	"github.com/iotexproject/iotex-election/carrier"
-	"github.com/iotexproject/iotex-election/committee"
 	"github.com/iotexproject/iotex-election/contract"
-	"github.com/iotexproject/iotex-election/types"
 	"github.com/iotexproject/iotex-proto/golang/iotexapi"
 	"github.com/iotexproject/iotex-proto/golang/iotextypes"
 )
 
+const _viewIDOffsite = 10000000
+
+const (
+	// PollProtocolID is ID of poll protocol
+	PollProtocolID      = "poll"
+	protocolID          = "staking"
+	readBucketsLimit    = 30000
+	readCandidatesLimit = 20000
+)
+
 //VoteSync defines fields used in VoteSync
 type VoteSync struct {
-	service                   iotex.AuthedClient
-	iotexAPI                  iotexapi.APIServiceClient
-	vpsContract               iotex.Contract
-	brokerContract            iotex.Contract
-	clerkContract             iotex.Contract
-	discordBotToken           string
-	discordChannelID          string
-	discordMsg                string
-	discordReminder           string
-	discordReminded           bool
-	carrier                   carrier.Carrier
-	lastViewHeight            uint64
-	lastViewTimestamp         time.Time
-	lastUpdateHeight          uint64
-	lastBrokerUpdateHeight    uint64
-	lastClerkUpdateHeight     uint64
-	lastUpdateTimestamp       time.Time
-	timeInternal              time.Duration
-	paginationSize            uint8
-	brokerPaginationSize      uint8
-	lastNativeEphoch          uint64
-	tempLastNativeEphoch      uint64
-	terminate                 chan bool
-	terminated                bool
-	dardanellesHeight         uint64
-	nativeCommittee           *committee.NativeCommittee
-	nativeCommitteeInitHeight uint64
+	service                iotex.AuthedClient
+	iotexAPI               iotexapi.APIServiceClient
+	vpsContract            iotex.Contract
+	brokerContract         iotex.Contract
+	clerkContract          iotex.Contract
+	discordBotToken        string
+	discordChannelID       string
+	discordMsg             string
+	discordReminder        string
+	discordReminded        bool
+	lastViewHeight         uint64
+	lastViewTimestamp      time.Time
+	lastUpdateHeight       uint64
+	lastBrokerUpdateHeight uint64
+	lastClerkUpdateHeight  uint64
+	lastUpdateTimestamp    time.Time
+	timeInternal           time.Duration
+	paginationSize         uint8
+	brokerPaginationSize   uint8
+	lastNativeEphoch       uint64
+	tempLastNativeEphoch   uint64
+	terminate              chan bool
+	terminated             bool
+	dardanellesHeight      uint64
+	fairbankHeight         uint64
 }
 
 //Config defines the configs for VoteSync
@@ -68,6 +79,7 @@ type Config struct {
 	GravityChainTimeInterval  time.Duration `yaml:"gravityChainTimeInterval"`
 	OperatorPrivateKey        string        `yaml:"operatorPrivateKey"`
 	IoTeXAPI                  string        `yaml:"ioTeXAPI"`
+	IoTeXAPISecure            bool          `yaml:"ioTeXAPISecure"`
 	RegisterContractAddress   string        `yaml:"registerContractAddress"`
 	StakingContractAddress    string        `yaml:"stakingContractAddress"`
 	PaginationSize            uint8         `yaml:"paginationSize"`
@@ -78,12 +90,13 @@ type Config struct {
 	DiscordMsg                string        `yaml:"discordMsg"`
 	DiscordReminder           string        `yaml:"discordReminder"`
 	DardaenllesHeight         uint64        `yaml:"dardanellesHeight"`
+	FairBankHeight            uint64        `yaml:"fairbankHeight"`
 	NativeCommitteeInitHeight uint64        `yaml:"nativeCommitteeInitHeight"`
 }
 
 //WeightedVote defines voter and votes for weighted vote
 type WeightedVote struct {
-	Voter []byte
+	Voter string
 	Votes *big.Int
 }
 
@@ -96,21 +109,37 @@ func toIoAddress(addr common.Address) (address.Address, error) {
 	return address.FromBytes(pkhash)
 }
 
-//NewVoteSync instantiates new VoteSync
-func NewVoteSync(cfg Config, nativeCommittee *committee.NativeCommittee) (*VoteSync, error) {
-	ctx := context.Background()
-	carrier, err := carrier.NewEthereumVoteCarrier(
-		12,
-		1*time.Minute,
-		cfg.GravityChainAPIs,
-		common.HexToAddress(cfg.RegisterContractAddress),
-		common.HexToAddress(cfg.StakingContractAddress),
-	)
+func ioToEthAddress(str string) (common.Address, error) {
+	addr, err := address.FromString(str)
 	if err != nil {
-		return nil, err
+		return common.Address{}, err
 	}
+	return common.BytesToAddress(addr.Bytes()), nil
+}
 
-	conn, err := iotex.NewDefaultGRPCConn(cfg.IoTeXAPI)
+//NewVoteSync instantiates new VoteSync
+func NewVoteSync(cfg Config) (*VoteSync, error) {
+	ctx := context.Background()
+
+	opts := []grpc_retry.CallOption{
+		grpc_retry.WithBackoff(grpc_retry.BackoffLinear(100 * time.Second)),
+		grpc_retry.WithMax(3),
+	}
+	var conn *grpc.ClientConn
+	var err error
+	if cfg.IoTeXAPISecure {
+		conn, err = grpc.DialContext(ctx, cfg.IoTeXAPI,
+			grpc.WithBlock(),
+			grpc.WithStreamInterceptor(grpc_retry.StreamClientInterceptor(opts...)),
+			grpc.WithUnaryInterceptor(grpc_retry.UnaryClientInterceptor(opts...)),
+			grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
+	} else {
+		conn, err = grpc.DialContext(ctx, cfg.IoTeXAPI,
+			grpc.WithBlock(),
+			grpc.WithStreamInterceptor(grpc_retry.StreamClientInterceptor(opts...)),
+			grpc.WithUnaryInterceptor(grpc_retry.UnaryClientInterceptor(opts...)),
+			grpc.WithInsecure())
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +216,14 @@ func NewVoteSync(cfg Config, nativeCommittee *committee.NativeCommittee) (*VoteS
 	if err := d.Unmarshal(&lastUpdateHeight); err != nil {
 		return nil, err
 	}
-	lastUpdateTimestamp, err := carrier.BlockTimestamp(lastUpdateHeight.Uint64())
+
+	if lastUpdateHeight.Uint64() == 0 {
+		lastUpdateHeight = new(big.Int).SetUint64(cfg.FairBankHeight)
+	}
+	if lastUpdateHeight.Uint64() > _viewIDOffsite {
+		lastUpdateHeight.Sub(lastUpdateHeight, new(big.Int).SetUint64(_viewIDOffsite))
+	}
+	lastUpdateTimestamp, err := iotexBlockTime(context.Background(), iotexAPI, lastUpdateHeight.Uint64())
 	if err != nil {
 		return nil, err
 	}
@@ -200,7 +236,14 @@ func NewVoteSync(cfg Config, nativeCommittee *committee.NativeCommittee) (*VoteS
 	if err := d.Unmarshal(&lastViewHeight); err != nil {
 		return nil, err
 	}
-	lastViewTimestamp, err := carrier.BlockTimestamp(lastViewHeight.Uint64())
+
+	if lastViewHeight.Uint64() > _viewIDOffsite {
+		lastViewHeight.Sub(lastViewHeight, new(big.Int).SetUint64(_viewIDOffsite))
+	}
+	if lastViewHeight.Uint64() < cfg.FairBankHeight {
+		lastViewHeight = new(big.Int).SetUint64(cfg.FairBankHeight)
+	}
+	lastViewTimestamp, err := iotexBlockTime(context.Background(), iotexAPI, lastViewHeight.Uint64())
 	if err != nil {
 		return nil, err
 	}
@@ -214,6 +257,10 @@ func NewVoteSync(cfg Config, nativeCommittee *committee.NativeCommittee) (*VoteS
 		return nil, err
 	}
 
+	if lastBrokerUpdateHeight.Uint64() > _viewIDOffsite {
+		lastBrokerUpdateHeight.Sub(lastBrokerUpdateHeight, new(big.Int).SetUint64(_viewIDOffsite))
+	}
+
 	lastClerkUpdateHeight := new(big.Int)
 	d, err = vitaContract.Read("lastRewardPoolClaimViewID").Call(ctx)
 	if err != nil {
@@ -221,6 +268,10 @@ func NewVoteSync(cfg Config, nativeCommittee *committee.NativeCommittee) (*VoteS
 	}
 	if err := d.Unmarshal(&lastClerkUpdateHeight); err != nil {
 		return nil, err
+	}
+
+	if lastClerkUpdateHeight.Uint64() > _viewIDOffsite {
+		lastClerkUpdateHeight.Sub(lastClerkUpdateHeight, new(big.Int).SetUint64(_viewIDOffsite))
 	}
 
 	brokerABI, err := abi.JSON(strings.NewReader(contract.BrokerABI))
@@ -236,7 +287,6 @@ func NewVoteSync(cfg Config, nativeCommittee *committee.NativeCommittee) (*VoteS
 	clerkContract := cli.Contract(clerkContractAddress, clerkABI)
 
 	return &VoteSync{
-		carrier:                carrier,
 		vpsContract:            vpsContract,
 		brokerContract:         brokerContract,
 		clerkContract:          clerkContract,
@@ -258,13 +308,12 @@ func NewVoteSync(cfg Config, nativeCommittee *committee.NativeCommittee) (*VoteS
 		discordMsg:             cfg.DiscordMsg,
 		discordReminder:        cfg.DiscordReminder,
 		dardanellesHeight:      cfg.DardaenllesHeight,
-		nativeCommittee:        nativeCommittee,
+		fairbankHeight:         cfg.FairBankHeight,
 	}, nil
 }
 
 //Start starts voteSync
 func (vc *VoteSync) Start(ctx context.Context) {
-	tipChan := make(chan uint64)
 	errChan := make(chan error)
 
 	zap.L().Info("Start VoteSync.",
@@ -274,18 +323,25 @@ func (vc *VoteSync) Start(ctx context.Context) {
 		zap.Uint64("lastViewID", vc.lastViewHeight),
 	)
 	go func() {
+		ticker := time.NewTicker(10 * time.Minute)
+		defer ticker.Stop()
 		for {
 			select {
 			case <-vc.terminate:
 				return
-			case tip := <-tipChan:
-				blockTime, err := vc.carrier.BlockTimestamp(tip)
+			case <-ticker.C:
+				tip, err := iotexTip(ctx, vc.iotexAPI)
+				if err != nil {
+					zap.L().Error("failed to get iotex tip", zap.Error(err))
+					continue
+				}
+				blockTime, err := iotexBlockTime(ctx, vc.iotexAPI, tip)
 				if err != nil {
 					zap.L().Error("failed to get block time", zap.Error(err))
 					continue
 				}
 				if blockTime.After(vc.lastUpdateTimestamp.Add(vc.timeInternal)) {
-					if err := vc.sync(vc.lastViewHeight, tip, vc.lastViewTimestamp, blockTime); err != nil {
+					if err := vc.sync(ctx, vc.lastViewHeight, tip, blockTime); err != nil {
 						zap.L().Error("failed to sync votes", zap.Error(err))
 						continue
 					}
@@ -317,7 +373,6 @@ func (vc *VoteSync) Start(ctx context.Context) {
 			}
 		}
 	}()
-	vc.carrier.SubscribeNewBlock(tipChan, errChan, vc.terminate)
 }
 
 //Stop stops voteSync
@@ -326,7 +381,6 @@ func (vc *VoteSync) Stop(ctx context.Context) {
 		return
 	}
 	close(vc.terminate)
-	vc.carrier.Close()
 	vc.terminated = true
 	return
 }
@@ -402,9 +456,9 @@ func (vc *VoteSync) updateVotingPowers(addrs []common.Address, weights []*big.In
 	return wait.Wait(context.Background(), caller)
 }
 
-func (vc *VoteSync) sync(prevHeight, currHeight uint64, prevTs, currTs time.Time) error {
+func (vc *VoteSync) sync(ctx context.Context, prevHeight, currHeight uint64, currTs time.Time) error {
 	zap.L().Info("Start VoteSyncing.", zap.Uint64("lastViewID", prevHeight), zap.Uint64("nextViewID", currHeight))
-	ret, err := vc.fetchVotesUpdate(prevHeight, currHeight, prevTs, currTs)
+	ret, err := vc.fetchVotesUpdate(ctx, prevHeight, currHeight)
 	if err != nil {
 		return errors.Wrap(err, "fetch vote error")
 	}
@@ -416,7 +470,11 @@ func (vc *VoteSync) sync(prevHeight, currHeight uint64, prevTs, currTs time.Time
 		reqNum  int
 	)
 	for _, vote := range ret {
-		addrs = append(addrs, common.BytesToAddress(vote.Voter))
+		addr, err := ioToEthAddress(vote.Voter)
+		if err != nil {
+			return errors.Wrap(err, fmt.Sprintf("failed convert address:%s", vote.Voter))
+		}
+		addrs = append(addrs, addr)
 		weights = append(weights, vote.Votes)
 
 		if len(addrs)%int(vc.paginationSize/4) == 0 {
@@ -433,7 +491,7 @@ func (vc *VoteSync) sync(prevHeight, currHeight uint64, prevTs, currTs time.Time
 			return errors.Wrap(err, fmt.Sprintf("update vote error, reqNum:%d", reqNum))
 		}
 	}
-	caller := vc.vpsContract.Execute("rotate", new(big.Int).SetUint64(currHeight)).
+	caller := vc.vpsContract.Execute("rotate", new(big.Int).SetUint64(currHeight+_viewIDOffsite)).
 		SetGasPrice(big.NewInt(int64(1 * unit.Qev))).SetGasLimit(4000000)
 	if err := wait.Wait(context.Background(), caller); err != nil {
 		return errors.Wrap(err, "failed to execute rotate")
@@ -448,15 +506,15 @@ func (vc *VoteSync) sync(prevHeight, currHeight uint64, prevTs, currTs time.Time
 	return nil
 }
 
-func (vc *VoteSync) fetchVotesUpdate(prevHeight, currHeight uint64, prevTs, currTs time.Time) ([]*WeightedVote, error) {
+func (vc *VoteSync) fetchVotesUpdate(ctx context.Context, prevHeight, currHeight uint64) ([]*WeightedVote, error) {
 	// prevHeight == 0, only run at first 2 time. get all votes from currHeight
 	if prevHeight == 0 {
-		curr, err := vc.retryFetchBucketsByHeight(currHeight)
+		currB, currC, err := vc.retryFetchBucketsByHeight(ctx, currHeight)
 		if err != nil {
 			return nil, err
 		}
 
-		n := calWeightedVotes(curr, currTs)
+		n := calWeightedVotes(currB, currC)
 		var ret []*WeightedVote
 		for _, nv := range n {
 			ret = append(ret, nv)
@@ -464,26 +522,18 @@ func (vc *VoteSync) fetchVotesUpdate(prevHeight, currHeight uint64, prevTs, curr
 		return ret, nil
 	}
 
-	prev, err := vc.retryFetchBucketsByHeight(prevHeight)
+	prevB, prevC, err := vc.retryFetchBucketsByHeight(ctx, prevHeight)
 	if err != nil {
 		return nil, err
 	}
 
-	curr, err := vc.retryFetchBucketsByHeight(currHeight)
+	currB, currC, err := vc.retryFetchBucketsByHeight(ctx, currHeight)
 	if err != nil {
 		return nil, err
 	}
 
-	if prevNative, currNative, err := vc.fetchNativeBuckets(prevTs, currTs); err != nil {
-		// log on error first
-		zap.L().Error("failed to fetch native buckets", zap.Error(err))
-	} else {
-		prev = append(prev, prevNative...)
-		curr = append(curr, currNative...)
-	}
-
-	p := calWeightedVotes(prev, prevTs)
-	n := calWeightedVotes(curr, currTs)
+	p := calWeightedVotes(prevB, prevC)
+	n := calWeightedVotes(currB, currC)
 
 	var ret []*WeightedVote
 	// check for all voters in old view
@@ -512,13 +562,18 @@ func (vc *VoteSync) fetchVotesUpdate(prevHeight, currHeight uint64, prevTs, curr
 	return ret, nil
 }
 
-func (vc *VoteSync) retryFetchBucketsByHeight(h uint64) ([]*types.Bucket, error) {
+func (vc *VoteSync) retryFetchBucketsByHeight(ctx context.Context, h uint64) (*iotextypes.VoteBucketList, *iotextypes.CandidateListV2, error) {
 	var (
-		ret []*types.Bucket
-		err error
+		ret1 *iotextypes.VoteBucketList
+		ret2 *iotextypes.CandidateListV2
+		err  error
 	)
 	nerr := backoff.Retry(func() error {
-		ret, err = vc.fetchBucketsByHeight(h)
+		ret1, err = getAllStakingBuckets(ctx, vc.iotexAPI, h)
+		if err != nil {
+			return err
+		}
+		ret2, err = getAllStakingCandidates(ctx, vc.iotexAPI, h)
 		return err
 	}, backoff.NewExponentialBackOff())
 	if nerr != nil {
@@ -528,108 +583,23 @@ func (vc *VoteSync) retryFetchBucketsByHeight(h uint64) ([]*types.Bucket, error)
 			zap.Uint64("height", h),
 		)
 	}
-	return ret, nerr
+	return ret1, ret2, nerr
 }
 
-func (vc *VoteSync) fetchBucketsByHeight(h uint64) ([]*types.Bucket, error) {
-	var allVotes []*types.Bucket
-	idx := big.NewInt(0)
-	for {
-		var (
-			votes []*types.Bucket
-			err   error
-		)
-		if idx, votes, err = vc.carrier.Buckets(h, idx, vc.paginationSize); err != nil {
-			return nil, err
-		}
-		allVotes = append(allVotes, votes...)
-		if len(votes) < int(vc.paginationSize) {
-			break
-		}
+func iotexTip(ctx context.Context, iotexAPI iotexapi.APIServiceClient) (uint64, error) {
+	response, err := iotexAPI.GetChainMeta(
+		context.Background(),
+		&iotexapi.GetChainMetaRequest{},
+	)
+	if err != nil {
+		return 0, err
 	}
-	return allVotes, nil
+
+	return response.ChainMeta.Height, nil
 }
 
-func (vc *VoteSync) fetchNativeBuckets(prevTs, currTs time.Time) ([]*types.Bucket, []*types.Bucket, error) {
-	ctx := context.Background()
-	resp, err := vc.iotexAPI.GetChainMeta(ctx, &iotexapi.GetChainMetaRequest{})
-	if err != nil {
-		return nil, nil, err
-	}
-	h := resp.ChainMeta.GetHeight()
-	var retryCounter int
-	// get a iotex block which timestamp is after currTs
-	for {
-		time.Sleep(15 * time.Second)
-		bt, err := vc.getIotexBlockTime(ctx, h)
-		if err != nil {
-			if retryCounter > 20 {
-				return nil, nil, errors.Wrap(err, "already tried many times to get block on iotex")
-			}
-			retryCounter++
-			continue
-		}
-		if bt.After(currTs) {
-			break
-		}
-		h++
-	}
-
-	findEpoch := func(ctx context.Context, en uint64, t time.Time) (uint64, error) {
-		retryCounter := 0
-		for {
-			h := vc.getEpochHeight(en)
-			bt, err := vc.getIotexBlockTime(ctx, h)
-			if err != nil {
-				if retryCounter > 10 {
-					return en, errors.Wrap(err, "already tried many times to get block on iotex")
-				}
-				retryCounter++
-				time.Sleep(5 * time.Second)
-				continue
-			}
-			en--
-			if bt.Before(t) {
-				break
-			}
-		}
-		return en, nil
-	}
-
-	// get epoch number of the block we got
-	en := vc.getEpochNum(h)
-	// find a epoch start block which is the first one timestamp before currTs
-	currEn, err := findEpoch(ctx, en, currTs)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// check if there is a cached prevEpochNum
-	prevEn := vc.lastNativeEphoch
-	if prevEn == 0 {
-		// no cached prevEpochNum, find a epoch start block which is the first one timestamp before prevTs
-		prevEn, err = findEpoch(ctx, en, prevTs)
-		if err != nil {
-			return nil, nil, err
-		}
-	}
-
-	// get currBuckets and prevBuckets
-	pbkts, err := vc.getNativeElectionBuckets(ctx, prevEn)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to fetch prev epoch buckets, epoch number %v", prevEn)
-	}
-
-	cbkts, err := vc.getNativeElectionBuckets(ctx, currEn)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to fetch curr epoch buckets, epoch number %v", currEn)
-	}
-	vc.tempLastNativeEphoch = currEn
-	return pbkts, cbkts, nil
-}
-
-func (vc *VoteSync) getIotexBlockTime(ctx context.Context, h uint64) (time.Time, error) {
-	resp, err := vc.iotexAPI.GetBlockMetas(ctx, &iotexapi.GetBlockMetasRequest{
+func iotexBlockTime(ctx context.Context, iotexAPI iotexapi.APIServiceClient, h uint64) (time.Time, error) {
+	resp, err := iotexAPI.GetBlockMetas(ctx, &iotexapi.GetBlockMetasRequest{
 		Lookup: &iotexapi.GetBlockMetasRequest_ByIndex{
 			ByIndex: &iotexapi.GetBlockMetasByIndexRequest{
 				Start: h, Count: 1,
@@ -651,35 +621,6 @@ func (vc *VoteSync) getIotexBlockTime(ctx context.Context, h uint64) (time.Time,
 	return bt, nil
 }
 
-func (vc *VoteSync) getNativeElectionBuckets(ctx context.Context, en uint64) ([]*types.Bucket, error) {
-	resp, err := vc.iotexAPI.GetElectionBuckets(ctx, &iotexapi.GetElectionBucketsRequest{EpochNum: en})
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to GetElectionBuckets")
-	}
-	bkts := make([]*types.Bucket, 0, len(resp.GetBuckets()))
-	for _, bkt := range resp.GetBuckets() {
-		b, err := bucketfromIotexProtoMsg(bkt)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to convert iotextypes bucket to election bucket")
-		}
-		bkts = append(bkts, b)
-	}
-	if vc.nativeCommittee != nil {
-		epochHeight := vc.getEpochHeight(en)
-		if epochHeight >= vc.nativeCommitteeInitHeight {
-			zap.L().Info("get buckets from native committee", zap.Uint64("epoch height", epochHeight))
-			_, buckets, err := vc.nativeCommittee.DataByHeight(epochHeight)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to get buckets from native committee")
-			}
-			if buckets != nil && len(buckets) > 0 {
-				bkts = append(bkts, buckets...)
-			}
-		}
-	}
-	return bkts, nil
-}
-
 func (vc *VoteSync) sendDiscordMsg(msg string) error {
 	if vc.discordBotToken == "" || msg == "" {
 		return nil
@@ -698,64 +639,159 @@ func (vc *VoteSync) sendDiscordMsg(msg string) error {
 	return err
 }
 
-func calWeightedVotes(curr []*types.Bucket, currTs time.Time) map[string]*WeightedVote {
+func calWeightedVotes(bs *iotextypes.VoteBucketList, cs *iotextypes.CandidateListV2) map[string]*WeightedVote {
 	n := make(map[string]*WeightedVote)
-	for _, v := range curr {
-		vs := types.CalcWeightedVotes(v, currTs)
-		wv, ok := n[hex.EncodeToString(v.Voter())]
+	for _, v := range bs.GetBuckets() {
+		var selfStake bool
+		for _, c := range cs.GetCandidates() {
+			if c.GetSelfStakeBucketIdx() == v.GetIndex() {
+				selfStake = true
+				break
+			}
+		}
+
+		vs := calculateVoteWeight(v, selfStake)
+		wv, ok := n[v.GetOwner()]
 		if ok {
 			wv.Votes.Add(wv.Votes, vs)
 			continue
 		}
-		n[hex.EncodeToString(v.Voter())] = &WeightedVote{
-			Voter: v.Voter(),
+		n[v.GetOwner()] = &WeightedVote{
+			Voter: v.GetOwner(),
 			Votes: vs,
 		}
 	}
 	return n
 }
 
-func (vc *VoteSync) getEpochNum(height uint64) uint64 {
-	if height == 0 {
-		return 0
+func calculateVoteWeight(v *iotextypes.VoteBucket, selfStake bool) *big.Int {
+	durationLg := 1.2
+	autoStake := 1.0
+	selfStakeR := 1.06
+	remainingTime := float64(v.StakedDuration)
+	weight := float64(1)
+	var m float64
+	if v.AutoStake {
+		m = autoStake
 	}
-	if vc.dardanellesHeight == 0 || height <= vc.dardanellesHeight {
-		return (height-1)/360 + 1
+	if remainingTime > 0 {
+		weight += math.Log(math.Ceil(remainingTime/86400)*(1+m)) / math.Log(durationLg) / 100
 	}
-	dardanellesEpoch := vc.getEpochNum(vc.dardanellesHeight)
-	dardanellesEpochHeight := vc.getEpochHeight(dardanellesEpoch)
-	return dardanellesEpoch + (height-dardanellesEpochHeight)/720
+	if selfStake && v.AutoStake && v.StakedDuration >= 91 {
+		// self-stake extra bonus requires enable auto-stake for at least 3 months
+		weight *= selfStakeR
+	}
+
+	a, _ := new(big.Int).SetString(v.StakedAmount, 10)
+	amount := new(big.Float).SetInt(a)
+	weightedAmount, _ := amount.Mul(amount, big.NewFloat(weight)).Int(nil)
+	return weightedAmount
 }
 
-func (vc *VoteSync) getEpochHeight(epochNum uint64) uint64 {
-	if epochNum == 0 {
-		return 0
+func getAllStakingBuckets(ctx context.Context, chainClient iotexapi.APIServiceClient, height uint64) (voteBucketListAll *iotextypes.VoteBucketList, err error) {
+	voteBucketListAll = &iotextypes.VoteBucketList{}
+	for i := uint32(0); ; i++ {
+		offset := i * readBucketsLimit
+		size := uint32(readBucketsLimit)
+		voteBucketList, err := getStakingBuckets(ctx, chainClient, offset, size, height)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get bucket")
+		}
+		voteBucketListAll.Buckets = append(voteBucketListAll.Buckets, voteBucketList.Buckets...)
+		if len(voteBucketList.Buckets) < readBucketsLimit {
+			break
+		}
 	}
-	dardanellesEpoch := vc.getEpochNum(vc.dardanellesHeight)
-	if vc.dardanellesHeight == 0 || epochNum <= dardanellesEpoch {
-		return (epochNum-1)*360 + 1
-	}
-	dardanellesEpochHeight := vc.getEpochHeight(dardanellesEpoch)
-	return dardanellesEpochHeight + (epochNum-dardanellesEpoch)*720
+	return
 }
 
-func bucketfromIotexProtoMsg(vPb *iotextypes.ElectionBucket) (*types.Bucket, error) {
-	voter := make([]byte, len(vPb.GetVoter()))
-	copy(voter, vPb.GetVoter())
-	candidate := make([]byte, len(vPb.GetCandidate()))
-	copy(candidate, vPb.GetCandidate())
-	amount := big.NewInt(0).SetBytes(vPb.GetAmount())
-	startTime, err := ptypes.Timestamp(vPb.GetStartTime())
+// getStakingBuckets get specific buckets by height
+func getStakingBuckets(ctx context.Context, chainClient iotexapi.APIServiceClient, offset, limit uint32, height uint64) (voteBucketList *iotextypes.VoteBucketList, err error) {
+	methodName, err := proto.Marshal(&iotexapi.ReadStakingDataMethod{
+		Method: iotexapi.ReadStakingDataMethod_BUCKETS,
+	})
 	if err != nil {
 		return nil, err
 	}
-	duration, err := ptypes.Duration(vPb.GetDuration())
+	arg, err := proto.Marshal(&iotexapi.ReadStakingDataRequest{
+		Request: &iotexapi.ReadStakingDataRequest_Buckets{
+			Buckets: &iotexapi.ReadStakingDataRequest_VoteBuckets{
+				Pagination: &iotexapi.PaginationParam{
+					Offset: offset,
+					Limit:  limit,
+				},
+			},
+		},
+	})
 	if err != nil {
 		return nil, err
 	}
-	if duration < 0 {
-		return nil, errors.Errorf("duration %s cannot be negative", duration)
+	readStateRequest := &iotexapi.ReadStateRequest{
+		ProtocolID: []byte(protocolID),
+		MethodName: methodName,
+		Arguments:  [][]byte{arg, []byte(strconv.FormatUint(height, 10))},
 	}
+	readStateRes, err := chainClient.ReadState(ctx, readStateRequest)
+	if err != nil {
+		return
+	}
+	voteBucketList = &iotextypes.VoteBucketList{}
+	if err := proto.Unmarshal(readStateRes.GetData(), voteBucketList); err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal VoteBucketList")
+	}
+	return
+}
 
-	return types.NewBucket(startTime, duration, amount, voter, candidate, vPb.GetDecay())
+func getAllStakingCandidates(ctx context.Context, chainClient iotexapi.APIServiceClient, height uint64) (candidateListAll *iotextypes.CandidateListV2, err error) {
+	candidateListAll = &iotextypes.CandidateListV2{}
+	for i := uint32(0); ; i++ {
+		offset := i * readCandidatesLimit
+		size := uint32(readCandidatesLimit)
+		candidateList, err := getStakingCandidates(ctx, chainClient, offset, size, height)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get candidates")
+		}
+		candidateListAll.Candidates = append(candidateListAll.Candidates, candidateList.Candidates...)
+		if len(candidateList.Candidates) < readCandidatesLimit {
+			break
+		}
+	}
+	return
+}
+
+// getStakingCandidates get specific candidates by height
+func getStakingCandidates(ctx context.Context, chainClient iotexapi.APIServiceClient, offset, limit uint32, height uint64) (candidateList *iotextypes.CandidateListV2, err error) {
+	methodName, err := proto.Marshal(&iotexapi.ReadStakingDataMethod{
+		Method: iotexapi.ReadStakingDataMethod_CANDIDATES,
+	})
+	if err != nil {
+		return nil, err
+	}
+	arg, err := proto.Marshal(&iotexapi.ReadStakingDataRequest{
+		Request: &iotexapi.ReadStakingDataRequest_Candidates_{
+			Candidates: &iotexapi.ReadStakingDataRequest_Candidates{
+				Pagination: &iotexapi.PaginationParam{
+					Offset: offset,
+					Limit:  limit,
+				},
+			},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	readStateRequest := &iotexapi.ReadStateRequest{
+		ProtocolID: []byte(protocolID),
+		MethodName: methodName,
+		Arguments:  [][]byte{arg, []byte(strconv.FormatUint(height, 10))},
+	}
+	readStateRes, err := chainClient.ReadState(ctx, readStateRequest)
+	if err != nil {
+		return
+	}
+	candidateList = &iotextypes.CandidateListV2{}
+	if err := proto.Unmarshal(readStateRes.GetData(), candidateList); err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal VoteBucketList")
+	}
+	return
 }

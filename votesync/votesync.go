@@ -469,6 +469,11 @@ func (vc *VoteSync) sync(ctx context.Context, prevHeight, currHeight uint64, cur
 		weights []*big.Int
 		reqNum  int
 	)
+	if len(ret) == 0 { // just to pause the contract when nothing cahnged
+		if err := vc.updateVotingPowers(addrs, weights); err != nil {
+			return errors.Wrap(err, fmt.Sprintf("update vote error, reqNum:%d", reqNum))
+		}
+	}
 	for _, vote := range ret {
 		addr, err := ioToEthAddress(vote.Voter)
 		if err != nil {
@@ -491,6 +496,7 @@ func (vc *VoteSync) sync(ctx context.Context, prevHeight, currHeight uint64, cur
 			return errors.Wrap(err, fmt.Sprintf("update vote error, reqNum:%d", reqNum))
 		}
 	}
+
 	caller := vc.vpsContract.Execute("rotate", new(big.Int).SetUint64(currHeight+_viewIDOffsite)).
 		SetGasPrice(big.NewInt(int64(1 * unit.Qev))).SetGasLimit(4000000)
 	if err := wait.Wait(context.Background(), caller); err != nil {

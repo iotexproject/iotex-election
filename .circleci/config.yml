@@ -11,7 +11,7 @@ jobs:
       - GOPATH: "~/go"
 
     working_directory: ~/apps/iotex-election
-    resource_class: large
+    resource_class: medium
     steps:
       - checkout
       - run:

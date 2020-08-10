@@ -10,7 +10,7 @@ import (
 
 var cfg = Config{
 	OperatorPrivateKey:       "a000000000000000000000000000000000000000000000000000000000000000",
-	IoTeXAPI:                 "35.236.100.38:14014",
+	IoTeXAPI:                 "api.testnet.iotex.one:80",
 	VitaContractAddress:      "io1l9eflyzsmt9pyaud05wk8rajfanxp24xr5vm8d",
 	GravityChainAPIs:         []string{"https://mainnet.infura.io/v3/e1f5217dc75d4b77bfede00ca895635b"},
 	RegisterContractAddress:  "0x92adef0e5e0c2b4f64a1ac79823f7ad3bc1662c4",

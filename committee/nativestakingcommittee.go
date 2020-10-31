@@ -423,7 +423,7 @@ func (nc *NativeCommittee) delta(
 		Lookup: &iotexapi.GetLogsRequest_ByRange{
 			ByRange: &iotexapi.GetLogsByRange{
 				FromBlock: from,
-				Count:     count,
+				ToBlock:   from + count - 1,
 			},
 		},
 	})

@@ -12,7 +12,7 @@ require (
 	github.com/ethereum/go-ethereum v1.8.27
 	github.com/fjl/memsize v0.0.0-20190710130421-bcb5799ab5e5 // indirect
 	github.com/gballet/go-libpcsclite v0.0.0-20190607065134-2772fd86a8ff // indirect
-	github.com/golang/mock v1.4.0
+	github.com/golang/mock v1.4.4
 	github.com/golang/protobuf v1.4.2
 	github.com/graph-gophers/graphql-go v0.0.0-20190610161739-8f92f34fc598 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.0
@@ -23,7 +23,7 @@ require (
 	github.com/iotexproject/go-pkgs v0.1.2-0.20200212033110-8fa5cf96fc1b
 	github.com/iotexproject/iotex-address v0.2.1
 	github.com/iotexproject/iotex-antenna-go/v2 v2.4.0
-	github.com/iotexproject/iotex-proto v0.4.0
+	github.com/iotexproject/iotex-proto v0.4.4-0.20201029172022-a8466422b0f1
 	github.com/jackpal/go-nat-pmp v1.0.1 // indirect
 	github.com/karalabe/usb v0.0.0-20190819132248-550797b1cad8 // indirect
 	github.com/mattn/go-colorable v0.1.2 // indirect
@@ -44,7 +44,7 @@ require (
 	github.com/wsddn/go-ecdh v0.0.0-20161211032359-48726bab9208 // indirect
 	go.etcd.io/bbolt v1.3.5
 	go.uber.org/zap v1.10.0
-	golang.org/x/net v0.0.0-20191204025024-5ee1b9f4859a
+	golang.org/x/net v0.0.0-20200707034311-ab3426394381
 	google.golang.org/grpc v1.27.0
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 	gopkg.in/olebedev/go-duktape.v3 v3.0.0-20190709231704-1e4459ed25ff // indirect

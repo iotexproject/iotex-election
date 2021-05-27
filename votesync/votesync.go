@@ -14,7 +14,6 @@ import (
 	"github.com/cenkalti/backoff"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
@@ -23,7 +22,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
-	"github.com/iotexproject/go-pkgs/crypto"
 	"github.com/iotexproject/iotex-address/address"
 	"github.com/iotexproject/iotex-antenna-go/v2/account"
 	"github.com/iotexproject/iotex-antenna-go/v2/iotex"
@@ -32,6 +30,8 @@ import (
 	"github.com/iotexproject/iotex-election/contract"
 	"github.com/iotexproject/iotex-proto/golang/iotexapi"
 	"github.com/iotexproject/iotex-proto/golang/iotextypes"
+
+	"github.com/iotexproject/iotex-election/util"
 )
 
 const _viewIDOffsite = 10000000
@@ -100,15 +100,6 @@ type WeightedVote struct {
 	Votes *big.Int
 }
 
-//toIoAddress converts ethAddress to ioAddress
-func toIoAddress(addr common.Address) (address.Address, error) {
-	pkhash, err := hexutil.Decode(addr.String())
-	if err != nil {
-		return nil, err
-	}
-	return address.FromBytes(pkhash)
-}
-
 func ioToEthAddress(str string) (common.Address, error) {
 	addr, err := address.FromString(str)
 	if err != nil {
@@ -143,11 +134,7 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 	if err != nil {
 		return nil, err
 	}
-	operatorPrivateKey, err := crypto.HexStringToPrivateKey(cfg.OperatorPrivateKey)
-	if err != nil {
-		return nil, err
-	}
-	operatorAccount, err := account.PrivateKeyToAccount(operatorPrivateKey)
+	operatorAccount, err := account.HexStringToAccount(cfg.OperatorPrivateKey)
 	if err != nil {
 		return nil, err
 	}
@@ -164,15 +151,19 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 	}
 	vitaContract := cli.Contract(vitaContractAddress, vitaABI)
 
-	var addr common.Address
 	d, err := vitaContract.Read("vps").Call(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if err := d.Unmarshal(&addr); err != nil {
+	ret, err := d.Unmarshal()
+	if err != nil {
 		return nil, err
 	}
-	vpsContractAddress, err := toIoAddress(addr)
+	addr, err := util.ToEtherAddress(ret[0])
+	if err != nil {
+		return nil, err
+	}
+	vpsContractAddress, err := address.FromBytes(addr.Bytes())
 	if err != nil {
 		return nil, err
 	}
@@ -181,10 +172,15 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := d.Unmarshal(&addr); err != nil {
+	ret, err = d.Unmarshal()
+	if err != nil {
 		return nil, err
 	}
-	brokerContractAddress, err := toIoAddress(addr)
+	addr, err = util.ToEtherAddress(ret[0])
+	if err != nil {
+		return nil, err
+	}
+	brokerContractAddress, err := address.FromBytes(addr.Bytes())
 	if err != nil {
 		return nil, err
 	}
@@ -193,10 +189,15 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := d.Unmarshal(&addr); err != nil {
+	ret, err = d.Unmarshal()
+	if err != nil {
 		return nil, err
 	}
-	clerkContractAddress, err := toIoAddress(addr)
+	addr, err = util.ToEtherAddress(ret[0])
+	if err != nil {
+		return nil, err
+	}
+	clerkContractAddress, err := address.FromBytes(addr.Bytes())
 	if err != nil {
 		return nil, err
 	}
@@ -208,15 +209,18 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 	}
 	vpsContract := cli.Contract(vpsContractAddress, vpsABI)
 
-	lastUpdateHeight := new(big.Int)
 	d, err = vpsContract.Read("viewID").Call(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if err := d.Unmarshal(&lastUpdateHeight); err != nil {
+	ret, err = d.Unmarshal()
+	if err != nil {
 		return nil, err
 	}
-
+	lastUpdateHeight, err := util.ToBigInt(ret[0])
+	if err != nil {
+		return nil, err
+	}
 	if lastUpdateHeight.Uint64() == 0 {
 		lastUpdateHeight = new(big.Int).SetUint64(cfg.FairBankHeight)
 	}
@@ -228,15 +232,18 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 		return nil, err
 	}
 
-	lastViewHeight := new(big.Int)
 	d, err = vpsContract.Read("inactiveViewID").Call(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if err := d.Unmarshal(&lastViewHeight); err != nil {
+	ret, err = d.Unmarshal()
+	if err != nil {
 		return nil, err
 	}
-
+	lastViewHeight, err := util.ToBigInt(ret[0])
+	if err != nil {
+		return nil, err
+	}
 	if lastViewHeight.Uint64() > _viewIDOffsite {
 		lastViewHeight.Sub(lastViewHeight, new(big.Int).SetUint64(_viewIDOffsite))
 	}
@@ -248,28 +255,34 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 		return nil, err
 	}
 
-	lastBrokerUpdateHeight := new(big.Int)
 	d, err = vitaContract.Read("lastDonationPoolClaimViewID").Call(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if err := d.Unmarshal(&lastBrokerUpdateHeight); err != nil {
+	ret, err = d.Unmarshal()
+	if err != nil {
 		return nil, err
 	}
-
+	lastBrokerUpdateHeight, err := util.ToBigInt(ret[0])
+	if err != nil {
+		return nil, err
+	}
 	if lastBrokerUpdateHeight.Uint64() > _viewIDOffsite {
 		lastBrokerUpdateHeight.Sub(lastBrokerUpdateHeight, new(big.Int).SetUint64(_viewIDOffsite))
 	}
 
-	lastClerkUpdateHeight := new(big.Int)
 	d, err = vitaContract.Read("lastRewardPoolClaimViewID").Call(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if err := d.Unmarshal(&lastClerkUpdateHeight); err != nil {
+	ret, err = d.Unmarshal()
+	if err != nil {
 		return nil, err
 	}
-
+	lastClerkUpdateHeight, err := util.ToBigInt(ret[0])
+	if err != nil {
+		return nil, err
+	}
 	if lastClerkUpdateHeight.Uint64() > _viewIDOffsite {
 		lastClerkUpdateHeight.Sub(lastClerkUpdateHeight, new(big.Int).SetUint64(_viewIDOffsite))
 	}
@@ -391,12 +404,16 @@ func (vc *VoteSync) brokerReset() error {
 }
 
 func (vc *VoteSync) brokerNextBidToSettle() (uint64, error) {
-	nextBidToSettle := new(big.Int)
 	d, err := vc.brokerContract.Read("nextBidToSettle").Call(context.Background())
 	if err != nil {
 		return 0, err
 	}
-	if err := d.Unmarshal(&nextBidToSettle); err != nil {
+	ret, err := d.Unmarshal()
+	if err != nil {
+		return 0, err
+	}
+	nextBidToSettle, err := util.ToBigInt(ret[0])
+	if err != nil {
 		return 0, err
 	}
 	return nextBidToSettle.Uint64(), nil

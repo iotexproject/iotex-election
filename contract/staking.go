@@ -20,7 +20,6 @@ var (
 	_ = big.NewInt
 	_ = strings.NewReader
 	_ = ethereum.NotFound
-	_ = abi.U256
 	_ = bind.Bind
 	_ = common.Big1
 	_ = types.BloomLookup
@@ -138,7 +137,7 @@ func bindStaking(address common.Address, caller bind.ContractCaller, transactor 
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_Staking *StakingRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
+func (_Staking *StakingRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
 	return _Staking.Contract.StakingCaller.contract.Call(opts, result, method, params...)
 }
 
@@ -157,7 +156,7 @@ func (_Staking *StakingRaw) Transact(opts *bind.TransactOpts, method string, par
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_Staking *StakingCallerRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
+func (_Staking *StakingCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
 	return _Staking.Contract.contract.Call(opts, result, method, params...)
 }
 
@@ -174,7 +173,7 @@ func (_Staking *StakingTransactorRaw) Transact(opts *bind.TransactOpts, method s
 
 // Buckets is a free data retrieval call binding the contract method 0x9b51fb0d.
 //
-// Solidity: function buckets(uint256 ) constant returns(bytes12 canName, uint256 stakedAmount, uint256 stakeDuration, uint256 stakeStartTime, bool nonDecay, uint256 unstakeStartTime, address bucketOwner, uint256 createTime, uint256 prev, uint256 next)
+// Solidity: function buckets(uint256 ) view returns(bytes12 canName, uint256 stakedAmount, uint256 stakeDuration, uint256 stakeStartTime, bool nonDecay, uint256 unstakeStartTime, address bucketOwner, uint256 createTime, uint256 prev, uint256 next)
 func (_Staking *StakingCaller) Buckets(opts *bind.CallOpts, arg0 *big.Int) (struct {
 	CanName          [12]byte
 	StakedAmount     *big.Int
@@ -187,7 +186,10 @@ func (_Staking *StakingCaller) Buckets(opts *bind.CallOpts, arg0 *big.Int) (stru
 	Prev             *big.Int
 	Next             *big.Int
 }, error) {
-	ret := new(struct {
+	var out []interface{}
+	err := _Staking.contract.Call(opts, &out, "buckets", arg0)
+
+	outstruct := new(struct {
 		CanName          [12]byte
 		StakedAmount     *big.Int
 		StakeDuration    *big.Int
@@ -199,14 +201,25 @@ func (_Staking *StakingCaller) Buckets(opts *bind.CallOpts, arg0 *big.Int) (stru
 		Prev             *big.Int
 		Next             *big.Int
 	})
-	out := ret
-	err := _Staking.contract.Call(opts, out, "buckets", arg0)
-	return *ret, err
+
+	outstruct.CanName = out[0].([12]byte)
+	outstruct.StakedAmount = out[1].(*big.Int)
+	outstruct.StakeDuration = out[2].(*big.Int)
+	outstruct.StakeStartTime = out[3].(*big.Int)
+	outstruct.NonDecay = out[4].(bool)
+	outstruct.UnstakeStartTime = out[5].(*big.Int)
+	outstruct.BucketOwner = out[6].(common.Address)
+	outstruct.CreateTime = out[7].(*big.Int)
+	outstruct.Prev = out[8].(*big.Int)
+	outstruct.Next = out[9].(*big.Int)
+
+	return *outstruct, err
+
 }
 
 // Buckets is a free data retrieval call binding the contract method 0x9b51fb0d.
 //
-// Solidity: function buckets(uint256 ) constant returns(bytes12 canName, uint256 stakedAmount, uint256 stakeDuration, uint256 stakeStartTime, bool nonDecay, uint256 unstakeStartTime, address bucketOwner, uint256 createTime, uint256 prev, uint256 next)
+// Solidity: function buckets(uint256 ) view returns(bytes12 canName, uint256 stakedAmount, uint256 stakeDuration, uint256 stakeStartTime, bool nonDecay, uint256 unstakeStartTime, address bucketOwner, uint256 createTime, uint256 prev, uint256 next)
 func (_Staking *StakingSession) Buckets(arg0 *big.Int) (struct {
 	CanName          [12]byte
 	StakedAmount     *big.Int
@@ -224,7 +237,7 @@ func (_Staking *StakingSession) Buckets(arg0 *big.Int) (struct {
 
 // Buckets is a free data retrieval call binding the contract method 0x9b51fb0d.
 //
-// Solidity: function buckets(uint256 ) constant returns(bytes12 canName, uint256 stakedAmount, uint256 stakeDuration, uint256 stakeStartTime, bool nonDecay, uint256 unstakeStartTime, address bucketOwner, uint256 createTime, uint256 prev, uint256 next)
+// Solidity: function buckets(uint256 ) view returns(bytes12 canName, uint256 stakedAmount, uint256 stakeDuration, uint256 stakeStartTime, bool nonDecay, uint256 unstakeStartTime, address bucketOwner, uint256 createTime, uint256 prev, uint256 next)
 func (_Staking *StakingCallerSession) Buckets(arg0 *big.Int) (struct {
 	CanName          [12]byte
 	StakedAmount     *big.Int
@@ -242,25 +255,32 @@ func (_Staking *StakingCallerSession) Buckets(arg0 *big.Int) (struct {
 
 // GetActiveBucketCreateTimes is a free data retrieval call binding the contract method 0x37130b93.
 //
-// Solidity: function getActiveBucketCreateTimes(uint256 _prevIndex, uint256 _limit) constant returns(uint256 count, uint256[] indexes, uint256[] createTimes)
+// Solidity: function getActiveBucketCreateTimes(uint256 _prevIndex, uint256 _limit) view returns(uint256 count, uint256[] indexes, uint256[] createTimes)
 func (_Staking *StakingCaller) GetActiveBucketCreateTimes(opts *bind.CallOpts, _prevIndex *big.Int, _limit *big.Int) (struct {
 	Count       *big.Int
 	Indexes     []*big.Int
 	CreateTimes []*big.Int
 }, error) {
-	ret := new(struct {
+	var out []interface{}
+	err := _Staking.contract.Call(opts, &out, "getActiveBucketCreateTimes", _prevIndex, _limit)
+
+	outstruct := new(struct {
 		Count       *big.Int
 		Indexes     []*big.Int
 		CreateTimes []*big.Int
 	})
-	out := ret
-	err := _Staking.contract.Call(opts, out, "getActiveBucketCreateTimes", _prevIndex, _limit)
-	return *ret, err
+
+	outstruct.Count = out[0].(*big.Int)
+	outstruct.Indexes = out[1].([]*big.Int)
+	outstruct.CreateTimes = out[2].([]*big.Int)
+
+	return *outstruct, err
+
 }
 
 // GetActiveBucketCreateTimes is a free data retrieval call binding the contract method 0x37130b93.
 //
-// Solidity: function getActiveBucketCreateTimes(uint256 _prevIndex, uint256 _limit) constant returns(uint256 count, uint256[] indexes, uint256[] createTimes)
+// Solidity: function getActiveBucketCreateTimes(uint256 _prevIndex, uint256 _limit) view returns(uint256 count, uint256[] indexes, uint256[] createTimes)
 func (_Staking *StakingSession) GetActiveBucketCreateTimes(_prevIndex *big.Int, _limit *big.Int) (struct {
 	Count       *big.Int
 	Indexes     []*big.Int
@@ -271,7 +291,7 @@ func (_Staking *StakingSession) GetActiveBucketCreateTimes(_prevIndex *big.Int, 
 
 // GetActiveBucketCreateTimes is a free data retrieval call binding the contract method 0x37130b93.
 //
-// Solidity: function getActiveBucketCreateTimes(uint256 _prevIndex, uint256 _limit) constant returns(uint256 count, uint256[] indexes, uint256[] createTimes)
+// Solidity: function getActiveBucketCreateTimes(uint256 _prevIndex, uint256 _limit) view returns(uint256 count, uint256[] indexes, uint256[] createTimes)
 func (_Staking *StakingCallerSession) GetActiveBucketCreateTimes(_prevIndex *big.Int, _limit *big.Int) (struct {
 	Count       *big.Int
 	Indexes     []*big.Int
@@ -282,23 +302,29 @@ func (_Staking *StakingCallerSession) GetActiveBucketCreateTimes(_prevIndex *big
 
 // GetActiveBucketIdx is a free data retrieval call binding the contract method 0x8b59c5e0.
 //
-// Solidity: function getActiveBucketIdx(uint256 _prevIndex, uint256 _limit) constant returns(uint256 count, uint256[] indexes)
+// Solidity: function getActiveBucketIdx(uint256 _prevIndex, uint256 _limit) view returns(uint256 count, uint256[] indexes)
 func (_Staking *StakingCaller) GetActiveBucketIdx(opts *bind.CallOpts, _prevIndex *big.Int, _limit *big.Int) (struct {
 	Count   *big.Int
 	Indexes []*big.Int
 }, error) {
-	ret := new(struct {
+	var out []interface{}
+	err := _Staking.contract.Call(opts, &out, "getActiveBucketIdx", _prevIndex, _limit)
+
+	outstruct := new(struct {
 		Count   *big.Int
 		Indexes []*big.Int
 	})
-	out := ret
-	err := _Staking.contract.Call(opts, out, "getActiveBucketIdx", _prevIndex, _limit)
-	return *ret, err
+
+	outstruct.Count = out[0].(*big.Int)
+	outstruct.Indexes = out[1].([]*big.Int)
+
+	return *outstruct, err
+
 }
 
 // GetActiveBucketIdx is a free data retrieval call binding the contract method 0x8b59c5e0.
 //
-// Solidity: function getActiveBucketIdx(uint256 _prevIndex, uint256 _limit) constant returns(uint256 count, uint256[] indexes)
+// Solidity: function getActiveBucketIdx(uint256 _prevIndex, uint256 _limit) view returns(uint256 count, uint256[] indexes)
 func (_Staking *StakingSession) GetActiveBucketIdx(_prevIndex *big.Int, _limit *big.Int) (struct {
 	Count   *big.Int
 	Indexes []*big.Int
@@ -308,7 +334,7 @@ func (_Staking *StakingSession) GetActiveBucketIdx(_prevIndex *big.Int, _limit *
 
 // GetActiveBucketIdx is a free data retrieval call binding the contract method 0x8b59c5e0.
 //
-// Solidity: function getActiveBucketIdx(uint256 _prevIndex, uint256 _limit) constant returns(uint256 count, uint256[] indexes)
+// Solidity: function getActiveBucketIdx(uint256 _prevIndex, uint256 _limit) view returns(uint256 count, uint256[] indexes)
 func (_Staking *StakingCallerSession) GetActiveBucketIdx(_prevIndex *big.Int, _limit *big.Int) (struct {
 	Count   *big.Int
 	Indexes []*big.Int
@@ -318,7 +344,7 @@ func (_Staking *StakingCallerSession) GetActiveBucketIdx(_prevIndex *big.Int, _l
 
 // GetActiveBuckets is a free data retrieval call binding the contract method 0x042f95bd.
 //
-// Solidity: function getActiveBuckets(uint256 _prevIndex, uint256 _limit) constant returns(uint256 count, uint256[] indexes, uint256[] stakeStartTimes, uint256[] stakeDurations, bool[] decays, uint256[] stakedAmounts, bytes12[] canNames, address[] owners)
+// Solidity: function getActiveBuckets(uint256 _prevIndex, uint256 _limit) view returns(uint256 count, uint256[] indexes, uint256[] stakeStartTimes, uint256[] stakeDurations, bool[] decays, uint256[] stakedAmounts, bytes12[] canNames, address[] owners)
 func (_Staking *StakingCaller) GetActiveBuckets(opts *bind.CallOpts, _prevIndex *big.Int, _limit *big.Int) (struct {
 	Count           *big.Int
 	Indexes         []*big.Int
@@ -329,7 +355,10 @@ func (_Staking *StakingCaller) GetActiveBuckets(opts *bind.CallOpts, _prevIndex 
 	CanNames        [][12]byte
 	Owners          []common.Address
 }, error) {
-	ret := new(struct {
+	var out []interface{}
+	err := _Staking.contract.Call(opts, &out, "getActiveBuckets", _prevIndex, _limit)
+
+	outstruct := new(struct {
 		Count           *big.Int
 		Indexes         []*big.Int
 		StakeStartTimes []*big.Int
@@ -339,14 +368,23 @@ func (_Staking *StakingCaller) GetActiveBuckets(opts *bind.CallOpts, _prevIndex 
 		CanNames        [][12]byte
 		Owners          []common.Address
 	})
-	out := ret
-	err := _Staking.contract.Call(opts, out, "getActiveBuckets", _prevIndex, _limit)
-	return *ret, err
+
+	outstruct.Count = out[0].(*big.Int)
+	outstruct.Indexes = out[1].([]*big.Int)
+	outstruct.StakeStartTimes = out[2].([]*big.Int)
+	outstruct.StakeDurations = out[3].([]*big.Int)
+	outstruct.Decays = out[4].([]bool)
+	outstruct.StakedAmounts = out[5].([]*big.Int)
+	outstruct.CanNames = out[6].([][12]byte)
+	outstruct.Owners = out[7].([]common.Address)
+
+	return *outstruct, err
+
 }
 
 // GetActiveBuckets is a free data retrieval call binding the contract method 0x042f95bd.
 //
-// Solidity: function getActiveBuckets(uint256 _prevIndex, uint256 _limit) constant returns(uint256 count, uint256[] indexes, uint256[] stakeStartTimes, uint256[] stakeDurations, bool[] decays, uint256[] stakedAmounts, bytes12[] canNames, address[] owners)
+// Solidity: function getActiveBuckets(uint256 _prevIndex, uint256 _limit) view returns(uint256 count, uint256[] indexes, uint256[] stakeStartTimes, uint256[] stakeDurations, bool[] decays, uint256[] stakedAmounts, bytes12[] canNames, address[] owners)
 func (_Staking *StakingSession) GetActiveBuckets(_prevIndex *big.Int, _limit *big.Int) (struct {
 	Count           *big.Int
 	Indexes         []*big.Int
@@ -362,7 +400,7 @@ func (_Staking *StakingSession) GetActiveBuckets(_prevIndex *big.Int, _limit *bi
 
 // GetActiveBuckets is a free data retrieval call binding the contract method 0x042f95bd.
 //
-// Solidity: function getActiveBuckets(uint256 _prevIndex, uint256 _limit) constant returns(uint256 count, uint256[] indexes, uint256[] stakeStartTimes, uint256[] stakeDurations, bool[] decays, uint256[] stakedAmounts, bytes12[] canNames, address[] owners)
+// Solidity: function getActiveBuckets(uint256 _prevIndex, uint256 _limit) view returns(uint256 count, uint256[] indexes, uint256[] stakeStartTimes, uint256[] stakeDurations, bool[] decays, uint256[] stakedAmounts, bytes12[] canNames, address[] owners)
 func (_Staking *StakingCallerSession) GetActiveBuckets(_prevIndex *big.Int, _limit *big.Int) (struct {
 	Count           *big.Int
 	Indexes         []*big.Int
@@ -378,364 +416,434 @@ func (_Staking *StakingCallerSession) GetActiveBuckets(_prevIndex *big.Int, _lim
 
 // GetBucketIndexesByAddress is a free data retrieval call binding the contract method 0x7d0de831.
 //
-// Solidity: function getBucketIndexesByAddress(address _owner) constant returns(uint256[])
+// Solidity: function getBucketIndexesByAddress(address _owner) view returns(uint256[])
 func (_Staking *StakingCaller) GetBucketIndexesByAddress(opts *bind.CallOpts, _owner common.Address) ([]*big.Int, error) {
-	var (
-		ret0 = new([]*big.Int)
-	)
-	out := ret0
-	err := _Staking.contract.Call(opts, out, "getBucketIndexesByAddress", _owner)
-	return *ret0, err
+	var out []interface{}
+	err := _Staking.contract.Call(opts, &out, "getBucketIndexesByAddress", _owner)
+
+	if err != nil {
+		return *new([]*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([]*big.Int)).(*[]*big.Int)
+
+	return out0, err
+
 }
 
 // GetBucketIndexesByAddress is a free data retrieval call binding the contract method 0x7d0de831.
 //
-// Solidity: function getBucketIndexesByAddress(address _owner) constant returns(uint256[])
+// Solidity: function getBucketIndexesByAddress(address _owner) view returns(uint256[])
 func (_Staking *StakingSession) GetBucketIndexesByAddress(_owner common.Address) ([]*big.Int, error) {
 	return _Staking.Contract.GetBucketIndexesByAddress(&_Staking.CallOpts, _owner)
 }
 
 // GetBucketIndexesByAddress is a free data retrieval call binding the contract method 0x7d0de831.
 //
-// Solidity: function getBucketIndexesByAddress(address _owner) constant returns(uint256[])
+// Solidity: function getBucketIndexesByAddress(address _owner) view returns(uint256[])
 func (_Staking *StakingCallerSession) GetBucketIndexesByAddress(_owner common.Address) ([]*big.Int, error) {
 	return _Staking.Contract.GetBucketIndexesByAddress(&_Staking.CallOpts, _owner)
 }
 
 // IsOwner is a free data retrieval call binding the contract method 0x2f54bf6e.
 //
-// Solidity: function isOwner(address _address) constant returns(bool)
+// Solidity: function isOwner(address _address) view returns(bool)
 func (_Staking *StakingCaller) IsOwner(opts *bind.CallOpts, _address common.Address) (bool, error) {
-	var (
-		ret0 = new(bool)
-	)
-	out := ret0
-	err := _Staking.contract.Call(opts, out, "isOwner", _address)
-	return *ret0, err
+	var out []interface{}
+	err := _Staking.contract.Call(opts, &out, "isOwner", _address)
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
 }
 
 // IsOwner is a free data retrieval call binding the contract method 0x2f54bf6e.
 //
-// Solidity: function isOwner(address _address) constant returns(bool)
+// Solidity: function isOwner(address _address) view returns(bool)
 func (_Staking *StakingSession) IsOwner(_address common.Address) (bool, error) {
 	return _Staking.Contract.IsOwner(&_Staking.CallOpts, _address)
 }
 
 // IsOwner is a free data retrieval call binding the contract method 0x2f54bf6e.
 //
-// Solidity: function isOwner(address _address) constant returns(bool)
+// Solidity: function isOwner(address _address) view returns(bool)
 func (_Staking *StakingCallerSession) IsOwner(_address common.Address) (bool, error) {
 	return _Staking.Contract.IsOwner(&_Staking.CallOpts, _address)
 }
 
 // MaxBucketsPerAddr is a free data retrieval call binding the contract method 0xfe8a8b4c.
 //
-// Solidity: function maxBucketsPerAddr() constant returns(uint256)
+// Solidity: function maxBucketsPerAddr() view returns(uint256)
 func (_Staking *StakingCaller) MaxBucketsPerAddr(opts *bind.CallOpts) (*big.Int, error) {
-	var (
-		ret0 = new(*big.Int)
-	)
-	out := ret0
-	err := _Staking.contract.Call(opts, out, "maxBucketsPerAddr")
-	return *ret0, err
+	var out []interface{}
+	err := _Staking.contract.Call(opts, &out, "maxBucketsPerAddr")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
 }
 
 // MaxBucketsPerAddr is a free data retrieval call binding the contract method 0xfe8a8b4c.
 //
-// Solidity: function maxBucketsPerAddr() constant returns(uint256)
+// Solidity: function maxBucketsPerAddr() view returns(uint256)
 func (_Staking *StakingSession) MaxBucketsPerAddr() (*big.Int, error) {
 	return _Staking.Contract.MaxBucketsPerAddr(&_Staking.CallOpts)
 }
 
 // MaxBucketsPerAddr is a free data retrieval call binding the contract method 0xfe8a8b4c.
 //
-// Solidity: function maxBucketsPerAddr() constant returns(uint256)
+// Solidity: function maxBucketsPerAddr() view returns(uint256)
 func (_Staking *StakingCallerSession) MaxBucketsPerAddr() (*big.Int, error) {
 	return _Staking.Contract.MaxBucketsPerAddr(&_Staking.CallOpts)
 }
 
 // MaxStakeDuration is a free data retrieval call binding the contract method 0x76f70003.
 //
-// Solidity: function maxStakeDuration() constant returns(uint256)
+// Solidity: function maxStakeDuration() view returns(uint256)
 func (_Staking *StakingCaller) MaxStakeDuration(opts *bind.CallOpts) (*big.Int, error) {
-	var (
-		ret0 = new(*big.Int)
-	)
-	out := ret0
-	err := _Staking.contract.Call(opts, out, "maxStakeDuration")
-	return *ret0, err
+	var out []interface{}
+	err := _Staking.contract.Call(opts, &out, "maxStakeDuration")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
 }
 
 // MaxStakeDuration is a free data retrieval call binding the contract method 0x76f70003.
 //
-// Solidity: function maxStakeDuration() constant returns(uint256)
+// Solidity: function maxStakeDuration() view returns(uint256)
 func (_Staking *StakingSession) MaxStakeDuration() (*big.Int, error) {
 	return _Staking.Contract.MaxStakeDuration(&_Staking.CallOpts)
 }
 
 // MaxStakeDuration is a free data retrieval call binding the contract method 0x76f70003.
 //
-// Solidity: function maxStakeDuration() constant returns(uint256)
+// Solidity: function maxStakeDuration() view returns(uint256)
 func (_Staking *StakingCallerSession) MaxStakeDuration() (*big.Int, error) {
 	return _Staking.Contract.MaxStakeDuration(&_Staking.CallOpts)
 }
 
 // MinStakeAmount is a free data retrieval call binding the contract method 0xf1887684.
 //
-// Solidity: function minStakeAmount() constant returns(uint256)
+// Solidity: function minStakeAmount() view returns(uint256)
 func (_Staking *StakingCaller) MinStakeAmount(opts *bind.CallOpts) (*big.Int, error) {
-	var (
-		ret0 = new(*big.Int)
-	)
-	out := ret0
-	err := _Staking.contract.Call(opts, out, "minStakeAmount")
-	return *ret0, err
+	var out []interface{}
+	err := _Staking.contract.Call(opts, &out, "minStakeAmount")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
 }
 
 // MinStakeAmount is a free data retrieval call binding the contract method 0xf1887684.
 //
-// Solidity: function minStakeAmount() constant returns(uint256)
+// Solidity: function minStakeAmount() view returns(uint256)
 func (_Staking *StakingSession) MinStakeAmount() (*big.Int, error) {
 	return _Staking.Contract.MinStakeAmount(&_Staking.CallOpts)
 }
 
 // MinStakeAmount is a free data retrieval call binding the contract method 0xf1887684.
 //
-// Solidity: function minStakeAmount() constant returns(uint256)
+// Solidity: function minStakeAmount() view returns(uint256)
 func (_Staking *StakingCallerSession) MinStakeAmount() (*big.Int, error) {
 	return _Staking.Contract.MinStakeAmount(&_Staking.CallOpts)
 }
 
 // MinStakeDuration is a free data retrieval call binding the contract method 0x5fec5c64.
 //
-// Solidity: function minStakeDuration() constant returns(uint256)
+// Solidity: function minStakeDuration() view returns(uint256)
 func (_Staking *StakingCaller) MinStakeDuration(opts *bind.CallOpts) (*big.Int, error) {
-	var (
-		ret0 = new(*big.Int)
-	)
-	out := ret0
-	err := _Staking.contract.Call(opts, out, "minStakeDuration")
-	return *ret0, err
+	var out []interface{}
+	err := _Staking.contract.Call(opts, &out, "minStakeDuration")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
 }
 
 // MinStakeDuration is a free data retrieval call binding the contract method 0x5fec5c64.
 //
-// Solidity: function minStakeDuration() constant returns(uint256)
+// Solidity: function minStakeDuration() view returns(uint256)
 func (_Staking *StakingSession) MinStakeDuration() (*big.Int, error) {
 	return _Staking.Contract.MinStakeDuration(&_Staking.CallOpts)
 }
 
 // MinStakeDuration is a free data retrieval call binding the contract method 0x5fec5c64.
 //
-// Solidity: function minStakeDuration() constant returns(uint256)
+// Solidity: function minStakeDuration() view returns(uint256)
 func (_Staking *StakingCallerSession) MinStakeDuration() (*big.Int, error) {
 	return _Staking.Contract.MinStakeDuration(&_Staking.CallOpts)
 }
 
 // Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
 //
-// Solidity: function owner() constant returns(address)
+// Solidity: function owner() view returns(address)
 func (_Staking *StakingCaller) Owner(opts *bind.CallOpts) (common.Address, error) {
-	var (
-		ret0 = new(common.Address)
-	)
-	out := ret0
-	err := _Staking.contract.Call(opts, out, "owner")
-	return *ret0, err
+	var out []interface{}
+	err := _Staking.contract.Call(opts, &out, "owner")
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
 }
 
 // Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
 //
-// Solidity: function owner() constant returns(address)
+// Solidity: function owner() view returns(address)
 func (_Staking *StakingSession) Owner() (common.Address, error) {
 	return _Staking.Contract.Owner(&_Staking.CallOpts)
 }
 
 // Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
 //
-// Solidity: function owner() constant returns(address)
+// Solidity: function owner() view returns(address)
 func (_Staking *StakingCallerSession) Owner() (common.Address, error) {
 	return _Staking.Contract.Owner(&_Staking.CallOpts)
 }
 
 // Paused is a free data retrieval call binding the contract method 0x5c975abb.
 //
-// Solidity: function paused() constant returns(bool)
+// Solidity: function paused() view returns(bool)
 func (_Staking *StakingCaller) Paused(opts *bind.CallOpts) (bool, error) {
-	var (
-		ret0 = new(bool)
-	)
-	out := ret0
-	err := _Staking.contract.Call(opts, out, "paused")
-	return *ret0, err
+	var out []interface{}
+	err := _Staking.contract.Call(opts, &out, "paused")
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
 }
 
 // Paused is a free data retrieval call binding the contract method 0x5c975abb.
 //
-// Solidity: function paused() constant returns(bool)
+// Solidity: function paused() view returns(bool)
 func (_Staking *StakingSession) Paused() (bool, error) {
 	return _Staking.Contract.Paused(&_Staking.CallOpts)
 }
 
 // Paused is a free data retrieval call binding the contract method 0x5c975abb.
 //
-// Solidity: function paused() constant returns(bool)
+// Solidity: function paused() view returns(bool)
 func (_Staking *StakingCallerSession) Paused() (bool, error) {
 	return _Staking.Contract.Paused(&_Staking.CallOpts)
 }
 
 // SecondsPerEpoch is a free data retrieval call binding the contract method 0x580c8f3d.
 //
-// Solidity: function secondsPerEpoch() constant returns(uint256)
+// Solidity: function secondsPerEpoch() view returns(uint256)
 func (_Staking *StakingCaller) SecondsPerEpoch(opts *bind.CallOpts) (*big.Int, error) {
-	var (
-		ret0 = new(*big.Int)
-	)
-	out := ret0
-	err := _Staking.contract.Call(opts, out, "secondsPerEpoch")
-	return *ret0, err
+	var out []interface{}
+	err := _Staking.contract.Call(opts, &out, "secondsPerEpoch")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
 }
 
 // SecondsPerEpoch is a free data retrieval call binding the contract method 0x580c8f3d.
 //
-// Solidity: function secondsPerEpoch() constant returns(uint256)
+// Solidity: function secondsPerEpoch() view returns(uint256)
 func (_Staking *StakingSession) SecondsPerEpoch() (*big.Int, error) {
 	return _Staking.Contract.SecondsPerEpoch(&_Staking.CallOpts)
 }
 
 // SecondsPerEpoch is a free data retrieval call binding the contract method 0x580c8f3d.
 //
-// Solidity: function secondsPerEpoch() constant returns(uint256)
+// Solidity: function secondsPerEpoch() view returns(uint256)
 func (_Staking *StakingCallerSession) SecondsPerEpoch() (*big.Int, error) {
 	return _Staking.Contract.SecondsPerEpoch(&_Staking.CallOpts)
 }
 
 // Stakeholders is a free data retrieval call binding the contract method 0x423ce1ae.
 //
-// Solidity: function stakeholders(address , uint256 ) constant returns(uint256)
+// Solidity: function stakeholders(address , uint256 ) view returns(uint256)
 func (_Staking *StakingCaller) Stakeholders(opts *bind.CallOpts, arg0 common.Address, arg1 *big.Int) (*big.Int, error) {
-	var (
-		ret0 = new(*big.Int)
-	)
-	out := ret0
-	err := _Staking.contract.Call(opts, out, "stakeholders", arg0, arg1)
-	return *ret0, err
+	var out []interface{}
+	err := _Staking.contract.Call(opts, &out, "stakeholders", arg0, arg1)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
 }
 
 // Stakeholders is a free data retrieval call binding the contract method 0x423ce1ae.
 //
-// Solidity: function stakeholders(address , uint256 ) constant returns(uint256)
+// Solidity: function stakeholders(address , uint256 ) view returns(uint256)
 func (_Staking *StakingSession) Stakeholders(arg0 common.Address, arg1 *big.Int) (*big.Int, error) {
 	return _Staking.Contract.Stakeholders(&_Staking.CallOpts, arg0, arg1)
 }
 
 // Stakeholders is a free data retrieval call binding the contract method 0x423ce1ae.
 //
-// Solidity: function stakeholders(address , uint256 ) constant returns(uint256)
+// Solidity: function stakeholders(address , uint256 ) view returns(uint256)
 func (_Staking *StakingCallerSession) Stakeholders(arg0 common.Address, arg1 *big.Int) (*big.Int, error) {
 	return _Staking.Contract.Stakeholders(&_Staking.CallOpts, arg0, arg1)
 }
 
 // Token is a free data retrieval call binding the contract method 0xfc0c546a.
 //
-// Solidity: function token() constant returns(address)
+// Solidity: function token() view returns(address)
 func (_Staking *StakingCaller) Token(opts *bind.CallOpts) (common.Address, error) {
-	var (
-		ret0 = new(common.Address)
-	)
-	out := ret0
-	err := _Staking.contract.Call(opts, out, "token")
-	return *ret0, err
+	var out []interface{}
+	err := _Staking.contract.Call(opts, &out, "token")
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
 }
 
 // Token is a free data retrieval call binding the contract method 0xfc0c546a.
 //
-// Solidity: function token() constant returns(address)
+// Solidity: function token() view returns(address)
 func (_Staking *StakingSession) Token() (common.Address, error) {
 	return _Staking.Contract.Token(&_Staking.CallOpts)
 }
 
 // Token is a free data retrieval call binding the contract method 0xfc0c546a.
 //
-// Solidity: function token() constant returns(address)
+// Solidity: function token() view returns(address)
 func (_Staking *StakingCallerSession) Token() (common.Address, error) {
 	return _Staking.Contract.Token(&_Staking.CallOpts)
 }
 
 // TotalStaked is a free data retrieval call binding the contract method 0x817b1cd2.
 //
-// Solidity: function totalStaked() constant returns(uint256)
+// Solidity: function totalStaked() view returns(uint256)
 func (_Staking *StakingCaller) TotalStaked(opts *bind.CallOpts) (*big.Int, error) {
-	var (
-		ret0 = new(*big.Int)
-	)
-	out := ret0
-	err := _Staking.contract.Call(opts, out, "totalStaked")
-	return *ret0, err
+	var out []interface{}
+	err := _Staking.contract.Call(opts, &out, "totalStaked")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
 }
 
 // TotalStaked is a free data retrieval call binding the contract method 0x817b1cd2.
 //
-// Solidity: function totalStaked() constant returns(uint256)
+// Solidity: function totalStaked() view returns(uint256)
 func (_Staking *StakingSession) TotalStaked() (*big.Int, error) {
 	return _Staking.Contract.TotalStaked(&_Staking.CallOpts)
 }
 
 // TotalStaked is a free data retrieval call binding the contract method 0x817b1cd2.
 //
-// Solidity: function totalStaked() constant returns(uint256)
+// Solidity: function totalStaked() view returns(uint256)
 func (_Staking *StakingCallerSession) TotalStaked() (*big.Int, error) {
 	return _Staking.Contract.TotalStaked(&_Staking.CallOpts)
 }
 
 // UnStakeDuration is a free data retrieval call binding the contract method 0xc698d495.
 //
-// Solidity: function unStakeDuration() constant returns(uint256)
+// Solidity: function unStakeDuration() view returns(uint256)
 func (_Staking *StakingCaller) UnStakeDuration(opts *bind.CallOpts) (*big.Int, error) {
-	var (
-		ret0 = new(*big.Int)
-	)
-	out := ret0
-	err := _Staking.contract.Call(opts, out, "unStakeDuration")
-	return *ret0, err
+	var out []interface{}
+	err := _Staking.contract.Call(opts, &out, "unStakeDuration")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
 }
 
 // UnStakeDuration is a free data retrieval call binding the contract method 0xc698d495.
 //
-// Solidity: function unStakeDuration() constant returns(uint256)
+// Solidity: function unStakeDuration() view returns(uint256)
 func (_Staking *StakingSession) UnStakeDuration() (*big.Int, error) {
 	return _Staking.Contract.UnStakeDuration(&_Staking.CallOpts)
 }
 
 // UnStakeDuration is a free data retrieval call binding the contract method 0xc698d495.
 //
-// Solidity: function unStakeDuration() constant returns(uint256)
+// Solidity: function unStakeDuration() view returns(uint256)
 func (_Staking *StakingCallerSession) UnStakeDuration() (*big.Int, error) {
 	return _Staking.Contract.UnStakeDuration(&_Staking.CallOpts)
 }
 
 // Whitelist is a free data retrieval call binding the contract method 0x9b19251a.
 //
-// Solidity: function whitelist(address ) constant returns(bool)
+// Solidity: function whitelist(address ) view returns(bool)
 func (_Staking *StakingCaller) Whitelist(opts *bind.CallOpts, arg0 common.Address) (bool, error) {
-	var (
-		ret0 = new(bool)
-	)
-	out := ret0
-	err := _Staking.contract.Call(opts, out, "whitelist", arg0)
-	return *ret0, err
+	var out []interface{}
+	err := _Staking.contract.Call(opts, &out, "whitelist", arg0)
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
 }
 
 // Whitelist is a free data retrieval call binding the contract method 0x9b19251a.
 //
-// Solidity: function whitelist(address ) constant returns(bool)
+// Solidity: function whitelist(address ) view returns(bool)
 func (_Staking *StakingSession) Whitelist(arg0 common.Address) (bool, error) {
 	return _Staking.Contract.Whitelist(&_Staking.CallOpts, arg0)
 }
 
 // Whitelist is a free data retrieval call binding the contract method 0x9b19251a.
 //
-// Solidity: function whitelist(address ) constant returns(bool)
+// Solidity: function whitelist(address ) view returns(bool)
 func (_Staking *StakingCallerSession) Whitelist(arg0 common.Address) (bool, error) {
 	return _Staking.Contract.Whitelist(&_Staking.CallOpts, arg0)
 }
@@ -1140,6 +1248,17 @@ func (_Staking *StakingFilterer) WatchBucketCreated(opts *bind.WatchOpts, sink c
 	}), nil
 }
 
+// ParseBucketCreated is a log parse operation binding the contract event 0xbecddf0f61f76a4ac94a507fbc32c036d2fb7c4b466cad82dd9a4a2d76b263fe.
+//
+// Solidity: event BucketCreated(uint256 bucketIndex, bytes12 canName, uint256 amount, uint256 stakeDuration, bool nonDecay, bytes data)
+func (_Staking *StakingFilterer) ParseBucketCreated(log types.Log) (*StakingBucketCreated, error) {
+	event := new(StakingBucketCreated)
+	if err := _Staking.contract.UnpackLog(event, "BucketCreated", log); err != nil {
+		return nil, err
+	}
+	return event, nil
+}
+
 // StakingBucketUnstakeIterator is returned from FilterBucketUnstake and is used to iterate over the raw logs and unpacked data for BucketUnstake events raised by the Staking contract.
 type StakingBucketUnstakeIterator struct {
 	Event *StakingBucketUnstake // Event containing the contract specifics and raw log
@@ -1263,6 +1382,17 @@ func (_Staking *StakingFilterer) WatchBucketUnstake(opts *bind.WatchOpts, sink c
 			}
 		}
 	}), nil
+}
+
+// ParseBucketUnstake is a log parse operation binding the contract event 0xaa192dc938c20fb63756fbd8f4d9f46092c3252f772b2c549c4688c118b6b475.
+//
+// Solidity: event BucketUnstake(uint256 bucketIndex, bytes12 canName, uint256 amount, bytes data)
+func (_Staking *StakingFilterer) ParseBucketUnstake(log types.Log) (*StakingBucketUnstake, error) {
+	event := new(StakingBucketUnstake)
+	if err := _Staking.contract.UnpackLog(event, "BucketUnstake", log); err != nil {
+		return nil, err
+	}
+	return event, nil
 }
 
 // StakingBucketUpdatedIterator is returned from FilterBucketUpdated and is used to iterate over the raw logs and unpacked data for BucketUpdated events raised by the Staking contract.
@@ -1393,6 +1523,17 @@ func (_Staking *StakingFilterer) WatchBucketUpdated(opts *bind.WatchOpts, sink c
 	}), nil
 }
 
+// ParseBucketUpdated is a log parse operation binding the contract event 0x004bbbedd0138c223ffed73fdab05a22a5d22770de54bea694d06661d59d1600.
+//
+// Solidity: event BucketUpdated(uint256 bucketIndex, bytes12 canName, uint256 stakeDuration, uint256 stakeStartTime, bool nonDecay, address bucketOwner, bytes data)
+func (_Staking *StakingFilterer) ParseBucketUpdated(log types.Log) (*StakingBucketUpdated, error) {
+	event := new(StakingBucketUpdated)
+	if err := _Staking.contract.UnpackLog(event, "BucketUpdated", log); err != nil {
+		return nil, err
+	}
+	return event, nil
+}
+
 // StakingBucketWithdrawIterator is returned from FilterBucketWithdraw and is used to iterate over the raw logs and unpacked data for BucketWithdraw events raised by the Staking contract.
 type StakingBucketWithdrawIterator struct {
 	Event *StakingBucketWithdraw // Event containing the contract specifics and raw log
@@ -1518,6 +1659,17 @@ func (_Staking *StakingFilterer) WatchBucketWithdraw(opts *bind.WatchOpts, sink 
 	}), nil
 }
 
+// ParseBucketWithdraw is a log parse operation binding the contract event 0x2a79739690fe6bf5933c5d812824e30c2b95d43b6ddadd96148a4493d3b56540.
+//
+// Solidity: event BucketWithdraw(uint256 bucketIndex, bytes12 canName, uint256 amount, bytes data)
+func (_Staking *StakingFilterer) ParseBucketWithdraw(log types.Log) (*StakingBucketWithdraw, error) {
+	event := new(StakingBucketWithdraw)
+	if err := _Staking.contract.UnpackLog(event, "BucketWithdraw", log); err != nil {
+		return nil, err
+	}
+	return event, nil
+}
+
 // StakingPauseIterator is returned from FilterPause and is used to iterate over the raw logs and unpacked data for Pause events raised by the Staking contract.
 type StakingPauseIterator struct {
 	Event *StakingPause // Event containing the contract specifics and raw log
@@ -1639,6 +1791,17 @@ func (_Staking *StakingFilterer) WatchPause(opts *bind.WatchOpts, sink chan<- *S
 	}), nil
 }
 
+// ParsePause is a log parse operation binding the contract event 0x6985a02210a168e66602d3235cb6db0e70f92b3ba4d376a33c0f3d9434bff625.
+//
+// Solidity: event Pause()
+func (_Staking *StakingFilterer) ParsePause(log types.Log) (*StakingPause, error) {
+	event := new(StakingPause)
+	if err := _Staking.contract.UnpackLog(event, "Pause", log); err != nil {
+		return nil, err
+	}
+	return event, nil
+}
+
 // StakingUnpauseIterator is returned from FilterUnpause and is used to iterate over the raw logs and unpacked data for Unpause events raised by the Staking contract.
 type StakingUnpauseIterator struct {
 	Event *StakingUnpause // Event containing the contract specifics and raw log
@@ -1758,6 +1921,17 @@ func (_Staking *StakingFilterer) WatchUnpause(opts *bind.WatchOpts, sink chan<- 
 			}
 		}
 	}), nil
+}
+
+// ParseUnpause is a log parse operation binding the contract event 0x7805862f689e2f13df9f062ff482ad3ad112aca9e0847911ed832e158c525b33.
+//
+// Solidity: event Unpause()
+func (_Staking *StakingFilterer) ParseUnpause(log types.Log) (*StakingUnpause, error) {
+	event := new(StakingUnpause)
+	if err := _Staking.contract.UnpackLog(event, "Unpause", log); err != nil {
+		return nil, err
+	}
+	return event, nil
 }
 
 // StakingWhitelistedAddressAddedIterator is returned from FilterWhitelistedAddressAdded and is used to iterate over the raw logs and unpacked data for WhitelistedAddressAdded events raised by the Staking contract.
@@ -1882,6 +2056,17 @@ func (_Staking *StakingFilterer) WatchWhitelistedAddressAdded(opts *bind.WatchOp
 	}), nil
 }
 
+// ParseWhitelistedAddressAdded is a log parse operation binding the contract event 0xd1bba68c128cc3f427e5831b3c6f99f480b6efa6b9e80c757768f6124158cc3f.
+//
+// Solidity: event WhitelistedAddressAdded(address addr)
+func (_Staking *StakingFilterer) ParseWhitelistedAddressAdded(log types.Log) (*StakingWhitelistedAddressAdded, error) {
+	event := new(StakingWhitelistedAddressAdded)
+	if err := _Staking.contract.UnpackLog(event, "WhitelistedAddressAdded", log); err != nil {
+		return nil, err
+	}
+	return event, nil
+}
+
 // StakingWhitelistedAddressRemovedIterator is returned from FilterWhitelistedAddressRemoved and is used to iterate over the raw logs and unpacked data for WhitelistedAddressRemoved events raised by the Staking contract.
 type StakingWhitelistedAddressRemovedIterator struct {
 	Event *StakingWhitelistedAddressRemoved // Event containing the contract specifics and raw log
@@ -2002,4 +2187,15 @@ func (_Staking *StakingFilterer) WatchWhitelistedAddressRemoved(opts *bind.Watch
 			}
 		}
 	}), nil
+}
+
+// ParseWhitelistedAddressRemoved is a log parse operation binding the contract event 0xf1abf01a1043b7c244d128e8595cf0c1d10743b022b03a02dffd8ca3bf729f5a.
+//
+// Solidity: event WhitelistedAddressRemoved(address addr)
+func (_Staking *StakingFilterer) ParseWhitelistedAddressRemoved(log types.Log) (*StakingWhitelistedAddressRemoved, error) {
+	event := new(StakingWhitelistedAddressRemoved)
+	if err := _Staking.contract.UnpackLog(event, "WhitelistedAddressRemoved", log); err != nil {
+		return nil, err
+	}
+	return event, nil
 }

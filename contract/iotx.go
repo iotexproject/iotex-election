@@ -20,7 +20,6 @@ var (
 	_ = big.NewInt
 	_ = strings.NewReader
 	_ = ethereum.NotFound
-	_ = abi.U256
 	_ = bind.Bind
 	_ = common.Big1
 	_ = types.BloomLookup
@@ -138,7 +137,7 @@ func bindIOTX(address common.Address, caller bind.ContractCaller, transactor bin
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_IOTX *IOTXRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
+func (_IOTX *IOTXRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
 	return _IOTX.Contract.IOTXCaller.contract.Call(opts, result, method, params...)
 }
 
@@ -157,7 +156,7 @@ func (_IOTX *IOTXRaw) Transact(opts *bind.TransactOpts, method string, params ..
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_IOTX *IOTXCallerRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
+func (_IOTX *IOTXCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
 	return _IOTX.Contract.contract.Call(opts, result, method, params...)
 }
 
@@ -174,208 +173,248 @@ func (_IOTX *IOTXTransactorRaw) Transact(opts *bind.TransactOpts, method string,
 
 // Allowance is a free data retrieval call binding the contract method 0xdd62ed3e.
 //
-// Solidity: function allowance(address _owner, address _spender) constant returns(uint256)
+// Solidity: function allowance(address _owner, address _spender) view returns(uint256)
 func (_IOTX *IOTXCaller) Allowance(opts *bind.CallOpts, _owner common.Address, _spender common.Address) (*big.Int, error) {
-	var (
-		ret0 = new(*big.Int)
-	)
-	out := ret0
-	err := _IOTX.contract.Call(opts, out, "allowance", _owner, _spender)
-	return *ret0, err
+	var out []interface{}
+	err := _IOTX.contract.Call(opts, &out, "allowance", _owner, _spender)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
 }
 
 // Allowance is a free data retrieval call binding the contract method 0xdd62ed3e.
 //
-// Solidity: function allowance(address _owner, address _spender) constant returns(uint256)
+// Solidity: function allowance(address _owner, address _spender) view returns(uint256)
 func (_IOTX *IOTXSession) Allowance(_owner common.Address, _spender common.Address) (*big.Int, error) {
 	return _IOTX.Contract.Allowance(&_IOTX.CallOpts, _owner, _spender)
 }
 
 // Allowance is a free data retrieval call binding the contract method 0xdd62ed3e.
 //
-// Solidity: function allowance(address _owner, address _spender) constant returns(uint256)
+// Solidity: function allowance(address _owner, address _spender) view returns(uint256)
 func (_IOTX *IOTXCallerSession) Allowance(_owner common.Address, _spender common.Address) (*big.Int, error) {
 	return _IOTX.Contract.Allowance(&_IOTX.CallOpts, _owner, _spender)
 }
 
 // BalanceOf is a free data retrieval call binding the contract method 0x70a08231.
 //
-// Solidity: function balanceOf(address _owner) constant returns(uint256)
+// Solidity: function balanceOf(address _owner) view returns(uint256)
 func (_IOTX *IOTXCaller) BalanceOf(opts *bind.CallOpts, _owner common.Address) (*big.Int, error) {
-	var (
-		ret0 = new(*big.Int)
-	)
-	out := ret0
-	err := _IOTX.contract.Call(opts, out, "balanceOf", _owner)
-	return *ret0, err
+	var out []interface{}
+	err := _IOTX.contract.Call(opts, &out, "balanceOf", _owner)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
 }
 
 // BalanceOf is a free data retrieval call binding the contract method 0x70a08231.
 //
-// Solidity: function balanceOf(address _owner) constant returns(uint256)
+// Solidity: function balanceOf(address _owner) view returns(uint256)
 func (_IOTX *IOTXSession) BalanceOf(_owner common.Address) (*big.Int, error) {
 	return _IOTX.Contract.BalanceOf(&_IOTX.CallOpts, _owner)
 }
 
 // BalanceOf is a free data retrieval call binding the contract method 0x70a08231.
 //
-// Solidity: function balanceOf(address _owner) constant returns(uint256)
+// Solidity: function balanceOf(address _owner) view returns(uint256)
 func (_IOTX *IOTXCallerSession) BalanceOf(_owner common.Address) (*big.Int, error) {
 	return _IOTX.Contract.BalanceOf(&_IOTX.CallOpts, _owner)
 }
 
 // Decimals is a free data retrieval call binding the contract method 0x313ce567.
 //
-// Solidity: function decimals() constant returns(uint8)
+// Solidity: function decimals() view returns(uint8)
 func (_IOTX *IOTXCaller) Decimals(opts *bind.CallOpts) (uint8, error) {
-	var (
-		ret0 = new(uint8)
-	)
-	out := ret0
-	err := _IOTX.contract.Call(opts, out, "decimals")
-	return *ret0, err
+	var out []interface{}
+	err := _IOTX.contract.Call(opts, &out, "decimals")
+
+	if err != nil {
+		return *new(uint8), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(uint8)).(*uint8)
+
+	return out0, err
+
 }
 
 // Decimals is a free data retrieval call binding the contract method 0x313ce567.
 //
-// Solidity: function decimals() constant returns(uint8)
+// Solidity: function decimals() view returns(uint8)
 func (_IOTX *IOTXSession) Decimals() (uint8, error) {
 	return _IOTX.Contract.Decimals(&_IOTX.CallOpts)
 }
 
 // Decimals is a free data retrieval call binding the contract method 0x313ce567.
 //
-// Solidity: function decimals() constant returns(uint8)
+// Solidity: function decimals() view returns(uint8)
 func (_IOTX *IOTXCallerSession) Decimals() (uint8, error) {
 	return _IOTX.Contract.Decimals(&_IOTX.CallOpts)
 }
 
 // Name is a free data retrieval call binding the contract method 0x06fdde03.
 //
-// Solidity: function name() constant returns(string)
+// Solidity: function name() view returns(string)
 func (_IOTX *IOTXCaller) Name(opts *bind.CallOpts) (string, error) {
-	var (
-		ret0 = new(string)
-	)
-	out := ret0
-	err := _IOTX.contract.Call(opts, out, "name")
-	return *ret0, err
+	var out []interface{}
+	err := _IOTX.contract.Call(opts, &out, "name")
+
+	if err != nil {
+		return *new(string), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(string)).(*string)
+
+	return out0, err
+
 }
 
 // Name is a free data retrieval call binding the contract method 0x06fdde03.
 //
-// Solidity: function name() constant returns(string)
+// Solidity: function name() view returns(string)
 func (_IOTX *IOTXSession) Name() (string, error) {
 	return _IOTX.Contract.Name(&_IOTX.CallOpts)
 }
 
 // Name is a free data retrieval call binding the contract method 0x06fdde03.
 //
-// Solidity: function name() constant returns(string)
+// Solidity: function name() view returns(string)
 func (_IOTX *IOTXCallerSession) Name() (string, error) {
 	return _IOTX.Contract.Name(&_IOTX.CallOpts)
 }
 
 // Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
 //
-// Solidity: function owner() constant returns(address)
+// Solidity: function owner() view returns(address)
 func (_IOTX *IOTXCaller) Owner(opts *bind.CallOpts) (common.Address, error) {
-	var (
-		ret0 = new(common.Address)
-	)
-	out := ret0
-	err := _IOTX.contract.Call(opts, out, "owner")
-	return *ret0, err
+	var out []interface{}
+	err := _IOTX.contract.Call(opts, &out, "owner")
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
 }
 
 // Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
 //
-// Solidity: function owner() constant returns(address)
+// Solidity: function owner() view returns(address)
 func (_IOTX *IOTXSession) Owner() (common.Address, error) {
 	return _IOTX.Contract.Owner(&_IOTX.CallOpts)
 }
 
 // Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
 //
-// Solidity: function owner() constant returns(address)
+// Solidity: function owner() view returns(address)
 func (_IOTX *IOTXCallerSession) Owner() (common.Address, error) {
 	return _IOTX.Contract.Owner(&_IOTX.CallOpts)
 }
 
 // Paused is a free data retrieval call binding the contract method 0x5c975abb.
 //
-// Solidity: function paused() constant returns(bool)
+// Solidity: function paused() view returns(bool)
 func (_IOTX *IOTXCaller) Paused(opts *bind.CallOpts) (bool, error) {
-	var (
-		ret0 = new(bool)
-	)
-	out := ret0
-	err := _IOTX.contract.Call(opts, out, "paused")
-	return *ret0, err
+	var out []interface{}
+	err := _IOTX.contract.Call(opts, &out, "paused")
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
 }
 
 // Paused is a free data retrieval call binding the contract method 0x5c975abb.
 //
-// Solidity: function paused() constant returns(bool)
+// Solidity: function paused() view returns(bool)
 func (_IOTX *IOTXSession) Paused() (bool, error) {
 	return _IOTX.Contract.Paused(&_IOTX.CallOpts)
 }
 
 // Paused is a free data retrieval call binding the contract method 0x5c975abb.
 //
-// Solidity: function paused() constant returns(bool)
+// Solidity: function paused() view returns(bool)
 func (_IOTX *IOTXCallerSession) Paused() (bool, error) {
 	return _IOTX.Contract.Paused(&_IOTX.CallOpts)
 }
 
 // Symbol is a free data retrieval call binding the contract method 0x95d89b41.
 //
-// Solidity: function symbol() constant returns(string)
+// Solidity: function symbol() view returns(string)
 func (_IOTX *IOTXCaller) Symbol(opts *bind.CallOpts) (string, error) {
-	var (
-		ret0 = new(string)
-	)
-	out := ret0
-	err := _IOTX.contract.Call(opts, out, "symbol")
-	return *ret0, err
+	var out []interface{}
+	err := _IOTX.contract.Call(opts, &out, "symbol")
+
+	if err != nil {
+		return *new(string), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(string)).(*string)
+
+	return out0, err
+
 }
 
 // Symbol is a free data retrieval call binding the contract method 0x95d89b41.
 //
-// Solidity: function symbol() constant returns(string)
+// Solidity: function symbol() view returns(string)
 func (_IOTX *IOTXSession) Symbol() (string, error) {
 	return _IOTX.Contract.Symbol(&_IOTX.CallOpts)
 }
 
 // Symbol is a free data retrieval call binding the contract method 0x95d89b41.
 //
-// Solidity: function symbol() constant returns(string)
+// Solidity: function symbol() view returns(string)
 func (_IOTX *IOTXCallerSession) Symbol() (string, error) {
 	return _IOTX.Contract.Symbol(&_IOTX.CallOpts)
 }
 
 // TotalSupply is a free data retrieval call binding the contract method 0x18160ddd.
 //
-// Solidity: function totalSupply() constant returns(uint256)
+// Solidity: function totalSupply() view returns(uint256)
 func (_IOTX *IOTXCaller) TotalSupply(opts *bind.CallOpts) (*big.Int, error) {
-	var (
-		ret0 = new(*big.Int)
-	)
-	out := ret0
-	err := _IOTX.contract.Call(opts, out, "totalSupply")
-	return *ret0, err
+	var out []interface{}
+	err := _IOTX.contract.Call(opts, &out, "totalSupply")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
 }
 
 // TotalSupply is a free data retrieval call binding the contract method 0x18160ddd.
 //
-// Solidity: function totalSupply() constant returns(uint256)
+// Solidity: function totalSupply() view returns(uint256)
 func (_IOTX *IOTXSession) TotalSupply() (*big.Int, error) {
 	return _IOTX.Contract.TotalSupply(&_IOTX.CallOpts)
 }
 
 // TotalSupply is a free data retrieval call binding the contract method 0x18160ddd.
 //
-// Solidity: function totalSupply() constant returns(uint256)
+// Solidity: function totalSupply() view returns(uint256)
 func (_IOTX *IOTXCallerSession) TotalSupply() (*big.Int, error) {
 	return _IOTX.Contract.TotalSupply(&_IOTX.CallOpts)
 }
@@ -690,6 +729,17 @@ func (_IOTX *IOTXFilterer) WatchApproval(opts *bind.WatchOpts, sink chan<- *IOTX
 	}), nil
 }
 
+// ParseApproval is a log parse operation binding the contract event 0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925.
+//
+// Solidity: event Approval(address indexed owner, address indexed spender, uint256 value)
+func (_IOTX *IOTXFilterer) ParseApproval(log types.Log) (*IOTXApproval, error) {
+	event := new(IOTXApproval)
+	if err := _IOTX.contract.UnpackLog(event, "Approval", log); err != nil {
+		return nil, err
+	}
+	return event, nil
+}
+
 // IOTXOwnershipTransferredIterator is returned from FilterOwnershipTransferred and is used to iterate over the raw logs and unpacked data for OwnershipTransferred events raised by the IOTX contract.
 type IOTXOwnershipTransferredIterator struct {
 	Event *IOTXOwnershipTransferred // Event containing the contract specifics and raw log
@@ -831,6 +881,17 @@ func (_IOTX *IOTXFilterer) WatchOwnershipTransferred(opts *bind.WatchOpts, sink 
 	}), nil
 }
 
+// ParseOwnershipTransferred is a log parse operation binding the contract event 0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0.
+//
+// Solidity: event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)
+func (_IOTX *IOTXFilterer) ParseOwnershipTransferred(log types.Log) (*IOTXOwnershipTransferred, error) {
+	event := new(IOTXOwnershipTransferred)
+	if err := _IOTX.contract.UnpackLog(event, "OwnershipTransferred", log); err != nil {
+		return nil, err
+	}
+	return event, nil
+}
+
 // IOTXPauseIterator is returned from FilterPause and is used to iterate over the raw logs and unpacked data for Pause events raised by the IOTX contract.
 type IOTXPauseIterator struct {
 	Event *IOTXPause // Event containing the contract specifics and raw log
@@ -950,6 +1011,17 @@ func (_IOTX *IOTXFilterer) WatchPause(opts *bind.WatchOpts, sink chan<- *IOTXPau
 			}
 		}
 	}), nil
+}
+
+// ParsePause is a log parse operation binding the contract event 0x6985a02210a168e66602d3235cb6db0e70f92b3ba4d376a33c0f3d9434bff625.
+//
+// Solidity: event Pause()
+func (_IOTX *IOTXFilterer) ParsePause(log types.Log) (*IOTXPause, error) {
+	event := new(IOTXPause)
+	if err := _IOTX.contract.UnpackLog(event, "Pause", log); err != nil {
+		return nil, err
+	}
+	return event, nil
 }
 
 // IOTXTransferIterator is returned from FilterTransfer and is used to iterate over the raw logs and unpacked data for Transfer events raised by the IOTX contract.
@@ -1094,6 +1166,17 @@ func (_IOTX *IOTXFilterer) WatchTransfer(opts *bind.WatchOpts, sink chan<- *IOTX
 	}), nil
 }
 
+// ParseTransfer is a log parse operation binding the contract event 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef.
+//
+// Solidity: event Transfer(address indexed from, address indexed to, uint256 value)
+func (_IOTX *IOTXFilterer) ParseTransfer(log types.Log) (*IOTXTransfer, error) {
+	event := new(IOTXTransfer)
+	if err := _IOTX.contract.UnpackLog(event, "Transfer", log); err != nil {
+		return nil, err
+	}
+	return event, nil
+}
+
 // IOTXUnpauseIterator is returned from FilterUnpause and is used to iterate over the raw logs and unpacked data for Unpause events raised by the IOTX contract.
 type IOTXUnpauseIterator struct {
 	Event *IOTXUnpause // Event containing the contract specifics and raw log
@@ -1213,4 +1296,15 @@ func (_IOTX *IOTXFilterer) WatchUnpause(opts *bind.WatchOpts, sink chan<- *IOTXU
 			}
 		}
 	}), nil
+}
+
+// ParseUnpause is a log parse operation binding the contract event 0x7805862f689e2f13df9f062ff482ad3ad112aca9e0847911ed832e158c525b33.
+//
+// Solidity: event Unpause()
+func (_IOTX *IOTXFilterer) ParseUnpause(log types.Log) (*IOTXUnpause, error) {
+	event := new(IOTXUnpause)
+	if err := _IOTX.contract.UnpackLog(event, "Unpause", log); err != nil {
+		return nil, err
+	}
+	return event, nil
 }

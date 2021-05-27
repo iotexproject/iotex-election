@@ -17,7 +17,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/minio/blake2b-simd"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
@@ -25,6 +27,8 @@ const (
 	maxUint = ^uint(0)
 	maxInt  = int64(maxUint >> 1)
 )
+
+var ErrWrongType = errors.New("wrong data type held by interface{}")
 
 //Uint64ToInt64 converts uint64 to int64
 func Uint64ToInt64(u uint64) int64 {
@@ -77,6 +81,20 @@ func IsAllZeros(b []byte) bool {
 		}
 	}
 	return true
+}
+
+func ToEtherAddress(v interface{}) (common.Address, error) {
+	if addr, ok := v.(common.Address); ok {
+		return addr, nil
+	}
+	return common.Address{}, ErrWrongType
+}
+
+func ToBigInt(v interface{}) (*big.Int, error) {
+	if bn, ok := v.(*big.Int); ok {
+		return bn, nil
+	}
+	return nil, ErrWrongType
 }
 
 type item struct {

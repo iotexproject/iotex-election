@@ -20,7 +20,6 @@ var (
 	_ = big.NewInt
 	_ = strings.NewReader
 	_ = ethereum.NotFound
-	_ = abi.U256
 	_ = bind.Bind
 	_ = common.Big1
 	_ = types.BloomLookup
@@ -138,7 +137,7 @@ func bindRotatableVPS(address common.Address, caller bind.ContractCaller, transa
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_RotatableVPS *RotatableVPSRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
+func (_RotatableVPS *RotatableVPSRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
 	return _RotatableVPS.Contract.RotatableVPSCaller.contract.Call(opts, result, method, params...)
 }
 
@@ -157,7 +156,7 @@ func (_RotatableVPS *RotatableVPSRaw) Transact(opts *bind.TransactOpts, method s
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_RotatableVPS *RotatableVPSCallerRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
+func (_RotatableVPS *RotatableVPSCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
 	return _RotatableVPS.Contract.contract.Call(opts, result, method, params...)
 }
 
@@ -174,312 +173,372 @@ func (_RotatableVPS *RotatableVPSTransactorRaw) Transact(opts *bind.TransactOpts
 
 // ActiveVPS is a free data retrieval call binding the contract method 0x90332e4d.
 //
-// Solidity: function activeVPS() constant returns(address)
+// Solidity: function activeVPS() view returns(address)
 func (_RotatableVPS *RotatableVPSCaller) ActiveVPS(opts *bind.CallOpts) (common.Address, error) {
-	var (
-		ret0 = new(common.Address)
-	)
-	out := ret0
-	err := _RotatableVPS.contract.Call(opts, out, "activeVPS")
-	return *ret0, err
+	var out []interface{}
+	err := _RotatableVPS.contract.Call(opts, &out, "activeVPS")
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
 }
 
 // ActiveVPS is a free data retrieval call binding the contract method 0x90332e4d.
 //
-// Solidity: function activeVPS() constant returns(address)
+// Solidity: function activeVPS() view returns(address)
 func (_RotatableVPS *RotatableVPSSession) ActiveVPS() (common.Address, error) {
 	return _RotatableVPS.Contract.ActiveVPS(&_RotatableVPS.CallOpts)
 }
 
 // ActiveVPS is a free data retrieval call binding the contract method 0x90332e4d.
 //
-// Solidity: function activeVPS() constant returns(address)
+// Solidity: function activeVPS() view returns(address)
 func (_RotatableVPS *RotatableVPSCallerSession) ActiveVPS() (common.Address, error) {
 	return _RotatableVPS.Contract.ActiveVPS(&_RotatableVPS.CallOpts)
 }
 
 // ActiveVPSIndex is a free data retrieval call binding the contract method 0xcec455c7.
 //
-// Solidity: function activeVPSIndex() constant returns(uint256)
+// Solidity: function activeVPSIndex() view returns(uint256)
 func (_RotatableVPS *RotatableVPSCaller) ActiveVPSIndex(opts *bind.CallOpts) (*big.Int, error) {
-	var (
-		ret0 = new(*big.Int)
-	)
-	out := ret0
-	err := _RotatableVPS.contract.Call(opts, out, "activeVPSIndex")
-	return *ret0, err
+	var out []interface{}
+	err := _RotatableVPS.contract.Call(opts, &out, "activeVPSIndex")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
 }
 
 // ActiveVPSIndex is a free data retrieval call binding the contract method 0xcec455c7.
 //
-// Solidity: function activeVPSIndex() constant returns(uint256)
+// Solidity: function activeVPSIndex() view returns(uint256)
 func (_RotatableVPS *RotatableVPSSession) ActiveVPSIndex() (*big.Int, error) {
 	return _RotatableVPS.Contract.ActiveVPSIndex(&_RotatableVPS.CallOpts)
 }
 
 // ActiveVPSIndex is a free data retrieval call binding the contract method 0xcec455c7.
 //
-// Solidity: function activeVPSIndex() constant returns(uint256)
+// Solidity: function activeVPSIndex() view returns(uint256)
 func (_RotatableVPS *RotatableVPSCallerSession) ActiveVPSIndex() (*big.Int, error) {
 	return _RotatableVPS.Contract.ActiveVPSIndex(&_RotatableVPS.CallOpts)
 }
 
 // InactiveVPS is a free data retrieval call binding the contract method 0xd5a86bf2.
 //
-// Solidity: function inactiveVPS() constant returns(address)
+// Solidity: function inactiveVPS() view returns(address)
 func (_RotatableVPS *RotatableVPSCaller) InactiveVPS(opts *bind.CallOpts) (common.Address, error) {
-	var (
-		ret0 = new(common.Address)
-	)
-	out := ret0
-	err := _RotatableVPS.contract.Call(opts, out, "inactiveVPS")
-	return *ret0, err
+	var out []interface{}
+	err := _RotatableVPS.contract.Call(opts, &out, "inactiveVPS")
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
 }
 
 // InactiveVPS is a free data retrieval call binding the contract method 0xd5a86bf2.
 //
-// Solidity: function inactiveVPS() constant returns(address)
+// Solidity: function inactiveVPS() view returns(address)
 func (_RotatableVPS *RotatableVPSSession) InactiveVPS() (common.Address, error) {
 	return _RotatableVPS.Contract.InactiveVPS(&_RotatableVPS.CallOpts)
 }
 
 // InactiveVPS is a free data retrieval call binding the contract method 0xd5a86bf2.
 //
-// Solidity: function inactiveVPS() constant returns(address)
+// Solidity: function inactiveVPS() view returns(address)
 func (_RotatableVPS *RotatableVPSCallerSession) InactiveVPS() (common.Address, error) {
 	return _RotatableVPS.Contract.InactiveVPS(&_RotatableVPS.CallOpts)
 }
 
 // InactiveViewID is a free data retrieval call binding the contract method 0x63aedb0a.
 //
-// Solidity: function inactiveViewID() constant returns(uint256)
+// Solidity: function inactiveViewID() view returns(uint256)
 func (_RotatableVPS *RotatableVPSCaller) InactiveViewID(opts *bind.CallOpts) (*big.Int, error) {
-	var (
-		ret0 = new(*big.Int)
-	)
-	out := ret0
-	err := _RotatableVPS.contract.Call(opts, out, "inactiveViewID")
-	return *ret0, err
+	var out []interface{}
+	err := _RotatableVPS.contract.Call(opts, &out, "inactiveViewID")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
 }
 
 // InactiveViewID is a free data retrieval call binding the contract method 0x63aedb0a.
 //
-// Solidity: function inactiveViewID() constant returns(uint256)
+// Solidity: function inactiveViewID() view returns(uint256)
 func (_RotatableVPS *RotatableVPSSession) InactiveViewID() (*big.Int, error) {
 	return _RotatableVPS.Contract.InactiveViewID(&_RotatableVPS.CallOpts)
 }
 
 // InactiveViewID is a free data retrieval call binding the contract method 0x63aedb0a.
 //
-// Solidity: function inactiveViewID() constant returns(uint256)
+// Solidity: function inactiveViewID() view returns(uint256)
 func (_RotatableVPS *RotatableVPSCallerSession) InactiveViewID() (*big.Int, error) {
 	return _RotatableVPS.Contract.InactiveViewID(&_RotatableVPS.CallOpts)
 }
 
 // Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
 //
-// Solidity: function owner() constant returns(address)
+// Solidity: function owner() view returns(address)
 func (_RotatableVPS *RotatableVPSCaller) Owner(opts *bind.CallOpts) (common.Address, error) {
-	var (
-		ret0 = new(common.Address)
-	)
-	out := ret0
-	err := _RotatableVPS.contract.Call(opts, out, "owner")
-	return *ret0, err
+	var out []interface{}
+	err := _RotatableVPS.contract.Call(opts, &out, "owner")
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
 }
 
 // Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
 //
-// Solidity: function owner() constant returns(address)
+// Solidity: function owner() view returns(address)
 func (_RotatableVPS *RotatableVPSSession) Owner() (common.Address, error) {
 	return _RotatableVPS.Contract.Owner(&_RotatableVPS.CallOpts)
 }
 
 // Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
 //
-// Solidity: function owner() constant returns(address)
+// Solidity: function owner() view returns(address)
 func (_RotatableVPS *RotatableVPSCallerSession) Owner() (common.Address, error) {
 	return _RotatableVPS.Contract.Owner(&_RotatableVPS.CallOpts)
 }
 
 // Paused is a free data retrieval call binding the contract method 0x5c975abb.
 //
-// Solidity: function paused() constant returns(bool)
+// Solidity: function paused() view returns(bool)
 func (_RotatableVPS *RotatableVPSCaller) Paused(opts *bind.CallOpts) (bool, error) {
-	var (
-		ret0 = new(bool)
-	)
-	out := ret0
-	err := _RotatableVPS.contract.Call(opts, out, "paused")
-	return *ret0, err
+	var out []interface{}
+	err := _RotatableVPS.contract.Call(opts, &out, "paused")
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
 }
 
 // Paused is a free data retrieval call binding the contract method 0x5c975abb.
 //
-// Solidity: function paused() constant returns(bool)
+// Solidity: function paused() view returns(bool)
 func (_RotatableVPS *RotatableVPSSession) Paused() (bool, error) {
 	return _RotatableVPS.Contract.Paused(&_RotatableVPS.CallOpts)
 }
 
 // Paused is a free data retrieval call binding the contract method 0x5c975abb.
 //
-// Solidity: function paused() constant returns(bool)
+// Solidity: function paused() view returns(bool)
 func (_RotatableVPS *RotatableVPSCallerSession) Paused() (bool, error) {
 	return _RotatableVPS.Contract.Paused(&_RotatableVPS.CallOpts)
 }
 
 // PowerOf is a free data retrieval call binding the contract method 0x1ac84690.
 //
-// Solidity: function powerOf(address _voter) constant returns(uint256)
+// Solidity: function powerOf(address _voter) view returns(uint256)
 func (_RotatableVPS *RotatableVPSCaller) PowerOf(opts *bind.CallOpts, _voter common.Address) (*big.Int, error) {
-	var (
-		ret0 = new(*big.Int)
-	)
-	out := ret0
-	err := _RotatableVPS.contract.Call(opts, out, "powerOf", _voter)
-	return *ret0, err
+	var out []interface{}
+	err := _RotatableVPS.contract.Call(opts, &out, "powerOf", _voter)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
 }
 
 // PowerOf is a free data retrieval call binding the contract method 0x1ac84690.
 //
-// Solidity: function powerOf(address _voter) constant returns(uint256)
+// Solidity: function powerOf(address _voter) view returns(uint256)
 func (_RotatableVPS *RotatableVPSSession) PowerOf(_voter common.Address) (*big.Int, error) {
 	return _RotatableVPS.Contract.PowerOf(&_RotatableVPS.CallOpts, _voter)
 }
 
 // PowerOf is a free data retrieval call binding the contract method 0x1ac84690.
 //
-// Solidity: function powerOf(address _voter) constant returns(uint256)
+// Solidity: function powerOf(address _voter) view returns(uint256)
 func (_RotatableVPS *RotatableVPSCallerSession) PowerOf(_voter common.Address) (*big.Int, error) {
 	return _RotatableVPS.Contract.PowerOf(&_RotatableVPS.CallOpts, _voter)
 }
 
 // PowersOf is a free data retrieval call binding the contract method 0xff82c4ca.
 //
-// Solidity: function powersOf(address[] _voters) constant returns(uint256[])
+// Solidity: function powersOf(address[] _voters) view returns(uint256[])
 func (_RotatableVPS *RotatableVPSCaller) PowersOf(opts *bind.CallOpts, _voters []common.Address) ([]*big.Int, error) {
-	var (
-		ret0 = new([]*big.Int)
-	)
-	out := ret0
-	err := _RotatableVPS.contract.Call(opts, out, "powersOf", _voters)
-	return *ret0, err
+	var out []interface{}
+	err := _RotatableVPS.contract.Call(opts, &out, "powersOf", _voters)
+
+	if err != nil {
+		return *new([]*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([]*big.Int)).(*[]*big.Int)
+
+	return out0, err
+
 }
 
 // PowersOf is a free data retrieval call binding the contract method 0xff82c4ca.
 //
-// Solidity: function powersOf(address[] _voters) constant returns(uint256[])
+// Solidity: function powersOf(address[] _voters) view returns(uint256[])
 func (_RotatableVPS *RotatableVPSSession) PowersOf(_voters []common.Address) ([]*big.Int, error) {
 	return _RotatableVPS.Contract.PowersOf(&_RotatableVPS.CallOpts, _voters)
 }
 
 // PowersOf is a free data retrieval call binding the contract method 0xff82c4ca.
 //
-// Solidity: function powersOf(address[] _voters) constant returns(uint256[])
+// Solidity: function powersOf(address[] _voters) view returns(uint256[])
 func (_RotatableVPS *RotatableVPSCallerSession) PowersOf(_voters []common.Address) ([]*big.Int, error) {
 	return _RotatableVPS.Contract.PowersOf(&_RotatableVPS.CallOpts, _voters)
 }
 
 // TotalPower is a free data retrieval call binding the contract method 0xdb3ad22c.
 //
-// Solidity: function totalPower() constant returns(uint256)
+// Solidity: function totalPower() view returns(uint256)
 func (_RotatableVPS *RotatableVPSCaller) TotalPower(opts *bind.CallOpts) (*big.Int, error) {
-	var (
-		ret0 = new(*big.Int)
-	)
-	out := ret0
-	err := _RotatableVPS.contract.Call(opts, out, "totalPower")
-	return *ret0, err
+	var out []interface{}
+	err := _RotatableVPS.contract.Call(opts, &out, "totalPower")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
 }
 
 // TotalPower is a free data retrieval call binding the contract method 0xdb3ad22c.
 //
-// Solidity: function totalPower() constant returns(uint256)
+// Solidity: function totalPower() view returns(uint256)
 func (_RotatableVPS *RotatableVPSSession) TotalPower() (*big.Int, error) {
 	return _RotatableVPS.Contract.TotalPower(&_RotatableVPS.CallOpts)
 }
 
 // TotalPower is a free data retrieval call binding the contract method 0xdb3ad22c.
 //
-// Solidity: function totalPower() constant returns(uint256)
+// Solidity: function totalPower() view returns(uint256)
 func (_RotatableVPS *RotatableVPSCallerSession) TotalPower() (*big.Int, error) {
 	return _RotatableVPS.Contract.TotalPower(&_RotatableVPS.CallOpts)
 }
 
 // ViewID is a free data retrieval call binding the contract method 0x8280264b.
 //
-// Solidity: function viewID() constant returns(uint256)
+// Solidity: function viewID() view returns(uint256)
 func (_RotatableVPS *RotatableVPSCaller) ViewID(opts *bind.CallOpts) (*big.Int, error) {
-	var (
-		ret0 = new(*big.Int)
-	)
-	out := ret0
-	err := _RotatableVPS.contract.Call(opts, out, "viewID")
-	return *ret0, err
+	var out []interface{}
+	err := _RotatableVPS.contract.Call(opts, &out, "viewID")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
 }
 
 // ViewID is a free data retrieval call binding the contract method 0x8280264b.
 //
-// Solidity: function viewID() constant returns(uint256)
+// Solidity: function viewID() view returns(uint256)
 func (_RotatableVPS *RotatableVPSSession) ViewID() (*big.Int, error) {
 	return _RotatableVPS.Contract.ViewID(&_RotatableVPS.CallOpts)
 }
 
 // ViewID is a free data retrieval call binding the contract method 0x8280264b.
 //
-// Solidity: function viewID() constant returns(uint256)
+// Solidity: function viewID() view returns(uint256)
 func (_RotatableVPS *RotatableVPSCallerSession) ViewID() (*big.Int, error) {
 	return _RotatableVPS.Contract.ViewID(&_RotatableVPS.CallOpts)
 }
 
 // Voters is a free data retrieval call binding the contract method 0xfba00cbd.
 //
-// Solidity: function voters(uint256 _offset, uint256 _limit) constant returns(address[] voters_)
+// Solidity: function voters(uint256 _offset, uint256 _limit) view returns(address[] voters_)
 func (_RotatableVPS *RotatableVPSCaller) Voters(opts *bind.CallOpts, _offset *big.Int, _limit *big.Int) ([]common.Address, error) {
-	var (
-		ret0 = new([]common.Address)
-	)
-	out := ret0
-	err := _RotatableVPS.contract.Call(opts, out, "voters", _offset, _limit)
-	return *ret0, err
+	var out []interface{}
+	err := _RotatableVPS.contract.Call(opts, &out, "voters", _offset, _limit)
+
+	if err != nil {
+		return *new([]common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([]common.Address)).(*[]common.Address)
+
+	return out0, err
+
 }
 
 // Voters is a free data retrieval call binding the contract method 0xfba00cbd.
 //
-// Solidity: function voters(uint256 _offset, uint256 _limit) constant returns(address[] voters_)
+// Solidity: function voters(uint256 _offset, uint256 _limit) view returns(address[] voters_)
 func (_RotatableVPS *RotatableVPSSession) Voters(_offset *big.Int, _limit *big.Int) ([]common.Address, error) {
 	return _RotatableVPS.Contract.Voters(&_RotatableVPS.CallOpts, _offset, _limit)
 }
 
 // Voters is a free data retrieval call binding the contract method 0xfba00cbd.
 //
-// Solidity: function voters(uint256 _offset, uint256 _limit) constant returns(address[] voters_)
+// Solidity: function voters(uint256 _offset, uint256 _limit) view returns(address[] voters_)
 func (_RotatableVPS *RotatableVPSCallerSession) Voters(_offset *big.Int, _limit *big.Int) ([]common.Address, error) {
 	return _RotatableVPS.Contract.Voters(&_RotatableVPS.CallOpts, _offset, _limit)
 }
 
 // Whitelist is a free data retrieval call binding the contract method 0x9b19251a.
 //
-// Solidity: function whitelist(address ) constant returns(bool)
+// Solidity: function whitelist(address ) view returns(bool)
 func (_RotatableVPS *RotatableVPSCaller) Whitelist(opts *bind.CallOpts, arg0 common.Address) (bool, error) {
-	var (
-		ret0 = new(bool)
-	)
-	out := ret0
-	err := _RotatableVPS.contract.Call(opts, out, "whitelist", arg0)
-	return *ret0, err
+	var out []interface{}
+	err := _RotatableVPS.contract.Call(opts, &out, "whitelist", arg0)
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
 }
 
 // Whitelist is a free data retrieval call binding the contract method 0x9b19251a.
 //
-// Solidity: function whitelist(address ) constant returns(bool)
+// Solidity: function whitelist(address ) view returns(bool)
 func (_RotatableVPS *RotatableVPSSession) Whitelist(arg0 common.Address) (bool, error) {
 	return _RotatableVPS.Contract.Whitelist(&_RotatableVPS.CallOpts, arg0)
 }
 
 // Whitelist is a free data retrieval call binding the contract method 0x9b19251a.
 //
-// Solidity: function whitelist(address ) constant returns(bool)
+// Solidity: function whitelist(address ) view returns(bool)
 func (_RotatableVPS *RotatableVPSCallerSession) Whitelist(arg0 common.Address) (bool, error) {
 	return _RotatableVPS.Contract.Whitelist(&_RotatableVPS.CallOpts, arg0)
 }
@@ -772,6 +831,17 @@ func (_RotatableVPS *RotatableVPSFilterer) WatchOwnershipTransferred(opts *bind.
 	}), nil
 }
 
+// ParseOwnershipTransferred is a log parse operation binding the contract event 0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0.
+//
+// Solidity: event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)
+func (_RotatableVPS *RotatableVPSFilterer) ParseOwnershipTransferred(log types.Log) (*RotatableVPSOwnershipTransferred, error) {
+	event := new(RotatableVPSOwnershipTransferred)
+	if err := _RotatableVPS.contract.UnpackLog(event, "OwnershipTransferred", log); err != nil {
+		return nil, err
+	}
+	return event, nil
+}
+
 // RotatableVPSSetVotingPowerIterator is returned from FilterSetVotingPower and is used to iterate over the raw logs and unpacked data for SetVotingPower events raised by the RotatableVPS contract.
 type RotatableVPSSetVotingPowerIterator struct {
 	Event *RotatableVPSSetVotingPower // Event containing the contract specifics and raw log
@@ -893,6 +963,17 @@ func (_RotatableVPS *RotatableVPSFilterer) WatchSetVotingPower(opts *bind.WatchO
 			}
 		}
 	}), nil
+}
+
+// ParseSetVotingPower is a log parse operation binding the contract event 0x048ebfbc43eddab7a7a576fb6a22551fb89c9fa0bb520948a32ec8b1546640d3.
+//
+// Solidity: event SetVotingPower(address voter, uint256 power)
+func (_RotatableVPS *RotatableVPSFilterer) ParseSetVotingPower(log types.Log) (*RotatableVPSSetVotingPower, error) {
+	event := new(RotatableVPSSetVotingPower)
+	if err := _RotatableVPS.contract.UnpackLog(event, "SetVotingPower", log); err != nil {
+		return nil, err
+	}
+	return event, nil
 }
 
 // RotatableVPSWhitelistedAddressAddedIterator is returned from FilterWhitelistedAddressAdded and is used to iterate over the raw logs and unpacked data for WhitelistedAddressAdded events raised by the RotatableVPS contract.
@@ -1017,6 +1098,17 @@ func (_RotatableVPS *RotatableVPSFilterer) WatchWhitelistedAddressAdded(opts *bi
 	}), nil
 }
 
+// ParseWhitelistedAddressAdded is a log parse operation binding the contract event 0xd1bba68c128cc3f427e5831b3c6f99f480b6efa6b9e80c757768f6124158cc3f.
+//
+// Solidity: event WhitelistedAddressAdded(address addr)
+func (_RotatableVPS *RotatableVPSFilterer) ParseWhitelistedAddressAdded(log types.Log) (*RotatableVPSWhitelistedAddressAdded, error) {
+	event := new(RotatableVPSWhitelistedAddressAdded)
+	if err := _RotatableVPS.contract.UnpackLog(event, "WhitelistedAddressAdded", log); err != nil {
+		return nil, err
+	}
+	return event, nil
+}
+
 // RotatableVPSWhitelistedAddressRemovedIterator is returned from FilterWhitelistedAddressRemoved and is used to iterate over the raw logs and unpacked data for WhitelistedAddressRemoved events raised by the RotatableVPS contract.
 type RotatableVPSWhitelistedAddressRemovedIterator struct {
 	Event *RotatableVPSWhitelistedAddressRemoved // Event containing the contract specifics and raw log
@@ -1137,4 +1229,15 @@ func (_RotatableVPS *RotatableVPSFilterer) WatchWhitelistedAddressRemoved(opts *
 			}
 		}
 	}), nil
+}
+
+// ParseWhitelistedAddressRemoved is a log parse operation binding the contract event 0xf1abf01a1043b7c244d128e8595cf0c1d10743b022b03a02dffd8ca3bf729f5a.
+//
+// Solidity: event WhitelistedAddressRemoved(address addr)
+func (_RotatableVPS *RotatableVPSFilterer) ParseWhitelistedAddressRemoved(log types.Log) (*RotatableVPSWhitelistedAddressRemoved, error) {
+	event := new(RotatableVPSWhitelistedAddressRemoved)
+	if err := _RotatableVPS.contract.UnpackLog(event, "WhitelistedAddressRemoved", log); err != nil {
+		return nil, err
+	}
+	return event, nil
 }

@@ -21,18 +21,21 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/golang/protobuf/ptypes"
 	lru "github.com/hashicorp/golang-lru"
-	"github.com/pkg/errors"
-	"go.uber.org/zap"
-
 	"github.com/iotexproject/go-pkgs/hash"
 	"github.com/iotexproject/iotex-address/address"
 	"github.com/iotexproject/iotex-antenna-go/v2/iotex"
-	"github.com/iotexproject/iotex-election/contract"
-	"github.com/iotexproject/iotex-election/types"
 	"github.com/iotexproject/iotex-proto/golang/iotexapi"
 	"github.com/iotexproject/iotex-proto/golang/iotextypes"
+	"github.com/pkg/errors"
+	"go.uber.org/zap"
+
+	"github.com/iotexproject/iotex-election/contract"
+	"github.com/iotexproject/iotex-election/types"
 )
 
 type (
@@ -54,7 +57,7 @@ type (
 		tickerDuration         time.Duration
 		client                 iotexapi.APIServiceClient
 		stakingContractAddress address.Address
-		abi                    abi.ABI
+		boundContract          *bind.BoundContract
 	}
 
 	NativeCommitteeConfig struct {
@@ -136,7 +139,7 @@ func NewNativeStakingCommittee(
 		return nil, err
 	}
 	return &NativeCommittee{
-		abi:                    parsed,
+		boundContract:          bind.NewBoundContract(common.BytesToAddress(addr.Bytes()), parsed, nil, nil, nil),
 		archive:                archive,
 		cache:                  cache,
 		client:                 iotexapi.NewAPIServiceClient(conn),
@@ -436,10 +439,11 @@ func (nc *NativeCommittee) delta(
 	// update buckets correspondingly
 	for _, l := range response.Logs {
 		bucket := &pyggBucket{}
+		etherLog := toEtherLog(l)
 		switch hex.EncodeToString(l.Topics[0]) {
 		case topicCreated:
 			event := new(contract.PyggStakingPyggCreated)
-			if err := nc.abi.Unpack(event, "PyggCreated", l.Data); err != nil {
+			if err := nc.boundContract.UnpackLog(event, "PyggCreated", etherLog); err != nil {
 				return nil, err
 			}
 			bucket.Index = event.PyggIndex.Uint64()
@@ -451,7 +455,7 @@ func (nc *NativeCommittee) delta(
 			bucket.Owner = event.PyggOwner
 		case topicUpdated:
 			event := new(contract.PyggStakingPyggUpdated)
-			if err := nc.abi.Unpack(event, "PyggUpdated", l.Data); err != nil {
+			if err := nc.boundContract.UnpackLog(event, "PyggUpdated", etherLog); err != nil {
 				return nil, err
 			}
 			bucket.Index = event.PyggIndex.Uint64()
@@ -463,7 +467,7 @@ func (nc *NativeCommittee) delta(
 			bucket.Owner = event.PyggOwner
 		case topicUnstake:
 			event := new(contract.PyggStakingPyggUnstake)
-			if err := nc.abi.Unpack(event, "PyggUnstake", l.Data); err != nil {
+			if err := nc.boundContract.UnpackLog(event, "PyggUnstake", etherLog); err != nil {
 				return nil, err
 			}
 			bucket.Index = event.PyggIndex.Uint64()
@@ -475,4 +479,19 @@ func (nc *NativeCommittee) delta(
 	}
 
 	return buckets, nil
+}
+
+func toEtherLog(log *iotextypes.Log) ethtypes.Log {
+	etherLog := ethtypes.Log{
+		Data:        log.Data,
+		BlockNumber: log.BlkHeight,
+		TxHash:      common.BytesToHash(log.BlkHash),
+		BlockHash:   common.BytesToHash(log.BlkHash),
+		Index:       uint(log.Index),
+	}
+
+	for i := range log.Topics {
+		etherLog.Topics = append(etherLog.Topics, common.BytesToHash(log.Topics[i]))
+	}
+	return etherLog
 }

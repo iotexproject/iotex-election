@@ -20,7 +20,6 @@ var (
 	_ = big.NewInt
 	_ = strings.NewReader
 	_ = ethereum.NotFound
-	_ = abi.U256
 	_ = bind.Bind
 	_ = common.Big1
 	_ = types.BloomLookup
@@ -138,7 +137,7 @@ func bindPyggStaking(address common.Address, caller bind.ContractCaller, transac
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_PyggStaking *PyggStakingRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
+func (_PyggStaking *PyggStakingRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
 	return _PyggStaking.Contract.PyggStakingCaller.contract.Call(opts, result, method, params...)
 }
 
@@ -157,7 +156,7 @@ func (_PyggStaking *PyggStakingRaw) Transact(opts *bind.TransactOpts, method str
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_PyggStaking *PyggStakingCallerRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
+func (_PyggStaking *PyggStakingCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
 	return _PyggStaking.Contract.contract.Call(opts, result, method, params...)
 }
 
@@ -174,25 +173,32 @@ func (_PyggStaking *PyggStakingTransactorRaw) Transact(opts *bind.TransactOpts, 
 
 // GetActivePyggCreateTimes is a free data retrieval call binding the contract method 0x6c0a5ebd.
 //
-// Solidity: function getActivePyggCreateTimes(uint256 _prevIndex, uint256 _limit) constant returns(uint256 count, uint256[] indexes, uint256[] createTimes)
+// Solidity: function getActivePyggCreateTimes(uint256 _prevIndex, uint256 _limit) view returns(uint256 count, uint256[] indexes, uint256[] createTimes)
 func (_PyggStaking *PyggStakingCaller) GetActivePyggCreateTimes(opts *bind.CallOpts, _prevIndex *big.Int, _limit *big.Int) (struct {
 	Count       *big.Int
 	Indexes     []*big.Int
 	CreateTimes []*big.Int
 }, error) {
-	ret := new(struct {
+	var out []interface{}
+	err := _PyggStaking.contract.Call(opts, &out, "getActivePyggCreateTimes", _prevIndex, _limit)
+
+	outstruct := new(struct {
 		Count       *big.Int
 		Indexes     []*big.Int
 		CreateTimes []*big.Int
 	})
-	out := ret
-	err := _PyggStaking.contract.Call(opts, out, "getActivePyggCreateTimes", _prevIndex, _limit)
-	return *ret, err
+
+	outstruct.Count = out[0].(*big.Int)
+	outstruct.Indexes = out[1].([]*big.Int)
+	outstruct.CreateTimes = out[2].([]*big.Int)
+
+	return *outstruct, err
+
 }
 
 // GetActivePyggCreateTimes is a free data retrieval call binding the contract method 0x6c0a5ebd.
 //
-// Solidity: function getActivePyggCreateTimes(uint256 _prevIndex, uint256 _limit) constant returns(uint256 count, uint256[] indexes, uint256[] createTimes)
+// Solidity: function getActivePyggCreateTimes(uint256 _prevIndex, uint256 _limit) view returns(uint256 count, uint256[] indexes, uint256[] createTimes)
 func (_PyggStaking *PyggStakingSession) GetActivePyggCreateTimes(_prevIndex *big.Int, _limit *big.Int) (struct {
 	Count       *big.Int
 	Indexes     []*big.Int
@@ -203,7 +209,7 @@ func (_PyggStaking *PyggStakingSession) GetActivePyggCreateTimes(_prevIndex *big
 
 // GetActivePyggCreateTimes is a free data retrieval call binding the contract method 0x6c0a5ebd.
 //
-// Solidity: function getActivePyggCreateTimes(uint256 _prevIndex, uint256 _limit) constant returns(uint256 count, uint256[] indexes, uint256[] createTimes)
+// Solidity: function getActivePyggCreateTimes(uint256 _prevIndex, uint256 _limit) view returns(uint256 count, uint256[] indexes, uint256[] createTimes)
 func (_PyggStaking *PyggStakingCallerSession) GetActivePyggCreateTimes(_prevIndex *big.Int, _limit *big.Int) (struct {
 	Count       *big.Int
 	Indexes     []*big.Int
@@ -214,23 +220,29 @@ func (_PyggStaking *PyggStakingCallerSession) GetActivePyggCreateTimes(_prevInde
 
 // GetActivePyggIdx is a free data retrieval call binding the contract method 0x94a9c0f9.
 //
-// Solidity: function getActivePyggIdx(uint256 _prevIndex, uint256 _limit) constant returns(uint256 count, uint256[] indexes)
+// Solidity: function getActivePyggIdx(uint256 _prevIndex, uint256 _limit) view returns(uint256 count, uint256[] indexes)
 func (_PyggStaking *PyggStakingCaller) GetActivePyggIdx(opts *bind.CallOpts, _prevIndex *big.Int, _limit *big.Int) (struct {
 	Count   *big.Int
 	Indexes []*big.Int
 }, error) {
-	ret := new(struct {
+	var out []interface{}
+	err := _PyggStaking.contract.Call(opts, &out, "getActivePyggIdx", _prevIndex, _limit)
+
+	outstruct := new(struct {
 		Count   *big.Int
 		Indexes []*big.Int
 	})
-	out := ret
-	err := _PyggStaking.contract.Call(opts, out, "getActivePyggIdx", _prevIndex, _limit)
-	return *ret, err
+
+	outstruct.Count = out[0].(*big.Int)
+	outstruct.Indexes = out[1].([]*big.Int)
+
+	return *outstruct, err
+
 }
 
 // GetActivePyggIdx is a free data retrieval call binding the contract method 0x94a9c0f9.
 //
-// Solidity: function getActivePyggIdx(uint256 _prevIndex, uint256 _limit) constant returns(uint256 count, uint256[] indexes)
+// Solidity: function getActivePyggIdx(uint256 _prevIndex, uint256 _limit) view returns(uint256 count, uint256[] indexes)
 func (_PyggStaking *PyggStakingSession) GetActivePyggIdx(_prevIndex *big.Int, _limit *big.Int) (struct {
 	Count   *big.Int
 	Indexes []*big.Int
@@ -240,7 +252,7 @@ func (_PyggStaking *PyggStakingSession) GetActivePyggIdx(_prevIndex *big.Int, _l
 
 // GetActivePyggIdx is a free data retrieval call binding the contract method 0x94a9c0f9.
 //
-// Solidity: function getActivePyggIdx(uint256 _prevIndex, uint256 _limit) constant returns(uint256 count, uint256[] indexes)
+// Solidity: function getActivePyggIdx(uint256 _prevIndex, uint256 _limit) view returns(uint256 count, uint256[] indexes)
 func (_PyggStaking *PyggStakingCallerSession) GetActivePyggIdx(_prevIndex *big.Int, _limit *big.Int) (struct {
 	Count   *big.Int
 	Indexes []*big.Int
@@ -250,7 +262,7 @@ func (_PyggStaking *PyggStakingCallerSession) GetActivePyggIdx(_prevIndex *big.I
 
 // GetActivePyggs is a free data retrieval call binding the contract method 0xdf43a94e.
 //
-// Solidity: function getActivePyggs(uint256 _prevIndex, uint256 _limit) constant returns(uint256 count, uint256[] indexes, uint256[] stakeStartTimes, uint256[] stakeDurations, bool[] decays, uint256[] stakedAmounts, bytes12[] canNames, address[] owners)
+// Solidity: function getActivePyggs(uint256 _prevIndex, uint256 _limit) view returns(uint256 count, uint256[] indexes, uint256[] stakeStartTimes, uint256[] stakeDurations, bool[] decays, uint256[] stakedAmounts, bytes12[] canNames, address[] owners)
 func (_PyggStaking *PyggStakingCaller) GetActivePyggs(opts *bind.CallOpts, _prevIndex *big.Int, _limit *big.Int) (struct {
 	Count           *big.Int
 	Indexes         []*big.Int
@@ -261,7 +273,10 @@ func (_PyggStaking *PyggStakingCaller) GetActivePyggs(opts *bind.CallOpts, _prev
 	CanNames        [][12]byte
 	Owners          []common.Address
 }, error) {
-	ret := new(struct {
+	var out []interface{}
+	err := _PyggStaking.contract.Call(opts, &out, "getActivePyggs", _prevIndex, _limit)
+
+	outstruct := new(struct {
 		Count           *big.Int
 		Indexes         []*big.Int
 		StakeStartTimes []*big.Int
@@ -271,14 +286,23 @@ func (_PyggStaking *PyggStakingCaller) GetActivePyggs(opts *bind.CallOpts, _prev
 		CanNames        [][12]byte
 		Owners          []common.Address
 	})
-	out := ret
-	err := _PyggStaking.contract.Call(opts, out, "getActivePyggs", _prevIndex, _limit)
-	return *ret, err
+
+	outstruct.Count = out[0].(*big.Int)
+	outstruct.Indexes = out[1].([]*big.Int)
+	outstruct.StakeStartTimes = out[2].([]*big.Int)
+	outstruct.StakeDurations = out[3].([]*big.Int)
+	outstruct.Decays = out[4].([]bool)
+	outstruct.StakedAmounts = out[5].([]*big.Int)
+	outstruct.CanNames = out[6].([][12]byte)
+	outstruct.Owners = out[7].([]common.Address)
+
+	return *outstruct, err
+
 }
 
 // GetActivePyggs is a free data retrieval call binding the contract method 0xdf43a94e.
 //
-// Solidity: function getActivePyggs(uint256 _prevIndex, uint256 _limit) constant returns(uint256 count, uint256[] indexes, uint256[] stakeStartTimes, uint256[] stakeDurations, bool[] decays, uint256[] stakedAmounts, bytes12[] canNames, address[] owners)
+// Solidity: function getActivePyggs(uint256 _prevIndex, uint256 _limit) view returns(uint256 count, uint256[] indexes, uint256[] stakeStartTimes, uint256[] stakeDurations, bool[] decays, uint256[] stakedAmounts, bytes12[] canNames, address[] owners)
 func (_PyggStaking *PyggStakingSession) GetActivePyggs(_prevIndex *big.Int, _limit *big.Int) (struct {
 	Count           *big.Int
 	Indexes         []*big.Int
@@ -294,7 +318,7 @@ func (_PyggStaking *PyggStakingSession) GetActivePyggs(_prevIndex *big.Int, _lim
 
 // GetActivePyggs is a free data retrieval call binding the contract method 0xdf43a94e.
 //
-// Solidity: function getActivePyggs(uint256 _prevIndex, uint256 _limit) constant returns(uint256 count, uint256[] indexes, uint256[] stakeStartTimes, uint256[] stakeDurations, bool[] decays, uint256[] stakedAmounts, bytes12[] canNames, address[] owners)
+// Solidity: function getActivePyggs(uint256 _prevIndex, uint256 _limit) view returns(uint256 count, uint256[] indexes, uint256[] stakeStartTimes, uint256[] stakeDurations, bool[] decays, uint256[] stakedAmounts, bytes12[] canNames, address[] owners)
 func (_PyggStaking *PyggStakingCallerSession) GetActivePyggs(_prevIndex *big.Int, _limit *big.Int) (struct {
 	Count           *big.Int
 	Indexes         []*big.Int
@@ -310,215 +334,255 @@ func (_PyggStaking *PyggStakingCallerSession) GetActivePyggs(_prevIndex *big.Int
 
 // GetPyggIndexesByAddress is a free data retrieval call binding the contract method 0xd09daa99.
 //
-// Solidity: function getPyggIndexesByAddress(address _owner) constant returns(uint256[])
+// Solidity: function getPyggIndexesByAddress(address _owner) view returns(uint256[])
 func (_PyggStaking *PyggStakingCaller) GetPyggIndexesByAddress(opts *bind.CallOpts, _owner common.Address) ([]*big.Int, error) {
-	var (
-		ret0 = new([]*big.Int)
-	)
-	out := ret0
-	err := _PyggStaking.contract.Call(opts, out, "getPyggIndexesByAddress", _owner)
-	return *ret0, err
+	var out []interface{}
+	err := _PyggStaking.contract.Call(opts, &out, "getPyggIndexesByAddress", _owner)
+
+	if err != nil {
+		return *new([]*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([]*big.Int)).(*[]*big.Int)
+
+	return out0, err
+
 }
 
 // GetPyggIndexesByAddress is a free data retrieval call binding the contract method 0xd09daa99.
 //
-// Solidity: function getPyggIndexesByAddress(address _owner) constant returns(uint256[])
+// Solidity: function getPyggIndexesByAddress(address _owner) view returns(uint256[])
 func (_PyggStaking *PyggStakingSession) GetPyggIndexesByAddress(_owner common.Address) ([]*big.Int, error) {
 	return _PyggStaking.Contract.GetPyggIndexesByAddress(&_PyggStaking.CallOpts, _owner)
 }
 
 // GetPyggIndexesByAddress is a free data retrieval call binding the contract method 0xd09daa99.
 //
-// Solidity: function getPyggIndexesByAddress(address _owner) constant returns(uint256[])
+// Solidity: function getPyggIndexesByAddress(address _owner) view returns(uint256[])
 func (_PyggStaking *PyggStakingCallerSession) GetPyggIndexesByAddress(_owner common.Address) ([]*big.Int, error) {
 	return _PyggStaking.Contract.GetPyggIndexesByAddress(&_PyggStaking.CallOpts, _owner)
 }
 
 // IsOwner is a free data retrieval call binding the contract method 0x2f54bf6e.
 //
-// Solidity: function isOwner(address _address) constant returns(bool)
+// Solidity: function isOwner(address _address) view returns(bool)
 func (_PyggStaking *PyggStakingCaller) IsOwner(opts *bind.CallOpts, _address common.Address) (bool, error) {
-	var (
-		ret0 = new(bool)
-	)
-	out := ret0
-	err := _PyggStaking.contract.Call(opts, out, "isOwner", _address)
-	return *ret0, err
+	var out []interface{}
+	err := _PyggStaking.contract.Call(opts, &out, "isOwner", _address)
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
 }
 
 // IsOwner is a free data retrieval call binding the contract method 0x2f54bf6e.
 //
-// Solidity: function isOwner(address _address) constant returns(bool)
+// Solidity: function isOwner(address _address) view returns(bool)
 func (_PyggStaking *PyggStakingSession) IsOwner(_address common.Address) (bool, error) {
 	return _PyggStaking.Contract.IsOwner(&_PyggStaking.CallOpts, _address)
 }
 
 // IsOwner is a free data retrieval call binding the contract method 0x2f54bf6e.
 //
-// Solidity: function isOwner(address _address) constant returns(bool)
+// Solidity: function isOwner(address _address) view returns(bool)
 func (_PyggStaking *PyggStakingCallerSession) IsOwner(_address common.Address) (bool, error) {
 	return _PyggStaking.Contract.IsOwner(&_PyggStaking.CallOpts, _address)
 }
 
 // MaxPyggsPerAddr is a free data retrieval call binding the contract method 0x1b0690ed.
 //
-// Solidity: function maxPyggsPerAddr() constant returns(uint256)
+// Solidity: function maxPyggsPerAddr() view returns(uint256)
 func (_PyggStaking *PyggStakingCaller) MaxPyggsPerAddr(opts *bind.CallOpts) (*big.Int, error) {
-	var (
-		ret0 = new(*big.Int)
-	)
-	out := ret0
-	err := _PyggStaking.contract.Call(opts, out, "maxPyggsPerAddr")
-	return *ret0, err
+	var out []interface{}
+	err := _PyggStaking.contract.Call(opts, &out, "maxPyggsPerAddr")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
 }
 
 // MaxPyggsPerAddr is a free data retrieval call binding the contract method 0x1b0690ed.
 //
-// Solidity: function maxPyggsPerAddr() constant returns(uint256)
+// Solidity: function maxPyggsPerAddr() view returns(uint256)
 func (_PyggStaking *PyggStakingSession) MaxPyggsPerAddr() (*big.Int, error) {
 	return _PyggStaking.Contract.MaxPyggsPerAddr(&_PyggStaking.CallOpts)
 }
 
 // MaxPyggsPerAddr is a free data retrieval call binding the contract method 0x1b0690ed.
 //
-// Solidity: function maxPyggsPerAddr() constant returns(uint256)
+// Solidity: function maxPyggsPerAddr() view returns(uint256)
 func (_PyggStaking *PyggStakingCallerSession) MaxPyggsPerAddr() (*big.Int, error) {
 	return _PyggStaking.Contract.MaxPyggsPerAddr(&_PyggStaking.CallOpts)
 }
 
 // MaxStakeDuration is a free data retrieval call binding the contract method 0x76f70003.
 //
-// Solidity: function maxStakeDuration() constant returns(uint256)
+// Solidity: function maxStakeDuration() view returns(uint256)
 func (_PyggStaking *PyggStakingCaller) MaxStakeDuration(opts *bind.CallOpts) (*big.Int, error) {
-	var (
-		ret0 = new(*big.Int)
-	)
-	out := ret0
-	err := _PyggStaking.contract.Call(opts, out, "maxStakeDuration")
-	return *ret0, err
+	var out []interface{}
+	err := _PyggStaking.contract.Call(opts, &out, "maxStakeDuration")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
 }
 
 // MaxStakeDuration is a free data retrieval call binding the contract method 0x76f70003.
 //
-// Solidity: function maxStakeDuration() constant returns(uint256)
+// Solidity: function maxStakeDuration() view returns(uint256)
 func (_PyggStaking *PyggStakingSession) MaxStakeDuration() (*big.Int, error) {
 	return _PyggStaking.Contract.MaxStakeDuration(&_PyggStaking.CallOpts)
 }
 
 // MaxStakeDuration is a free data retrieval call binding the contract method 0x76f70003.
 //
-// Solidity: function maxStakeDuration() constant returns(uint256)
+// Solidity: function maxStakeDuration() view returns(uint256)
 func (_PyggStaking *PyggStakingCallerSession) MaxStakeDuration() (*big.Int, error) {
 	return _PyggStaking.Contract.MaxStakeDuration(&_PyggStaking.CallOpts)
 }
 
 // MinStakeAmount is a free data retrieval call binding the contract method 0xf1887684.
 //
-// Solidity: function minStakeAmount() constant returns(uint256)
+// Solidity: function minStakeAmount() view returns(uint256)
 func (_PyggStaking *PyggStakingCaller) MinStakeAmount(opts *bind.CallOpts) (*big.Int, error) {
-	var (
-		ret0 = new(*big.Int)
-	)
-	out := ret0
-	err := _PyggStaking.contract.Call(opts, out, "minStakeAmount")
-	return *ret0, err
+	var out []interface{}
+	err := _PyggStaking.contract.Call(opts, &out, "minStakeAmount")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
 }
 
 // MinStakeAmount is a free data retrieval call binding the contract method 0xf1887684.
 //
-// Solidity: function minStakeAmount() constant returns(uint256)
+// Solidity: function minStakeAmount() view returns(uint256)
 func (_PyggStaking *PyggStakingSession) MinStakeAmount() (*big.Int, error) {
 	return _PyggStaking.Contract.MinStakeAmount(&_PyggStaking.CallOpts)
 }
 
 // MinStakeAmount is a free data retrieval call binding the contract method 0xf1887684.
 //
-// Solidity: function minStakeAmount() constant returns(uint256)
+// Solidity: function minStakeAmount() view returns(uint256)
 func (_PyggStaking *PyggStakingCallerSession) MinStakeAmount() (*big.Int, error) {
 	return _PyggStaking.Contract.MinStakeAmount(&_PyggStaking.CallOpts)
 }
 
 // MinStakeDuration is a free data retrieval call binding the contract method 0x5fec5c64.
 //
-// Solidity: function minStakeDuration() constant returns(uint256)
+// Solidity: function minStakeDuration() view returns(uint256)
 func (_PyggStaking *PyggStakingCaller) MinStakeDuration(opts *bind.CallOpts) (*big.Int, error) {
-	var (
-		ret0 = new(*big.Int)
-	)
-	out := ret0
-	err := _PyggStaking.contract.Call(opts, out, "minStakeDuration")
-	return *ret0, err
+	var out []interface{}
+	err := _PyggStaking.contract.Call(opts, &out, "minStakeDuration")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
 }
 
 // MinStakeDuration is a free data retrieval call binding the contract method 0x5fec5c64.
 //
-// Solidity: function minStakeDuration() constant returns(uint256)
+// Solidity: function minStakeDuration() view returns(uint256)
 func (_PyggStaking *PyggStakingSession) MinStakeDuration() (*big.Int, error) {
 	return _PyggStaking.Contract.MinStakeDuration(&_PyggStaking.CallOpts)
 }
 
 // MinStakeDuration is a free data retrieval call binding the contract method 0x5fec5c64.
 //
-// Solidity: function minStakeDuration() constant returns(uint256)
+// Solidity: function minStakeDuration() view returns(uint256)
 func (_PyggStaking *PyggStakingCallerSession) MinStakeDuration() (*big.Int, error) {
 	return _PyggStaking.Contract.MinStakeDuration(&_PyggStaking.CallOpts)
 }
 
 // Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
 //
-// Solidity: function owner() constant returns(address)
+// Solidity: function owner() view returns(address)
 func (_PyggStaking *PyggStakingCaller) Owner(opts *bind.CallOpts) (common.Address, error) {
-	var (
-		ret0 = new(common.Address)
-	)
-	out := ret0
-	err := _PyggStaking.contract.Call(opts, out, "owner")
-	return *ret0, err
+	var out []interface{}
+	err := _PyggStaking.contract.Call(opts, &out, "owner")
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
 }
 
 // Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
 //
-// Solidity: function owner() constant returns(address)
+// Solidity: function owner() view returns(address)
 func (_PyggStaking *PyggStakingSession) Owner() (common.Address, error) {
 	return _PyggStaking.Contract.Owner(&_PyggStaking.CallOpts)
 }
 
 // Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
 //
-// Solidity: function owner() constant returns(address)
+// Solidity: function owner() view returns(address)
 func (_PyggStaking *PyggStakingCallerSession) Owner() (common.Address, error) {
 	return _PyggStaking.Contract.Owner(&_PyggStaking.CallOpts)
 }
 
 // Paused is a free data retrieval call binding the contract method 0x5c975abb.
 //
-// Solidity: function paused() constant returns(bool)
+// Solidity: function paused() view returns(bool)
 func (_PyggStaking *PyggStakingCaller) Paused(opts *bind.CallOpts) (bool, error) {
-	var (
-		ret0 = new(bool)
-	)
-	out := ret0
-	err := _PyggStaking.contract.Call(opts, out, "paused")
-	return *ret0, err
+	var out []interface{}
+	err := _PyggStaking.contract.Call(opts, &out, "paused")
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
 }
 
 // Paused is a free data retrieval call binding the contract method 0x5c975abb.
 //
-// Solidity: function paused() constant returns(bool)
+// Solidity: function paused() view returns(bool)
 func (_PyggStaking *PyggStakingSession) Paused() (bool, error) {
 	return _PyggStaking.Contract.Paused(&_PyggStaking.CallOpts)
 }
 
 // Paused is a free data retrieval call binding the contract method 0x5c975abb.
 //
-// Solidity: function paused() constant returns(bool)
+// Solidity: function paused() view returns(bool)
 func (_PyggStaking *PyggStakingCallerSession) Paused() (bool, error) {
 	return _PyggStaking.Contract.Paused(&_PyggStaking.CallOpts)
 }
 
 // Pyggs is a free data retrieval call binding the contract method 0xccfafd5c.
 //
-// Solidity: function pyggs(uint256 ) constant returns(bytes12 canName, uint256 stakedAmount, uint256 stakeDuration, uint256 stakeStartTime, bool nonDecay, uint256 unstakeStartTime, address pyggOwner, uint256 createTime, uint256 prev, uint256 next)
+// Solidity: function pyggs(uint256 ) view returns(bytes12 canName, uint256 stakedAmount, uint256 stakeDuration, uint256 stakeStartTime, bool nonDecay, uint256 unstakeStartTime, address pyggOwner, uint256 createTime, uint256 prev, uint256 next)
 func (_PyggStaking *PyggStakingCaller) Pyggs(opts *bind.CallOpts, arg0 *big.Int) (struct {
 	CanName          [12]byte
 	StakedAmount     *big.Int
@@ -531,7 +595,10 @@ func (_PyggStaking *PyggStakingCaller) Pyggs(opts *bind.CallOpts, arg0 *big.Int)
 	Prev             *big.Int
 	Next             *big.Int
 }, error) {
-	ret := new(struct {
+	var out []interface{}
+	err := _PyggStaking.contract.Call(opts, &out, "pyggs", arg0)
+
+	outstruct := new(struct {
 		CanName          [12]byte
 		StakedAmount     *big.Int
 		StakeDuration    *big.Int
@@ -543,14 +610,25 @@ func (_PyggStaking *PyggStakingCaller) Pyggs(opts *bind.CallOpts, arg0 *big.Int)
 		Prev             *big.Int
 		Next             *big.Int
 	})
-	out := ret
-	err := _PyggStaking.contract.Call(opts, out, "pyggs", arg0)
-	return *ret, err
+
+	outstruct.CanName = out[0].([12]byte)
+	outstruct.StakedAmount = out[1].(*big.Int)
+	outstruct.StakeDuration = out[2].(*big.Int)
+	outstruct.StakeStartTime = out[3].(*big.Int)
+	outstruct.NonDecay = out[4].(bool)
+	outstruct.UnstakeStartTime = out[5].(*big.Int)
+	outstruct.PyggOwner = out[6].(common.Address)
+	outstruct.CreateTime = out[7].(*big.Int)
+	outstruct.Prev = out[8].(*big.Int)
+	outstruct.Next = out[9].(*big.Int)
+
+	return *outstruct, err
+
 }
 
 // Pyggs is a free data retrieval call binding the contract method 0xccfafd5c.
 //
-// Solidity: function pyggs(uint256 ) constant returns(bytes12 canName, uint256 stakedAmount, uint256 stakeDuration, uint256 stakeStartTime, bool nonDecay, uint256 unstakeStartTime, address pyggOwner, uint256 createTime, uint256 prev, uint256 next)
+// Solidity: function pyggs(uint256 ) view returns(bytes12 canName, uint256 stakedAmount, uint256 stakeDuration, uint256 stakeStartTime, bool nonDecay, uint256 unstakeStartTime, address pyggOwner, uint256 createTime, uint256 prev, uint256 next)
 func (_PyggStaking *PyggStakingSession) Pyggs(arg0 *big.Int) (struct {
 	CanName          [12]byte
 	StakedAmount     *big.Int
@@ -568,7 +646,7 @@ func (_PyggStaking *PyggStakingSession) Pyggs(arg0 *big.Int) (struct {
 
 // Pyggs is a free data retrieval call binding the contract method 0xccfafd5c.
 //
-// Solidity: function pyggs(uint256 ) constant returns(bytes12 canName, uint256 stakedAmount, uint256 stakeDuration, uint256 stakeStartTime, bool nonDecay, uint256 unstakeStartTime, address pyggOwner, uint256 createTime, uint256 prev, uint256 next)
+// Solidity: function pyggs(uint256 ) view returns(bytes12 canName, uint256 stakedAmount, uint256 stakeDuration, uint256 stakeStartTime, bool nonDecay, uint256 unstakeStartTime, address pyggOwner, uint256 createTime, uint256 prev, uint256 next)
 func (_PyggStaking *PyggStakingCallerSession) Pyggs(arg0 *big.Int) (struct {
 	CanName          [12]byte
 	StakedAmount     *big.Int
@@ -586,130 +664,155 @@ func (_PyggStaking *PyggStakingCallerSession) Pyggs(arg0 *big.Int) (struct {
 
 // SecondsPerDay is a free data retrieval call binding the contract method 0x63809953.
 //
-// Solidity: function secondsPerDay() constant returns(uint256)
+// Solidity: function secondsPerDay() view returns(uint256)
 func (_PyggStaking *PyggStakingCaller) SecondsPerDay(opts *bind.CallOpts) (*big.Int, error) {
-	var (
-		ret0 = new(*big.Int)
-	)
-	out := ret0
-	err := _PyggStaking.contract.Call(opts, out, "secondsPerDay")
-	return *ret0, err
+	var out []interface{}
+	err := _PyggStaking.contract.Call(opts, &out, "secondsPerDay")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
 }
 
 // SecondsPerDay is a free data retrieval call binding the contract method 0x63809953.
 //
-// Solidity: function secondsPerDay() constant returns(uint256)
+// Solidity: function secondsPerDay() view returns(uint256)
 func (_PyggStaking *PyggStakingSession) SecondsPerDay() (*big.Int, error) {
 	return _PyggStaking.Contract.SecondsPerDay(&_PyggStaking.CallOpts)
 }
 
 // SecondsPerDay is a free data retrieval call binding the contract method 0x63809953.
 //
-// Solidity: function secondsPerDay() constant returns(uint256)
+// Solidity: function secondsPerDay() view returns(uint256)
 func (_PyggStaking *PyggStakingCallerSession) SecondsPerDay() (*big.Int, error) {
 	return _PyggStaking.Contract.SecondsPerDay(&_PyggStaking.CallOpts)
 }
 
 // Stakeholders is a free data retrieval call binding the contract method 0x423ce1ae.
 //
-// Solidity: function stakeholders(address , uint256 ) constant returns(uint256)
+// Solidity: function stakeholders(address , uint256 ) view returns(uint256)
 func (_PyggStaking *PyggStakingCaller) Stakeholders(opts *bind.CallOpts, arg0 common.Address, arg1 *big.Int) (*big.Int, error) {
-	var (
-		ret0 = new(*big.Int)
-	)
-	out := ret0
-	err := _PyggStaking.contract.Call(opts, out, "stakeholders", arg0, arg1)
-	return *ret0, err
+	var out []interface{}
+	err := _PyggStaking.contract.Call(opts, &out, "stakeholders", arg0, arg1)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
 }
 
 // Stakeholders is a free data retrieval call binding the contract method 0x423ce1ae.
 //
-// Solidity: function stakeholders(address , uint256 ) constant returns(uint256)
+// Solidity: function stakeholders(address , uint256 ) view returns(uint256)
 func (_PyggStaking *PyggStakingSession) Stakeholders(arg0 common.Address, arg1 *big.Int) (*big.Int, error) {
 	return _PyggStaking.Contract.Stakeholders(&_PyggStaking.CallOpts, arg0, arg1)
 }
 
 // Stakeholders is a free data retrieval call binding the contract method 0x423ce1ae.
 //
-// Solidity: function stakeholders(address , uint256 ) constant returns(uint256)
+// Solidity: function stakeholders(address , uint256 ) view returns(uint256)
 func (_PyggStaking *PyggStakingCallerSession) Stakeholders(arg0 common.Address, arg1 *big.Int) (*big.Int, error) {
 	return _PyggStaking.Contract.Stakeholders(&_PyggStaking.CallOpts, arg0, arg1)
 }
 
 // TotalStaked is a free data retrieval call binding the contract method 0x817b1cd2.
 //
-// Solidity: function totalStaked() constant returns(uint256)
+// Solidity: function totalStaked() view returns(uint256)
 func (_PyggStaking *PyggStakingCaller) TotalStaked(opts *bind.CallOpts) (*big.Int, error) {
-	var (
-		ret0 = new(*big.Int)
-	)
-	out := ret0
-	err := _PyggStaking.contract.Call(opts, out, "totalStaked")
-	return *ret0, err
+	var out []interface{}
+	err := _PyggStaking.contract.Call(opts, &out, "totalStaked")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
 }
 
 // TotalStaked is a free data retrieval call binding the contract method 0x817b1cd2.
 //
-// Solidity: function totalStaked() constant returns(uint256)
+// Solidity: function totalStaked() view returns(uint256)
 func (_PyggStaking *PyggStakingSession) TotalStaked() (*big.Int, error) {
 	return _PyggStaking.Contract.TotalStaked(&_PyggStaking.CallOpts)
 }
 
 // TotalStaked is a free data retrieval call binding the contract method 0x817b1cd2.
 //
-// Solidity: function totalStaked() constant returns(uint256)
+// Solidity: function totalStaked() view returns(uint256)
 func (_PyggStaking *PyggStakingCallerSession) TotalStaked() (*big.Int, error) {
 	return _PyggStaking.Contract.TotalStaked(&_PyggStaking.CallOpts)
 }
 
 // UnStakeDuration is a free data retrieval call binding the contract method 0xc698d495.
 //
-// Solidity: function unStakeDuration() constant returns(uint256)
+// Solidity: function unStakeDuration() view returns(uint256)
 func (_PyggStaking *PyggStakingCaller) UnStakeDuration(opts *bind.CallOpts) (*big.Int, error) {
-	var (
-		ret0 = new(*big.Int)
-	)
-	out := ret0
-	err := _PyggStaking.contract.Call(opts, out, "unStakeDuration")
-	return *ret0, err
+	var out []interface{}
+	err := _PyggStaking.contract.Call(opts, &out, "unStakeDuration")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
 }
 
 // UnStakeDuration is a free data retrieval call binding the contract method 0xc698d495.
 //
-// Solidity: function unStakeDuration() constant returns(uint256)
+// Solidity: function unStakeDuration() view returns(uint256)
 func (_PyggStaking *PyggStakingSession) UnStakeDuration() (*big.Int, error) {
 	return _PyggStaking.Contract.UnStakeDuration(&_PyggStaking.CallOpts)
 }
 
 // UnStakeDuration is a free data retrieval call binding the contract method 0xc698d495.
 //
-// Solidity: function unStakeDuration() constant returns(uint256)
+// Solidity: function unStakeDuration() view returns(uint256)
 func (_PyggStaking *PyggStakingCallerSession) UnStakeDuration() (*big.Int, error) {
 	return _PyggStaking.Contract.UnStakeDuration(&_PyggStaking.CallOpts)
 }
 
 // Whitelist is a free data retrieval call binding the contract method 0x9b19251a.
 //
-// Solidity: function whitelist(address ) constant returns(bool)
+// Solidity: function whitelist(address ) view returns(bool)
 func (_PyggStaking *PyggStakingCaller) Whitelist(opts *bind.CallOpts, arg0 common.Address) (bool, error) {
-	var (
-		ret0 = new(bool)
-	)
-	out := ret0
-	err := _PyggStaking.contract.Call(opts, out, "whitelist", arg0)
-	return *ret0, err
+	var out []interface{}
+	err := _PyggStaking.contract.Call(opts, &out, "whitelist", arg0)
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
 }
 
 // Whitelist is a free data retrieval call binding the contract method 0x9b19251a.
 //
-// Solidity: function whitelist(address ) constant returns(bool)
+// Solidity: function whitelist(address ) view returns(bool)
 func (_PyggStaking *PyggStakingSession) Whitelist(arg0 common.Address) (bool, error) {
 	return _PyggStaking.Contract.Whitelist(&_PyggStaking.CallOpts, arg0)
 }
 
 // Whitelist is a free data retrieval call binding the contract method 0x9b19251a.
 //
-// Solidity: function whitelist(address ) constant returns(bool)
+// Solidity: function whitelist(address ) view returns(bool)
 func (_PyggStaking *PyggStakingCallerSession) Whitelist(arg0 common.Address) (bool, error) {
 	return _PyggStaking.Contract.Whitelist(&_PyggStaking.CallOpts, arg0)
 }
@@ -758,21 +861,21 @@ func (_PyggStaking *PyggStakingTransactorSession) AddAddressesToWhitelist(addrs 
 
 // CreatePygg is a paid mutator transaction binding the contract method 0x07c35fc0.
 //
-// Solidity: function createPygg(bytes12 _canName, uint256 _stakeDuration, bool _nonDecay, bytes _data) returns(uint256)
+// Solidity: function createPygg(bytes12 _canName, uint256 _stakeDuration, bool _nonDecay, bytes _data) payable returns(uint256)
 func (_PyggStaking *PyggStakingTransactor) CreatePygg(opts *bind.TransactOpts, _canName [12]byte, _stakeDuration *big.Int, _nonDecay bool, _data []byte) (*types.Transaction, error) {
 	return _PyggStaking.contract.Transact(opts, "createPygg", _canName, _stakeDuration, _nonDecay, _data)
 }
 
 // CreatePygg is a paid mutator transaction binding the contract method 0x07c35fc0.
 //
-// Solidity: function createPygg(bytes12 _canName, uint256 _stakeDuration, bool _nonDecay, bytes _data) returns(uint256)
+// Solidity: function createPygg(bytes12 _canName, uint256 _stakeDuration, bool _nonDecay, bytes _data) payable returns(uint256)
 func (_PyggStaking *PyggStakingSession) CreatePygg(_canName [12]byte, _stakeDuration *big.Int, _nonDecay bool, _data []byte) (*types.Transaction, error) {
 	return _PyggStaking.Contract.CreatePygg(&_PyggStaking.TransactOpts, _canName, _stakeDuration, _nonDecay, _data)
 }
 
 // CreatePygg is a paid mutator transaction binding the contract method 0x07c35fc0.
 //
-// Solidity: function createPygg(bytes12 _canName, uint256 _stakeDuration, bool _nonDecay, bytes _data) returns(uint256)
+// Solidity: function createPygg(bytes12 _canName, uint256 _stakeDuration, bool _nonDecay, bytes _data) payable returns(uint256)
 func (_PyggStaking *PyggStakingTransactorSession) CreatePygg(_canName [12]byte, _stakeDuration *big.Int, _nonDecay bool, _data []byte) (*types.Transaction, error) {
 	return _PyggStaking.Contract.CreatePygg(&_PyggStaking.TransactOpts, _canName, _stakeDuration, _nonDecay, _data)
 }
@@ -884,21 +987,21 @@ func (_PyggStaking *PyggStakingTransactorSession) Revote(_pyggIndex *big.Int, _c
 
 // StoreToPygg is a paid mutator transaction binding the contract method 0x6e7b3017.
 //
-// Solidity: function storeToPygg(uint256 _pyggIndex, bytes _data) returns()
+// Solidity: function storeToPygg(uint256 _pyggIndex, bytes _data) payable returns()
 func (_PyggStaking *PyggStakingTransactor) StoreToPygg(opts *bind.TransactOpts, _pyggIndex *big.Int, _data []byte) (*types.Transaction, error) {
 	return _PyggStaking.contract.Transact(opts, "storeToPygg", _pyggIndex, _data)
 }
 
 // StoreToPygg is a paid mutator transaction binding the contract method 0x6e7b3017.
 //
-// Solidity: function storeToPygg(uint256 _pyggIndex, bytes _data) returns()
+// Solidity: function storeToPygg(uint256 _pyggIndex, bytes _data) payable returns()
 func (_PyggStaking *PyggStakingSession) StoreToPygg(_pyggIndex *big.Int, _data []byte) (*types.Transaction, error) {
 	return _PyggStaking.Contract.StoreToPygg(&_PyggStaking.TransactOpts, _pyggIndex, _data)
 }
 
 // StoreToPygg is a paid mutator transaction binding the contract method 0x6e7b3017.
 //
-// Solidity: function storeToPygg(uint256 _pyggIndex, bytes _data) returns()
+// Solidity: function storeToPygg(uint256 _pyggIndex, bytes _data) payable returns()
 func (_PyggStaking *PyggStakingTransactorSession) StoreToPygg(_pyggIndex *big.Int, _data []byte) (*types.Transaction, error) {
 	return _PyggStaking.Contract.StoreToPygg(&_PyggStaking.TransactOpts, _pyggIndex, _data)
 }
@@ -1129,6 +1232,17 @@ func (_PyggStaking *PyggStakingFilterer) WatchPause(opts *bind.WatchOpts, sink c
 	}), nil
 }
 
+// ParsePause is a log parse operation binding the contract event 0x6985a02210a168e66602d3235cb6db0e70f92b3ba4d376a33c0f3d9434bff625.
+//
+// Solidity: event Pause()
+func (_PyggStaking *PyggStakingFilterer) ParsePause(log types.Log) (*PyggStakingPause, error) {
+	event := new(PyggStakingPause)
+	if err := _PyggStaking.contract.UnpackLog(event, "Pause", log); err != nil {
+		return nil, err
+	}
+	return event, nil
+}
+
 // PyggStakingPyggCreatedIterator is returned from FilterPyggCreated and is used to iterate over the raw logs and unpacked data for PyggCreated events raised by the PyggStaking contract.
 type PyggStakingPyggCreatedIterator struct {
 	Event *PyggStakingPyggCreated // Event containing the contract specifics and raw log
@@ -1258,6 +1372,17 @@ func (_PyggStaking *PyggStakingFilterer) WatchPyggCreated(opts *bind.WatchOpts, 
 	}), nil
 }
 
+// ParsePyggCreated is a log parse operation binding the contract event 0xd7812fae7f8126d2df0f5449a2cc0744d2e9d3fc8c161de6193bc4df6c68d365.
+//
+// Solidity: event PyggCreated(uint256 pyggIndex, bytes12 canName, uint256 amount, uint256 stakeDuration, uint256 stakeStartTime, bool nonDecay, address pyggOwner, bytes data)
+func (_PyggStaking *PyggStakingFilterer) ParsePyggCreated(log types.Log) (*PyggStakingPyggCreated, error) {
+	event := new(PyggStakingPyggCreated)
+	if err := _PyggStaking.contract.UnpackLog(event, "PyggCreated", log); err != nil {
+		return nil, err
+	}
+	return event, nil
+}
+
 // PyggStakingPyggUnstakeIterator is returned from FilterPyggUnstake and is used to iterate over the raw logs and unpacked data for PyggUnstake events raised by the PyggStaking contract.
 type PyggStakingPyggUnstakeIterator struct {
 	Event *PyggStakingPyggUnstake // Event containing the contract specifics and raw log
@@ -1381,6 +1506,17 @@ func (_PyggStaking *PyggStakingFilterer) WatchPyggUnstake(opts *bind.WatchOpts, 
 			}
 		}
 	}), nil
+}
+
+// ParsePyggUnstake is a log parse operation binding the contract event 0x9954bdedc474e937b39bbb080fc136e2edf1cef61f0906d36203267f4930762e.
+//
+// Solidity: event PyggUnstake(uint256 pyggIndex, bytes12 canName, uint256 amount, bytes data)
+func (_PyggStaking *PyggStakingFilterer) ParsePyggUnstake(log types.Log) (*PyggStakingPyggUnstake, error) {
+	event := new(PyggStakingPyggUnstake)
+	if err := _PyggStaking.contract.UnpackLog(event, "PyggUnstake", log); err != nil {
+		return nil, err
+	}
+	return event, nil
 }
 
 // PyggStakingPyggUpdatedIterator is returned from FilterPyggUpdated and is used to iterate over the raw logs and unpacked data for PyggUpdated events raised by the PyggStaking contract.
@@ -1512,6 +1648,17 @@ func (_PyggStaking *PyggStakingFilterer) WatchPyggUpdated(opts *bind.WatchOpts, 
 	}), nil
 }
 
+// ParsePyggUpdated is a log parse operation binding the contract event 0x0b074423c8a0f26c131cd7c88b19ef6adf084b812c97bdd1fb9dcf339ee9a387.
+//
+// Solidity: event PyggUpdated(uint256 pyggIndex, bytes12 canName, uint256 amount, uint256 stakeDuration, uint256 stakeStartTime, bool nonDecay, address pyggOwner, bytes data)
+func (_PyggStaking *PyggStakingFilterer) ParsePyggUpdated(log types.Log) (*PyggStakingPyggUpdated, error) {
+	event := new(PyggStakingPyggUpdated)
+	if err := _PyggStaking.contract.UnpackLog(event, "PyggUpdated", log); err != nil {
+		return nil, err
+	}
+	return event, nil
+}
+
 // PyggStakingPyggWithdrawIterator is returned from FilterPyggWithdraw and is used to iterate over the raw logs and unpacked data for PyggWithdraw events raised by the PyggStaking contract.
 type PyggStakingPyggWithdrawIterator struct {
 	Event *PyggStakingPyggWithdraw // Event containing the contract specifics and raw log
@@ -1637,6 +1784,17 @@ func (_PyggStaking *PyggStakingFilterer) WatchPyggWithdraw(opts *bind.WatchOpts,
 	}), nil
 }
 
+// ParsePyggWithdraw is a log parse operation binding the contract event 0xf99c0736fafe9102d41ec0b56c187b26a6e35ae50415dcbecedf73112d0ec763.
+//
+// Solidity: event PyggWithdraw(uint256 pyggIndex, bytes12 canName, uint256 amount, bytes data)
+func (_PyggStaking *PyggStakingFilterer) ParsePyggWithdraw(log types.Log) (*PyggStakingPyggWithdraw, error) {
+	event := new(PyggStakingPyggWithdraw)
+	if err := _PyggStaking.contract.UnpackLog(event, "PyggWithdraw", log); err != nil {
+		return nil, err
+	}
+	return event, nil
+}
+
 // PyggStakingUnpauseIterator is returned from FilterUnpause and is used to iterate over the raw logs and unpacked data for Unpause events raised by the PyggStaking contract.
 type PyggStakingUnpauseIterator struct {
 	Event *PyggStakingUnpause // Event containing the contract specifics and raw log
@@ -1756,6 +1914,17 @@ func (_PyggStaking *PyggStakingFilterer) WatchUnpause(opts *bind.WatchOpts, sink
 			}
 		}
 	}), nil
+}
+
+// ParseUnpause is a log parse operation binding the contract event 0x7805862f689e2f13df9f062ff482ad3ad112aca9e0847911ed832e158c525b33.
+//
+// Solidity: event Unpause()
+func (_PyggStaking *PyggStakingFilterer) ParseUnpause(log types.Log) (*PyggStakingUnpause, error) {
+	event := new(PyggStakingUnpause)
+	if err := _PyggStaking.contract.UnpackLog(event, "Unpause", log); err != nil {
+		return nil, err
+	}
+	return event, nil
 }
 
 // PyggStakingWhitelistedAddressAddedIterator is returned from FilterWhitelistedAddressAdded and is used to iterate over the raw logs and unpacked data for WhitelistedAddressAdded events raised by the PyggStaking contract.
@@ -1880,6 +2049,17 @@ func (_PyggStaking *PyggStakingFilterer) WatchWhitelistedAddressAdded(opts *bind
 	}), nil
 }
 
+// ParseWhitelistedAddressAdded is a log parse operation binding the contract event 0xd1bba68c128cc3f427e5831b3c6f99f480b6efa6b9e80c757768f6124158cc3f.
+//
+// Solidity: event WhitelistedAddressAdded(address addr)
+func (_PyggStaking *PyggStakingFilterer) ParseWhitelistedAddressAdded(log types.Log) (*PyggStakingWhitelistedAddressAdded, error) {
+	event := new(PyggStakingWhitelistedAddressAdded)
+	if err := _PyggStaking.contract.UnpackLog(event, "WhitelistedAddressAdded", log); err != nil {
+		return nil, err
+	}
+	return event, nil
+}
+
 // PyggStakingWhitelistedAddressRemovedIterator is returned from FilterWhitelistedAddressRemoved and is used to iterate over the raw logs and unpacked data for WhitelistedAddressRemoved events raised by the PyggStaking contract.
 type PyggStakingWhitelistedAddressRemovedIterator struct {
 	Event *PyggStakingWhitelistedAddressRemoved // Event containing the contract specifics and raw log
@@ -2000,4 +2180,15 @@ func (_PyggStaking *PyggStakingFilterer) WatchWhitelistedAddressRemoved(opts *bi
 			}
 		}
 	}), nil
+}
+
+// ParseWhitelistedAddressRemoved is a log parse operation binding the contract event 0xf1abf01a1043b7c244d128e8595cf0c1d10743b022b03a02dffd8ca3bf729f5a.
+//
+// Solidity: event WhitelistedAddressRemoved(address addr)
+func (_PyggStaking *PyggStakingFilterer) ParseWhitelistedAddressRemoved(log types.Log) (*PyggStakingWhitelistedAddressRemoved, error) {
+	event := new(PyggStakingWhitelistedAddressRemoved)
+	if err := _PyggStaking.contract.UnpackLog(event, "WhitelistedAddressRemoved", log); err != nil {
+		return nil, err
+	}
+	return event, nil
 }

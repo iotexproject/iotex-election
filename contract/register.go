@@ -892,6 +892,7 @@ func (_Register *RegisterFilterer) ParsePause(log types.Log) (*RegisterPause, er
 	if err := _Register.contract.UnpackLog(event, "Pause", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -1030,6 +1031,7 @@ func (_Register *RegisterFilterer) ParseRegistered(log types.Log) (*RegisterRegi
 	if err := _Register.contract.UnpackLog(event, "Registered", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -1162,5 +1164,6 @@ func (_Register *RegisterFilterer) ParseUnpause(log types.Log) (*RegisterUnpause
 	if err := _Register.contract.UnpackLog(event, "Unpause", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }

@@ -11,12 +11,14 @@
 package server
 
 import (
+	"encoding/hex"
 	"log"
 	"net"
 	"strconv"
 
 	"github.com/golang/protobuf/ptypes/empty"
-
+	"github.com/iotexproject/iotex-address/address"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/net/context"
@@ -24,6 +26,7 @@ import (
 	"google.golang.org/grpc/reflection"
 
 	"github.com/iotexproject/iotex-election/pb/api"
+	"github.com/iotexproject/iotex-election/votesync"
 )
 
 // DummyServer defines the interface of the ranking dummy server implementation
@@ -35,12 +38,14 @@ type DummyServer interface {
 
 // server implements api.APIServiceServer.
 type dummyServer struct {
+	api.UnimplementedAPIServiceServer
 	port       int
 	grpcServer *grpc.Server
+	vs         *votesync.VoteSync
 }
 
 // NewDummyServer returns an implementation of ranking dummy server
-func NewDummyServer(port int) (DummyServer, error) {
+func NewDummyServer(port int, vs *votesync.VoteSync) (DummyServer, error) {
 	zapCfg := zap.NewDevelopmentConfig()
 	zapCfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	zapCfg.Level.SetLevel(zap.InfoLevel)
@@ -51,6 +56,7 @@ func NewDummyServer(port int) (DummyServer, error) {
 	zap.ReplaceGlobals(l)
 	s := &dummyServer{
 		port: port,
+		vs:   vs,
 	}
 	s.grpcServer = grpc.NewServer()
 	api.RegisterAPIServiceServer(s.grpcServer, s)
@@ -68,6 +74,11 @@ func (s *dummyServer) Start(ctx context.Context) error {
 		return err
 	}
 	go func() {
+		if s.vs != nil {
+			s.vs.Start(ctx)
+		}
+	}()
+	go func() {
 		if err := s.grpcServer.Serve(lis); err != nil {
 			zap.L().Fatal("Failed to serve", zap.Error(err))
 		}
@@ -78,6 +89,9 @@ func (s *dummyServer) Start(ctx context.Context) error {
 func (s *dummyServer) Stop(ctx context.Context) error {
 	zap.L().Info("Dummpy server is stopping")
 	s.grpcServer.Stop()
+	if s.vs != nil {
+		s.vs.Stop(ctx)
+	}
 	return nil
 }
 
@@ -119,4 +133,24 @@ func (s *dummyServer) GetBuckets(ctx context.Context, request *api.GetBucketsReq
 func (s *dummyServer) GetRawData(ctx context.Context, request *api.GetRawDataRequest) (*api.RawDataResponse, error) {
 	zap.L().Info("Dummpy server calls GetRawData func")
 	return nil, nil
+}
+
+func (s *dummyServer) GetProof(ctx context.Context, request *api.ProofRequest) (*api.ProofResponse, error) {
+	zap.L().Info("Dummpy server calls GetProof func")
+	if s.vs == nil {
+		return nil, errors.New("no vote sync server")
+	}
+	addr, err := address.FromString(request.Account)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to cast account %s", request.Account)
+	}
+	proof, err := s.vs.ProofForAccount(addr)
+	if err != nil {
+		return nil, err
+	}
+	if proof == nil {
+		return nil, nil
+	}
+
+	return &api.ProofResponse{Proof: hex.EncodeToString(proof)}, nil
 }

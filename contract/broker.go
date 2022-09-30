@@ -822,6 +822,7 @@ func (_Broker *BrokerFilterer) ParseCollateralWithdrawn(log types.Log) (*BrokerC
 	if err := _Broker.contract.UnpackLog(event, "CollateralWithdrawn", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -957,6 +958,7 @@ func (_Broker *BrokerFilterer) ParseNewRound(log types.Log) (*BrokerNewRound, er
 	if err := _Broker.contract.UnpackLog(event, "NewRound", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -1109,6 +1111,7 @@ func (_Broker *BrokerFilterer) ParseOwnershipTransferred(log types.Log) (*Broker
 	if err := _Broker.contract.UnpackLog(event, "OwnershipTransferred", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -1241,6 +1244,7 @@ func (_Broker *BrokerFilterer) ParsePause(log types.Log) (*BrokerPause, error) {
 	if err := _Broker.contract.UnpackLog(event, "Pause", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -1373,6 +1377,7 @@ func (_Broker *BrokerFilterer) ParseUnpause(log types.Log) (*BrokerUnpause, erro
 	if err := _Broker.contract.UnpackLog(event, "Unpause", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -1526,6 +1531,7 @@ func (_Broker *BrokerFilterer) ParseVitaBidden(log types.Log) (*BrokerVitaBidden
 	if err := _Broker.contract.UnpackLog(event, "VitaBidden", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -1659,6 +1665,7 @@ func (_Broker *BrokerFilterer) ParseVitaBidsSettled(log types.Log) (*BrokerVitaB
 	if err := _Broker.contract.UnpackLog(event, "VitaBidsSettled", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -1813,6 +1820,7 @@ func (_Broker *BrokerFilterer) ParseVitaBought(log types.Log) (*BrokerVitaBought
 	if err := _Broker.contract.UnpackLog(event, "VitaBought", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -1946,6 +1954,7 @@ func (_Broker *BrokerFilterer) ParseWhitelistedAddressAdded(log types.Log) (*Bro
 	if err := _Broker.contract.UnpackLog(event, "WhitelistedAddressAdded", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -2079,5 +2088,6 @@ func (_Broker *BrokerFilterer) ParseWhitelistedAddressRemoved(log types.Log) (*B
 	if err := _Broker.contract.UnpackLog(event, "WhitelistedAddressRemoved", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }

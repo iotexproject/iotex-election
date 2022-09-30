@@ -38,8 +38,11 @@ service APIService {
 	// health endpoint
 	rpc isHealth(google.protobuf.Empty) returns (HealthCheckResponse) {}
 
-	//get raw data by height
+	// get raw data by height
 	rpc getRawData(GetRawDataRequest) returns (RawDataResponse) {}
+
+	// get proof for a given account
+	rpc getProof(ProofRequest) returns (ProofResponse) {}
 }
 
 message ChainMeta {
@@ -117,4 +120,12 @@ message RawDataResponse {
 	google.protobuf.Timestamp timestamp = 1;
 	repeated election.Bucket buckets = 2;
 	repeated election.Registration registrations = 3;
+}
+
+message ProofRequest {
+	string account = 1;
+}
+
+message ProofResponse {
+	string proof = 1;
 }

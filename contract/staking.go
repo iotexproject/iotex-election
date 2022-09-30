@@ -1256,6 +1256,7 @@ func (_Staking *StakingFilterer) ParseBucketCreated(log types.Log) (*StakingBuck
 	if err := _Staking.contract.UnpackLog(event, "BucketCreated", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -1392,6 +1393,7 @@ func (_Staking *StakingFilterer) ParseBucketUnstake(log types.Log) (*StakingBuck
 	if err := _Staking.contract.UnpackLog(event, "BucketUnstake", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -1531,6 +1533,7 @@ func (_Staking *StakingFilterer) ParseBucketUpdated(log types.Log) (*StakingBuck
 	if err := _Staking.contract.UnpackLog(event, "BucketUpdated", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -1667,6 +1670,7 @@ func (_Staking *StakingFilterer) ParseBucketWithdraw(log types.Log) (*StakingBuc
 	if err := _Staking.contract.UnpackLog(event, "BucketWithdraw", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -1799,6 +1803,7 @@ func (_Staking *StakingFilterer) ParsePause(log types.Log) (*StakingPause, error
 	if err := _Staking.contract.UnpackLog(event, "Pause", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -1931,6 +1936,7 @@ func (_Staking *StakingFilterer) ParseUnpause(log types.Log) (*StakingUnpause, e
 	if err := _Staking.contract.UnpackLog(event, "Unpause", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -2064,6 +2070,7 @@ func (_Staking *StakingFilterer) ParseWhitelistedAddressAdded(log types.Log) (*S
 	if err := _Staking.contract.UnpackLog(event, "WhitelistedAddressAdded", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -2197,5 +2204,6 @@ func (_Staking *StakingFilterer) ParseWhitelistedAddressRemoved(log types.Log) (
 	if err := _Staking.contract.UnpackLog(event, "WhitelistedAddressRemoved", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }

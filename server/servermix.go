@@ -7,8 +7,7 @@ import (
 )
 
 type ServerMix struct {
-	ess      Server
-	voteSync *votesync.VoteSync
+	ess Server
 }
 
 type MixConfig struct {
@@ -20,20 +19,7 @@ type MixConfig struct {
 }
 
 func NewServerMix(mCfg MixConfig) (*ServerMix, error) {
-	var ess Server
 	var err error
-	if mCfg.DummyServerPort != 0 {
-		ess, err = NewDummyServer(mCfg.DummyServerPort)
-		if err != nil {
-			return nil, err
-		}
-		zap.L().Info("New dummy server created")
-	} else {
-		ess, err = NewServer(&mCfg.ElectionConfig)
-		if err != nil {
-			return nil, err
-		}
-	}
 	var vs *votesync.VoteSync
 	if mCfg.EnableVoteSync {
 		vs, err = votesync.NewVoteSync(mCfg.VoteSync)
@@ -41,24 +27,27 @@ func NewServerMix(mCfg MixConfig) (*ServerMix, error) {
 			return nil, err
 		}
 	}
+	var ess Server
+	if mCfg.DummyServerPort != 0 {
+		ess, err = NewDummyServer(mCfg.DummyServerPort, vs)
+		if err != nil {
+			return nil, err
+		}
+		zap.L().Info("New dummy server created")
+	} else {
+		ess, err = NewServer(&mCfg.ElectionConfig, vs)
+		if err != nil {
+			return nil, err
+		}
+	}
 
-	return &ServerMix{
-		ess:      ess,
-		voteSync: vs,
-	}, nil
+	return &ServerMix{ess: ess}, nil
 }
 
 func (sm *ServerMix) Start(ctx context.Context) error {
-	if err := sm.ess.Start(ctx); err != nil {
-		return err
-	}
-	if sm.voteSync != nil {
-		sm.voteSync.Start(ctx)
-	}
-	return nil
+	return sm.ess.Start(ctx)
 }
 
 func (sm *ServerMix) Stop(ctx context.Context) error {
-	sm.voteSync.Stop(ctx)
 	return sm.ess.Stop(ctx)
 }

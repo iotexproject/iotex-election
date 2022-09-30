@@ -737,6 +737,7 @@ func (_IOTX *IOTXFilterer) ParseApproval(log types.Log) (*IOTXApproval, error) {
 	if err := _IOTX.contract.UnpackLog(event, "Approval", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -889,6 +890,7 @@ func (_IOTX *IOTXFilterer) ParseOwnershipTransferred(log types.Log) (*IOTXOwners
 	if err := _IOTX.contract.UnpackLog(event, "OwnershipTransferred", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -1021,6 +1023,7 @@ func (_IOTX *IOTXFilterer) ParsePause(log types.Log) (*IOTXPause, error) {
 	if err := _IOTX.contract.UnpackLog(event, "Pause", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -1174,6 +1177,7 @@ func (_IOTX *IOTXFilterer) ParseTransfer(log types.Log) (*IOTXTransfer, error) {
 	if err := _IOTX.contract.UnpackLog(event, "Transfer", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -1306,5 +1310,6 @@ func (_IOTX *IOTXFilterer) ParseUnpause(log types.Log) (*IOTXUnpause, error) {
 	if err := _IOTX.contract.UnpackLog(event, "Unpause", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }

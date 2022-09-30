@@ -25,7 +25,7 @@ func TestFetchVotesByHeight(t *testing.T) {
 	require := require.New(t)
 	vs, err := NewVoteSync(cfg)
 	require.NoError(err)
-	re1, re2, err := vs.retryFetchBucketsByHeight(context.Background(), 3459523)
+	re1, re2, err := vs.fetcher.FetchBucketsByHeight(context.Background(), 3459523)
 	require.NoError(err)
 	// TODO: this is due to incomplete staking index db, fix later
 	require.Zero(len(re1.GetBuckets()))

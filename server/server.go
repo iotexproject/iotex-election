@@ -12,7 +12,6 @@ package server
 
 import (
 	"encoding/hex"
-	"errors"
 	"math"
 	"math/big"
 	"net"
@@ -21,7 +20,8 @@ import (
 
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/empty"
-
+	"github.com/iotexproject/iotex-address/address"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -33,6 +33,7 @@ import (
 	electionpb "github.com/iotexproject/iotex-election/pb/election"
 	"github.com/iotexproject/iotex-election/types"
 	"github.com/iotexproject/iotex-election/util"
+	"github.com/iotexproject/iotex-election/votesync"
 )
 
 // Config defines the config for server
@@ -53,15 +54,17 @@ type Server interface {
 
 // server implements api.APIServiceServer.
 type server struct {
+	api.UnimplementedAPIServiceServer
 	port                 int
 	electionCommittee    committee.Committee
 	grpcServer           *grpc.Server
 	selfStakingThreshold *big.Int
 	scoreThreshold       *big.Int
+	vs                   *votesync.VoteSync
 }
 
 // NewServer returns an implementation of ranking server
-func NewServer(cfg *Config) (Server, error) {
+func NewServer(cfg *Config, vs *votesync.VoteSync) (Server, error) {
 	archive, err := committee.NewArchive(cfg.DB.DBPath, cfg.DB.NumOfRetries, cfg.Committee.GravityChainStartHeight, cfg.Committee.GravityChainHeightInterval)
 	if err != nil {
 		return nil, err
@@ -72,17 +75,18 @@ func NewServer(cfg *Config) (Server, error) {
 	}
 	scoreThreshold, ok := new(big.Int).SetString(cfg.ScoreThreshold, 10)
 	if !ok {
-		return nil, errors.New("Invalid score threshold")
+		return nil, errors.New("invalid score threshold")
 	}
 	selfStakingThreshold, ok := new(big.Int).SetString(cfg.SelfStakingThreshold, 10)
 	if !ok {
-		return nil, errors.New("Invalid self staking threshold")
+		return nil, errors.New("invalid self staking threshold")
 	}
 	s := &server{
 		electionCommittee:    c,
 		port:                 cfg.Port,
 		scoreThreshold:       scoreThreshold,
 		selfStakingThreshold: selfStakingThreshold,
+		vs:                   vs,
 	}
 	s.grpcServer = grpc.NewServer()
 	api.RegisterAPIServiceServer(s.grpcServer, s)
@@ -101,6 +105,11 @@ func (s *server) Start(ctx context.Context) error {
 		return err
 	}
 	go func() {
+		if s.vs != nil {
+			s.vs.Start(ctx)
+		}
+	}()
+	go func() {
 		if err := s.grpcServer.Serve(lis); err != nil {
 			zap.L().Fatal("Failed to serve", zap.Error(err))
 		}
@@ -110,6 +119,9 @@ func (s *server) Start(ctx context.Context) error {
 
 func (s *server) Stop(ctx context.Context) error {
 	s.grpcServer.Stop()
+	if s.vs != nil {
+		s.vs.Stop(ctx)
+	}
 	return s.electionCommittee.Stop(ctx)
 }
 
@@ -255,7 +267,7 @@ func (s *server) GetBucketsByCandidate(ctx context.Context, request *api.GetBuck
 		return nil, errors.New("invalid candidate name")
 	}
 	if votes == nil {
-		return nil, errors.New("No buckets for the candidate")
+		return nil, errors.New("no buckets for the candidate")
 	}
 	offset := request.Offset
 	if int(offset) >= len(votes) {
@@ -300,7 +312,7 @@ func (s *server) GetBuckets(ctx context.Context, request *api.GetBucketsRequest)
 	}
 	votes := result.Votes()
 	if votes == nil {
-		return nil, errors.New("No buckets available")
+		return nil, errors.New("no buckets available")
 	}
 	offset := request.Offset
 	if int(offset) >= len(votes) {
@@ -348,4 +360,23 @@ func (s *server) toRawDataResponse(mintTime time.Time, regs []*types.Registratio
 	}
 	response.Timestamp = t
 	return response, nil
+}
+
+func (s *server) GetProof(ctx context.Context, request *api.ProofRequest) (*api.ProofResponse, error) {
+	if s.vs == nil {
+		return nil, errors.New("no vote sync server")
+	}
+	addr, err := address.FromString(request.Account)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to cast address %s", request.Account)
+	}
+	proof, err := s.vs.ProofForAccount(addr)
+	if err != nil {
+		return nil, err
+	}
+	if proof == nil {
+		return nil, nil
+	}
+
+	return &api.ProofResponse{Proof: hex.EncodeToString(proof)}, nil
 }

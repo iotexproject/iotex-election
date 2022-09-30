@@ -839,6 +839,7 @@ func (_RotatableVPS *RotatableVPSFilterer) ParseOwnershipTransferred(log types.L
 	if err := _RotatableVPS.contract.UnpackLog(event, "OwnershipTransferred", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -973,6 +974,7 @@ func (_RotatableVPS *RotatableVPSFilterer) ParseSetVotingPower(log types.Log) (*
 	if err := _RotatableVPS.contract.UnpackLog(event, "SetVotingPower", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -1106,6 +1108,7 @@ func (_RotatableVPS *RotatableVPSFilterer) ParseWhitelistedAddressAdded(log type
 	if err := _RotatableVPS.contract.UnpackLog(event, "WhitelistedAddressAdded", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -1239,5 +1242,6 @@ func (_RotatableVPS *RotatableVPSFilterer) ParseWhitelistedAddressRemoved(log ty
 	if err := _RotatableVPS.contract.UnpackLog(event, "WhitelistedAddressRemoved", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }

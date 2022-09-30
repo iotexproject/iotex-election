@@ -6,16 +6,9 @@ import (
 	"fmt"
 	"math"
 	"math/big"
-	"strconv"
-	"strings"
 	"time"
 
-	"github.com/bwmarrin/discordgo"
-	"github.com/cenkalti/backoff"
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes"
 	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -25,13 +18,8 @@ import (
 	"github.com/iotexproject/iotex-address/address"
 	"github.com/iotexproject/iotex-antenna-go/v2/account"
 	"github.com/iotexproject/iotex-antenna-go/v2/iotex"
-	"github.com/iotexproject/iotex-antenna-go/v2/utils/unit"
-	"github.com/iotexproject/iotex-antenna-go/v2/utils/wait"
-	"github.com/iotexproject/iotex-election/contract"
 	"github.com/iotexproject/iotex-proto/golang/iotexapi"
 	"github.com/iotexproject/iotex-proto/golang/iotextypes"
-
-	"github.com/iotexproject/iotex-election/util"
 )
 
 const _viewIDOffsite = 10000000
@@ -44,18 +32,18 @@ const (
 	readCandidatesLimit = 20000
 )
 
+var _fixedAdhocPower = big.NewInt(1)
+
 //VoteSync defines fields used in VoteSync
 type VoteSync struct {
-	service                iotex.AuthedClient
-	iotexAPI               iotexapi.APIServiceClient
-	vpsContract            iotex.Contract
-	brokerContract         iotex.Contract
-	clerkContract          iotex.Contract
-	discordBotToken        string
-	discordChannelID       string
-	discordMsg             string
-	discordReminder        string
-	discordReminded        bool
+	agentContract          *agentContract
+	votingPowers           *VotingPowers
+	client                 *iotexClient
+	fetcher                *VoteFetcher
+	vpsContract            *rwvps
+	brokerContract         *brokerContract
+	clerkContract          *clerkContract
+	discord                *discord
 	lastViewHeight         uint64
 	lastViewTimestamp      time.Time
 	lastUpdateHeight       uint64
@@ -63,8 +51,6 @@ type VoteSync struct {
 	lastClerkUpdateHeight  uint64
 	lastUpdateTimestamp    time.Time
 	timeInternal           time.Duration
-	paginationSize         uint8
-	brokerPaginationSize   uint8
 	lastNativeEphoch       uint64
 	tempLastNativeEphoch   uint64
 	terminate              chan bool
@@ -89,9 +75,11 @@ type Config struct {
 	DiscordChannelID          string        `yaml:"discordChannelID"`
 	DiscordMsg                string        `yaml:"discordMsg"`
 	DiscordReminder           string        `yaml:"discordReminder"`
-	DardaenllesHeight         uint64        `yaml:"dardanellesHeight"`
+	DardanellesHeight         uint64        `yaml:"dardanellesHeight"`
 	FairBankHeight            uint64        `yaml:"fairbankHeight"`
 	NativeCommitteeInitHeight uint64        `yaml:"nativeCommitteeInitHeight"`
+	EnableAgentMode           bool          `yaml:"enableAgentMode"`
+	AgentContractAddress      string        `yaml:"agentContractAddress"`
 }
 
 //WeightedVote defines voter and votes for weighted vote
@@ -116,21 +104,17 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 		grpc_retry.WithBackoff(grpc_retry.BackoffLinear(100 * time.Second)),
 		grpc_retry.WithMax(3),
 	}
-	var conn *grpc.ClientConn
-	var err error
-	if cfg.IoTeXAPISecure {
-		conn, err = grpc.DialContext(ctx, cfg.IoTeXAPI,
-			grpc.WithBlock(),
-			grpc.WithStreamInterceptor(grpc_retry.StreamClientInterceptor(opts...)),
-			grpc.WithUnaryInterceptor(grpc_retry.UnaryClientInterceptor(opts...)),
-			grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
-	} else {
-		conn, err = grpc.DialContext(ctx, cfg.IoTeXAPI,
-			grpc.WithBlock(),
-			grpc.WithStreamInterceptor(grpc_retry.StreamClientInterceptor(opts...)),
-			grpc.WithUnaryInterceptor(grpc_retry.UnaryClientInterceptor(opts...)),
-			grpc.WithInsecure())
+	dialOpts := []grpc.DialOption{
+		grpc.WithBlock(),
+		grpc.WithStreamInterceptor(grpc_retry.StreamClientInterceptor(opts...)),
+		grpc.WithUnaryInterceptor(grpc_retry.UnaryClientInterceptor(opts...)),
 	}
+	if cfg.IoTeXAPISecure {
+		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
+	} else {
+		dialOpts = append(dialOpts, grpc.WithInsecure())
+	}
+	conn, err := grpc.DialContext(ctx, cfg.IoTeXAPI, dialOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -139,85 +123,41 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 		return nil, err
 	}
 	iotexAPI := iotexapi.NewAPIServiceClient(conn)
-	cli := iotex.NewAuthedClient(iotexAPI, operatorAccount)
+	apiClient := NewIoTeXClient(iotexAPI)
+	fetcher := &VoteFetcher{iotexAPI: iotexAPI}
+	authClient := iotex.NewAuthedClient(iotexAPI, operatorAccount)
 
-	vitaABI, err := abi.JSON(strings.NewReader(contract.VitaABI))
-	if err != nil {
-		return nil, err
-	}
 	vitaContractAddress, err := address.FromString(cfg.VitaContractAddress)
 	if err != nil {
 		return nil, err
 	}
-	vitaContract := cli.Contract(vitaContractAddress, vitaABI)
-
-	d, err := vitaContract.Read("vps").Call(ctx)
-	if err != nil {
-		return nil, err
-	}
-	ret, err := d.Unmarshal()
-	if err != nil {
-		return nil, err
-	}
-	addr, err := util.ToEtherAddress(ret[0])
-	if err != nil {
-		return nil, err
-	}
-	vpsContractAddress, err := address.FromBytes(addr.Bytes())
+	vitaContract, err := NewVitaContract(authClient, vitaContractAddress)
 	if err != nil {
 		return nil, err
 	}
 
-	d, err = vitaContract.Read("donationPoolAddress").Call(ctx)
-	if err != nil {
-		return nil, err
-	}
-	ret, err = d.Unmarshal()
-	if err != nil {
-		return nil, err
-	}
-	addr, err = util.ToEtherAddress(ret[0])
-	if err != nil {
-		return nil, err
-	}
-	brokerContractAddress, err := address.FromBytes(addr.Bytes())
+	vpsContractAddress, err := vitaContract.VPS()
 	if err != nil {
 		return nil, err
 	}
 
-	d, err = vitaContract.Read("rewardPoolAddress").Call(ctx)
+	brokerContractAddress, err := vitaContract.DonationPoolAddress()
 	if err != nil {
 		return nil, err
 	}
-	ret, err = d.Unmarshal()
-	if err != nil {
-		return nil, err
-	}
-	addr, err = util.ToEtherAddress(ret[0])
-	if err != nil {
-		return nil, err
-	}
-	clerkContractAddress, err := address.FromBytes(addr.Bytes())
+
+	clerkContractAddress, err := vitaContract.RewardPoolAddress()
 	if err != nil {
 		return nil, err
 	}
 	zap.L().Info("vote contracts.", zap.String("brokerContract", brokerContractAddress.String()), zap.String("clerkContract", clerkContractAddress.String()))
 
-	vpsABI, err := abi.JSON(strings.NewReader(contract.RotatableVPSABI))
+	vpsContract, err := NewRotatableWeightedVPS(authClient, vpsContractAddress, cfg.PaginationSize)
 	if err != nil {
 		return nil, err
 	}
-	vpsContract := cli.Contract(vpsContractAddress, vpsABI)
 
-	d, err = vpsContract.Read("viewID").Call(ctx)
-	if err != nil {
-		return nil, err
-	}
-	ret, err = d.Unmarshal()
-	if err != nil {
-		return nil, err
-	}
-	lastUpdateHeight, err := util.ToBigInt(ret[0])
+	lastUpdateHeight, err := vpsContract.ViewID()
 	if err != nil {
 		return nil, err
 	}
@@ -227,20 +167,12 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 	if lastUpdateHeight.Uint64() > _viewIDOffsite {
 		lastUpdateHeight.Sub(lastUpdateHeight, new(big.Int).SetUint64(_viewIDOffsite))
 	}
-	lastUpdateTimestamp, err := iotexBlockTime(context.Background(), iotexAPI, lastUpdateHeight.Uint64())
+	lastUpdateTimestamp, err := apiClient.BlockTime(lastUpdateHeight.Uint64())
 	if err != nil {
 		return nil, err
 	}
 
-	d, err = vpsContract.Read("inactiveViewID").Call(ctx)
-	if err != nil {
-		return nil, err
-	}
-	ret, err = d.Unmarshal()
-	if err != nil {
-		return nil, err
-	}
-	lastViewHeight, err := util.ToBigInt(ret[0])
+	lastViewHeight, err := vpsContract.InactiveViewID()
 	if err != nil {
 		return nil, err
 	}
@@ -250,20 +182,12 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 	if lastViewHeight.Uint64() < cfg.FairBankHeight {
 		lastViewHeight = new(big.Int).SetUint64(cfg.FairBankHeight)
 	}
-	lastViewTimestamp, err := iotexBlockTime(context.Background(), iotexAPI, lastViewHeight.Uint64())
+	lastViewTimestamp, err := apiClient.BlockTime(lastViewHeight.Uint64())
 	if err != nil {
 		return nil, err
 	}
 
-	d, err = vitaContract.Read("lastDonationPoolClaimViewID").Call(ctx)
-	if err != nil {
-		return nil, err
-	}
-	ret, err = d.Unmarshal()
-	if err != nil {
-		return nil, err
-	}
-	lastBrokerUpdateHeight, err := util.ToBigInt(ret[0])
+	lastBrokerUpdateHeight, err := vitaContract.LastDonationPoolClaimViewID()
 	if err != nil {
 		return nil, err
 	}
@@ -271,15 +195,7 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 		lastBrokerUpdateHeight.Sub(lastBrokerUpdateHeight, new(big.Int).SetUint64(_viewIDOffsite))
 	}
 
-	d, err = vitaContract.Read("lastRewardPoolClaimViewID").Call(ctx)
-	if err != nil {
-		return nil, err
-	}
-	ret, err = d.Unmarshal()
-	if err != nil {
-		return nil, err
-	}
-	lastClerkUpdateHeight, err := util.ToBigInt(ret[0])
+	lastClerkUpdateHeight, err := vitaContract.LastRewardPoolClaimViewID()
 	if err != nil {
 		return nil, err
 	}
@@ -287,27 +203,37 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 		lastClerkUpdateHeight.Sub(lastClerkUpdateHeight, new(big.Int).SetUint64(_viewIDOffsite))
 	}
 
-	brokerABI, err := abi.JSON(strings.NewReader(contract.BrokerABI))
+	brokerContract, err := NewBrokerContract(authClient, brokerContractAddress, cfg.BrokerPaginationSize)
 	if err != nil {
 		return nil, err
 	}
-	brokerContract := cli.Contract(brokerContractAddress, brokerABI)
 
-	clerkABI, err := abi.JSON(strings.NewReader(contract.ClerkABI))
+	clerkContract, err := NewClerkContract(authClient, clerkContractAddress)
 	if err != nil {
 		return nil, err
 	}
-	clerkContract := cli.Contract(clerkContractAddress, clerkABI)
+
+	var agentContract *agentContract
+	if cfg.EnableAgentMode {
+		agentContractAddress, err := address.FromString(cfg.AgentContractAddress)
+		if err != nil {
+			return nil, err
+		}
+		agentContract, err = NewAgentContract(authClient, agentContractAddress)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	return &VoteSync{
+		client:                 apiClient,
+		agentContract:          agentContract,
+		votingPowers:           &VotingPowers{},
+		fetcher:                fetcher,
 		vpsContract:            vpsContract,
 		brokerContract:         brokerContract,
 		clerkContract:          clerkContract,
-		service:                cli,
-		iotexAPI:               iotexAPI,
 		timeInternal:           cfg.GravityChainTimeInterval,
-		paginationSize:         cfg.PaginationSize,
-		brokerPaginationSize:   cfg.BrokerPaginationSize,
 		lastViewHeight:         lastViewHeight.Uint64(),
 		lastViewTimestamp:      lastViewTimestamp,
 		lastUpdateHeight:       lastUpdateHeight.Uint64(),
@@ -316,16 +242,18 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 		lastClerkUpdateHeight:  lastClerkUpdateHeight.Uint64(),
 		terminate:              make(chan bool),
 		terminated:             false,
-		discordBotToken:        cfg.DiscordBotToken,
-		discordChannelID:       cfg.DiscordChannelID,
-		discordMsg:             cfg.DiscordMsg,
-		discordReminder:        cfg.DiscordReminder,
-		dardanellesHeight:      cfg.DardaenllesHeight,
-		fairbankHeight:         cfg.FairBankHeight,
+		discord: &discord{
+			botToken:    cfg.DiscordBotToken,
+			channelID:   cfg.DiscordChannelID,
+			newCycleMsg: cfg.DiscordMsg,
+			reminderMsg: cfg.DiscordReminder,
+		},
+		dardanellesHeight: cfg.DardanellesHeight,
+		fairbankHeight:    cfg.FairBankHeight,
 	}, nil
 }
 
-//Start starts voteSync
+// Start starts voteSync
 func (vc *VoteSync) Start(ctx context.Context) {
 	errChan := make(chan error)
 
@@ -343,12 +271,12 @@ func (vc *VoteSync) Start(ctx context.Context) {
 			case <-vc.terminate:
 				return
 			case <-ticker.C:
-				tip, err := iotexTip(ctx, vc.iotexAPI)
+				tip, err := vc.client.Tip()
 				if err != nil {
 					zap.L().Error("failed to get iotex tip", zap.Error(err))
 					continue
 				}
-				blockTime, err := iotexBlockTime(ctx, vc.iotexAPI, tip)
+				blockTime, err := vc.client.BlockTime(tip)
 				if err != nil {
 					zap.L().Error("failed to get block time", zap.Error(err))
 					continue
@@ -358,16 +286,14 @@ func (vc *VoteSync) Start(ctx context.Context) {
 						zap.L().Error("failed to sync votes", zap.Error(err))
 						continue
 					}
-					if err := vc.sendDiscordMsg(vc.discordMsg); err != nil {
+					if err := vc.discord.SendNewCycleMessage(); err != nil {
 						zap.L().Error("failed to send discord msg", zap.Error(err))
 					}
-					vc.discordReminded = false
 				}
-				if blockTime.After(vc.lastUpdateTimestamp.Add(vc.timeInternal*24/25)) && !vc.discordReminded {
-					if err := vc.sendDiscordMsg(vc.discordReminder); err != nil {
+				if blockTime.After(vc.lastUpdateTimestamp.Add(vc.timeInternal*24/25)) && !vc.discord.Reminded() {
+					if err := vc.discord.SendReminder(); err != nil {
 						zap.L().Error("failed to send discord reminder", zap.Error(err))
 					}
-					vc.discordReminded = true
 				}
 
 				if vc.lastUpdateHeight > vc.lastBrokerUpdateHeight {
@@ -388,48 +314,45 @@ func (vc *VoteSync) Start(ctx context.Context) {
 	}()
 }
 
-//Stop stops voteSync
+// Stop stops voteSync
 func (vc *VoteSync) Stop(ctx context.Context) {
 	if vc.terminated {
 		return
 	}
 	close(vc.terminate)
 	vc.terminated = true
-	return
 }
 
-func (vc *VoteSync) brokerReset() error {
-	caller := vc.brokerContract.Execute("reset").SetGasPrice(big.NewInt(int64(1 * unit.Qev))).SetGasLimit(5000000)
-	return wait.Wait(context.Background(), caller)
-}
+func (vc *VoteSync) ProofForAccount(acct address.Address) ([]byte, error) {
+	if vc.agentContract == nil {
+		return nil, errors.New("agent mode is not enabled")
+	}
+	agentCycle, size, claimed, err := vc.agentContract.Claimed(acct)
+	if err != nil {
+		return nil, err
+	}
+	if claimed {
+		return nil, nil
+	}
+	cycle, power := vc.votingPowers.VotingPower(common.BytesToAddress(acct.Bytes()))
+	if cycle.Cmp(agentCycle) != 0 {
+		return nil, errors.New("unexpected status")
+	}
 
-func (vc *VoteSync) brokerNextBidToSettle() (uint64, error) {
-	d, err := vc.brokerContract.Read("nextBidToSettle").Call(context.Background())
-	if err != nil {
-		return 0, err
-	}
-	ret, err := d.Unmarshal()
-	if err != nil {
-		return 0, err
-	}
-	nextBidToSettle, err := util.ToBigInt(ret[0])
-	if err != nil {
-		return 0, err
-	}
-	return nextBidToSettle.Uint64(), nil
+	return vc.agentContract.Digest(
+		new(big.Int).Div(power.Mul(power, size), vc.votingPowers.Total()),
+		cycle,
+	)
 }
 
 func (vc *VoteSync) brokerSettle() error {
 	oldStart := uint64(0)
 	for {
-		caller := vc.brokerContract.Execute(
-			"settle", big.NewInt(0).SetUint64(uint64(vc.brokerPaginationSize))).
-			SetGasPrice(big.NewInt(int64(1 * unit.Qev))).SetGasLimit(5000000)
-		if err := wait.Wait(context.Background(), caller); err != nil {
+		if err := vc.brokerContract.Settle(); err != nil {
 			return err
 		}
 
-		newStart, err := vc.brokerNextBidToSettle()
+		newStart, err := vc.brokerContract.NextBidToSettle()
 		if err != nil {
 			return err
 		}
@@ -448,7 +371,7 @@ func (vc *VoteSync) settle(h uint64) error {
 		return errors.Wrap(err, "broker settle error")
 	}
 	l.Info("Finished broker settle.")
-	if err := vc.brokerReset(); err != nil {
+	if err := vc.brokerContract.Reset(); err != nil {
 		return errors.Wrap(err, "broker reset error")
 	}
 	vc.lastBrokerUpdateHeight = h
@@ -458,8 +381,7 @@ func (vc *VoteSync) settle(h uint64) error {
 
 func (vc *VoteSync) claimForClerk() error {
 	zap.L().Info("Start clerk claim process.", zap.Uint64("lastClerkUpdateHeight", vc.lastClerkUpdateHeight))
-	caller := vc.clerkContract.Execute("claim").SetGasPrice(big.NewInt(int64(1 * unit.Qev))).SetGasLimit(5000000)
-	if err := wait.Wait(context.Background(), caller); err != nil {
+	if err := vc.clerkContract.Claim(); err != nil {
 		return err
 	}
 	vc.lastClerkUpdateHeight = vc.lastUpdateHeight
@@ -467,56 +389,71 @@ func (vc *VoteSync) claimForClerk() error {
 	return nil
 }
 
-func (vc *VoteSync) updateVotingPowers(addrs []common.Address, weights []*big.Int) error {
-	caller := vc.vpsContract.Execute("updateVotingPowers", addrs, weights).
-		SetGasPrice(big.NewInt(int64(1 * unit.Qev))).SetGasLimit(7000000)
-	return wait.Wait(context.Background(), caller)
-}
-
 func (vc *VoteSync) sync(ctx context.Context, prevHeight, currHeight uint64, currTs time.Time) error {
 	zap.L().Info("Start VoteSyncing.", zap.Uint64("lastViewID", prevHeight), zap.Uint64("nextViewID", currHeight))
-	ret, err := vc.fetchVotesUpdate(ctx, prevHeight, currHeight)
-	if err != nil {
-		return errors.Wrap(err, "fetch vote error")
-	}
-	zap.L().Info("Need to sync.", zap.Int("numVoter", len(ret)))
-
-	var (
-		addrs   []common.Address
-		weights []*big.Int
-		reqNum  int
-	)
-	if len(ret) == 0 { // just to pause the contract when nothing cahnged
-		if err := vc.updateVotingPowers(addrs, weights); err != nil {
-			return errors.Wrap(err, fmt.Sprintf("update vote error, reqNum:%d", reqNum))
-		}
-	}
-	for _, vote := range ret {
-		addr, err := ioToEthAddress(vote.Voter)
+	if vc.agentContract != nil {
+		buckets, candidates, err := vc.fetcher.FetchBucketsByHeight(ctx, currHeight)
 		if err != nil {
-			return errors.Wrap(err, fmt.Sprintf("failed convert address:%s", vote.Voter))
+			return err
 		}
-		addrs = append(addrs, addr)
-		weights = append(weights, vote.Votes)
-
-		if len(addrs)%int(vc.paginationSize/4) == 0 {
-			if err := vc.updateVotingPowers(addrs, weights); err != nil {
-				return errors.Wrap(err, fmt.Sprintf("update vote error, reqNum:%d", reqNum))
+		totalVotes := big.NewInt(0)
+		votingPowers := make(map[common.Address]*big.Int)
+		votes := calWeightedVotes(buckets, candidates)
+		for _, vote := range votes {
+			totalVotes = totalVotes.Add(totalVotes, vote.Votes)
+			addr, err := ioToEthAddress(vote.Voter)
+			if err != nil {
+				return err
 			}
-			reqNum++
-			addrs = []common.Address{}
-			weights = []*big.Int{}
+			votingPowers[addr] = vote.Votes
 		}
-	}
-	if len(addrs) > 0 {
-		if err := vc.updateVotingPowers(addrs, weights); err != nil {
-			return errors.Wrap(err, fmt.Sprintf("update vote error, reqNum:%d", reqNum))
+		totalPower, err := vc.vpsContract.TotalPower()
+		if err != nil {
+			return err
+		}
+		if totalPower.Cmp(_fixedAdhocPower) != 0 {
+			votes, err := vc.vpsContract.VoterPowers()
+			if err != nil {
+				return err
+			}
+			voters := make([]common.Address, 0, len(votes)+1)
+			weights := make([]*big.Int, 0, len(votes)+1)
+			for voter := range votes {
+				voters = append(voters, voter)
+				weights = append(weights, big.NewInt(0))
+			}
+			voters = append(voters, vc.agentContract.Address())
+			weights = append(weights, _fixedAdhocPower)
+			if err := vc.vpsContract.UpdateVotingPowers(voters, weights); err != nil {
+				return err
+			}
+		}
+		vc.votingPowers.Update(nil, totalVotes, votingPowers)
+	} else {
+		ret, err := vc.fetchVotesUpdate(ctx, prevHeight, currHeight)
+		if err != nil {
+			return errors.Wrap(err, "fetch vote error")
+		}
+		zap.L().Info("Need to sync.", zap.Int("numVoter", len(ret)))
+
+		var (
+			addrs   []common.Address
+			weights []*big.Int
+		)
+		for _, vote := range ret {
+			addr, err := ioToEthAddress(vote.Voter)
+			if err != nil {
+				return errors.Wrap(err, fmt.Sprintf("failed convert address:%s", vote.Voter))
+			}
+			addrs = append(addrs, addr)
+			weights = append(weights, vote.Votes)
+		}
+		if err := vc.vpsContract.UpdateVotingPowers(addrs, weights); err != nil {
+			return errors.Wrap(err, "update vote error")
 		}
 	}
 
-	caller := vc.vpsContract.Execute("rotate", new(big.Int).SetUint64(currHeight+_viewIDOffsite)).
-		SetGasPrice(big.NewInt(int64(1 * unit.Qev))).SetGasLimit(4000000)
-	if err := wait.Wait(context.Background(), caller); err != nil {
+	if err := vc.vpsContract.Rotate(new(big.Int).SetUint64(currHeight + _viewIDOffsite)); err != nil {
 		return errors.Wrap(err, "failed to execute rotate")
 	}
 
@@ -532,11 +469,10 @@ func (vc *VoteSync) sync(ctx context.Context, prevHeight, currHeight uint64, cur
 func (vc *VoteSync) fetchVotesUpdate(ctx context.Context, prevHeight, currHeight uint64) ([]*WeightedVote, error) {
 	// prevHeight == 0, only run at first 2 time. get all votes from currHeight
 	if prevHeight == 0 {
-		currB, currC, err := vc.retryFetchBucketsByHeight(ctx, currHeight)
+		currB, currC, err := vc.fetcher.FetchBucketsByHeight(ctx, currHeight)
 		if err != nil {
 			return nil, err
 		}
-
 		n := calWeightedVotes(currB, currC)
 		var ret []*WeightedVote
 		for _, nv := range n {
@@ -545,12 +481,12 @@ func (vc *VoteSync) fetchVotesUpdate(ctx context.Context, prevHeight, currHeight
 		return ret, nil
 	}
 
-	prevB, prevC, err := vc.retryFetchBucketsByHeight(ctx, prevHeight)
+	prevB, prevC, err := vc.fetcher.FetchBucketsByHeight(ctx, prevHeight)
 	if err != nil {
 		return nil, err
 	}
 
-	currB, currC, err := vc.retryFetchBucketsByHeight(ctx, currHeight)
+	currB, currC, err := vc.fetcher.FetchBucketsByHeight(ctx, currHeight)
 	if err != nil {
 		return nil, err
 	}
@@ -561,7 +497,7 @@ func (vc *VoteSync) fetchVotesUpdate(ctx context.Context, prevHeight, currHeight
 	var ret []*WeightedVote
 	// check for all voters in old view
 	// if they don't exist in new view map, append 0 value for them
-	// if they do exisit in new view map, append only if the vote value is different
+	// if they do exist in new view map, append only if the vote value is different
 	for k, pv := range p {
 		nv, ok := n[k]
 		if !ok {
@@ -583,83 +519,6 @@ func (vc *VoteSync) fetchVotesUpdate(ctx context.Context, prevHeight, currHeight
 		}
 	}
 	return ret, nil
-}
-
-func (vc *VoteSync) retryFetchBucketsByHeight(ctx context.Context, h uint64) (*iotextypes.VoteBucketList, *iotextypes.CandidateListV2, error) {
-	var (
-		ret1 *iotextypes.VoteBucketList
-		ret2 *iotextypes.CandidateListV2
-		err  error
-	)
-	nerr := backoff.Retry(func() error {
-		ret1, err = getAllStakingBuckets(ctx, vc.iotexAPI, h)
-		if err != nil {
-			return err
-		}
-		ret2, err = getAllStakingCandidates(ctx, vc.iotexAPI, h)
-		return err
-	}, backoff.NewExponentialBackOff())
-	if nerr != nil {
-		zap.L().Error(
-			"failed to fetch vote result by height",
-			zap.Error(nerr),
-			zap.Uint64("height", h),
-		)
-	}
-	return ret1, ret2, nerr
-}
-
-func iotexTip(ctx context.Context, iotexAPI iotexapi.APIServiceClient) (uint64, error) {
-	response, err := iotexAPI.GetChainMeta(
-		context.Background(),
-		&iotexapi.GetChainMetaRequest{},
-	)
-	if err != nil {
-		return 0, err
-	}
-
-	return response.ChainMeta.Height, nil
-}
-
-func iotexBlockTime(ctx context.Context, iotexAPI iotexapi.APIServiceClient, h uint64) (time.Time, error) {
-	resp, err := iotexAPI.GetBlockMetas(ctx, &iotexapi.GetBlockMetasRequest{
-		Lookup: &iotexapi.GetBlockMetasRequest_ByIndex{
-			ByIndex: &iotexapi.GetBlockMetasByIndexRequest{
-				Start: h, Count: 1,
-			},
-		},
-	})
-	if err != nil {
-		return time.Now(), errors.Wrapf(err, "failed to fetch block meta %v", h)
-	}
-	bms := resp.GetBlkMetas()
-	if len(bms) != 1 {
-		return time.Now(), errors.Wrapf(err, "asked 1 block, but got none-1 value %v", h)
-	}
-	ts := bms[0].GetTimestamp()
-	bt, err := ptypes.Timestamp(ts)
-	if err != nil {
-		return time.Now(), errors.Wrapf(err, "failed to parse timestamp in blockmeta %v", h)
-	}
-	return bt, nil
-}
-
-func (vc *VoteSync) sendDiscordMsg(msg string) error {
-	if vc.discordBotToken == "" || msg == "" {
-		return nil
-	}
-
-	dg, err := discordgo.New("Bot " + vc.discordBotToken)
-	if err != nil {
-		return err
-	}
-	if err := dg.Open(); err != nil {
-		return err
-	}
-	defer dg.Close()
-
-	_, err = dg.ChannelMessageSend(vc.discordChannelID, msg)
-	return err
 }
 
 func calWeightedVotes(bs *iotextypes.VoteBucketList, cs *iotextypes.CandidateListV2) map[string]*WeightedVote {
@@ -709,114 +568,4 @@ func calculateVoteWeight(v *iotextypes.VoteBucket, selfStake bool) *big.Int {
 	amount := new(big.Float).SetInt(a)
 	weightedAmount, _ := amount.Mul(amount, big.NewFloat(weight)).Int(nil)
 	return weightedAmount
-}
-
-func getAllStakingBuckets(ctx context.Context, chainClient iotexapi.APIServiceClient, height uint64) (voteBucketListAll *iotextypes.VoteBucketList, err error) {
-	voteBucketListAll = &iotextypes.VoteBucketList{}
-	for i := uint32(0); ; i++ {
-		offset := i * readBucketsLimit
-		size := uint32(readBucketsLimit)
-		voteBucketList, err := getStakingBuckets(ctx, chainClient, offset, size, height)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to get bucket")
-		}
-		voteBucketListAll.Buckets = append(voteBucketListAll.Buckets, voteBucketList.Buckets...)
-		if len(voteBucketList.Buckets) < readBucketsLimit {
-			break
-		}
-	}
-	return
-}
-
-// getStakingBuckets get specific buckets by height
-func getStakingBuckets(ctx context.Context, chainClient iotexapi.APIServiceClient, offset, limit uint32, height uint64) (voteBucketList *iotextypes.VoteBucketList, err error) {
-	methodName, err := proto.Marshal(&iotexapi.ReadStakingDataMethod{
-		Method: iotexapi.ReadStakingDataMethod_BUCKETS,
-	})
-	if err != nil {
-		return nil, err
-	}
-	arg, err := proto.Marshal(&iotexapi.ReadStakingDataRequest{
-		Request: &iotexapi.ReadStakingDataRequest_Buckets{
-			Buckets: &iotexapi.ReadStakingDataRequest_VoteBuckets{
-				Pagination: &iotexapi.PaginationParam{
-					Offset: offset,
-					Limit:  limit,
-				},
-			},
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
-	readStateRequest := &iotexapi.ReadStateRequest{
-		ProtocolID: []byte(protocolID),
-		MethodName: methodName,
-		Arguments:  [][]byte{arg},
-		Height:     strconv.FormatUint(height, 10),
-	}
-	readStateRes, err := chainClient.ReadState(ctx, readStateRequest)
-	if err != nil {
-		return
-	}
-	voteBucketList = &iotextypes.VoteBucketList{}
-	if err := proto.Unmarshal(readStateRes.GetData(), voteBucketList); err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal VoteBucketList")
-	}
-	return
-}
-
-func getAllStakingCandidates(ctx context.Context, chainClient iotexapi.APIServiceClient, height uint64) (candidateListAll *iotextypes.CandidateListV2, err error) {
-	candidateListAll = &iotextypes.CandidateListV2{}
-	for i := uint32(0); ; i++ {
-		offset := i * readCandidatesLimit
-		size := uint32(readCandidatesLimit)
-		candidateList, err := getStakingCandidates(ctx, chainClient, offset, size, height)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to get candidates")
-		}
-		candidateListAll.Candidates = append(candidateListAll.Candidates, candidateList.Candidates...)
-		if len(candidateList.Candidates) < readCandidatesLimit {
-			break
-		}
-	}
-	return
-}
-
-// getStakingCandidates get specific candidates by height
-func getStakingCandidates(ctx context.Context, chainClient iotexapi.APIServiceClient, offset, limit uint32, height uint64) (candidateList *iotextypes.CandidateListV2, err error) {
-	methodName, err := proto.Marshal(&iotexapi.ReadStakingDataMethod{
-		Method: iotexapi.ReadStakingDataMethod_CANDIDATES,
-	})
-	if err != nil {
-		return nil, err
-	}
-	arg, err := proto.Marshal(&iotexapi.ReadStakingDataRequest{
-		Request: &iotexapi.ReadStakingDataRequest_Candidates_{
-			Candidates: &iotexapi.ReadStakingDataRequest_Candidates{
-				Pagination: &iotexapi.PaginationParam{
-					Offset: offset,
-					Limit:  limit,
-				},
-			},
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
-	readStateRequest := &iotexapi.ReadStateRequest{
-		ProtocolID: []byte(protocolID),
-		MethodName: methodName,
-		Arguments:  [][]byte{arg},
-		Height:     strconv.FormatUint(height, 10),
-	}
-	readStateRes, err := chainClient.ReadState(ctx, readStateRequest)
-	if err != nil {
-		return
-	}
-	candidateList = &iotextypes.CandidateListV2{}
-	if err := proto.Unmarshal(readStateRes.GetData(), candidateList); err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal VoteBucketList")
-	}
-	return
 }

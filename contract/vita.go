@@ -1307,6 +1307,7 @@ func (_Vita *VitaFilterer) ParseApproval(log types.Log) (*VitaApproval, error) {
 	if err := _Vita.contract.UnpackLog(event, "Approval", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -1442,6 +1443,7 @@ func (_Vita *VitaFilterer) ParseClaim(log types.Log) (*VitaClaim, error) {
 	if err := _Vita.contract.UnpackLog(event, "Claim", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -1576,6 +1578,7 @@ func (_Vita *VitaFilterer) ParseDecay(log types.Log) (*VitaDecay, error) {
 	if err := _Vita.contract.UnpackLog(event, "Decay", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -1728,6 +1731,7 @@ func (_Vita *VitaFilterer) ParseOwnershipTransferred(log types.Log) (*VitaOwners
 	if err := _Vita.contract.UnpackLog(event, "OwnershipTransferred", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -1860,6 +1864,7 @@ func (_Vita *VitaFilterer) ParsePause(log types.Log) (*VitaPause, error) {
 	if err := _Vita.contract.UnpackLog(event, "Pause", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -2013,6 +2018,7 @@ func (_Vita *VitaFilterer) ParseTransfer(log types.Log) (*VitaTransfer, error) {
 	if err := _Vita.contract.UnpackLog(event, "Transfer", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -2145,6 +2151,7 @@ func (_Vita *VitaFilterer) ParseUnpause(log types.Log) (*VitaUnpause, error) {
 	if err := _Vita.contract.UnpackLog(event, "Unpause", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -2278,5 +2285,6 @@ func (_Vita *VitaFilterer) ParseUpdateView(log types.Log) (*VitaUpdateView, erro
 	if err := _Vita.contract.UnpackLog(event, "UpdateView", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }

@@ -19,7 +19,7 @@ import (
 
 func TestStartDummyServer(t *testing.T) {
 	r := require.New(t)
-	s, err := NewDummyServer(32223)
+	s, err := NewDummyServer(32223, nil)
 	r.NoError(err)
 	r.True(s != nil)
 	ctx := context.Background()

@@ -8,3 +8,4 @@ abigen --abi vita.abi --pkg contract --type Vita --out vita.go
 abigen --abi register.abi --pkg contract --type Register --out register.go
 abigen --abi staking.abi --pkg contract --type Staking --out staking.go
 abigen --abi pyggstaking.abi --pkg contract --type PyggStaking --out pyggstaking.go
+abigen --abi agent.abi --pkg contract --type Agent --out agent.go

@@ -1240,6 +1240,7 @@ func (_PyggStaking *PyggStakingFilterer) ParsePause(log types.Log) (*PyggStaking
 	if err := _PyggStaking.contract.UnpackLog(event, "Pause", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -1380,6 +1381,7 @@ func (_PyggStaking *PyggStakingFilterer) ParsePyggCreated(log types.Log) (*PyggS
 	if err := _PyggStaking.contract.UnpackLog(event, "PyggCreated", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -1516,6 +1518,7 @@ func (_PyggStaking *PyggStakingFilterer) ParsePyggUnstake(log types.Log) (*PyggS
 	if err := _PyggStaking.contract.UnpackLog(event, "PyggUnstake", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -1656,6 +1659,7 @@ func (_PyggStaking *PyggStakingFilterer) ParsePyggUpdated(log types.Log) (*PyggS
 	if err := _PyggStaking.contract.UnpackLog(event, "PyggUpdated", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -1792,6 +1796,7 @@ func (_PyggStaking *PyggStakingFilterer) ParsePyggWithdraw(log types.Log) (*Pygg
 	if err := _PyggStaking.contract.UnpackLog(event, "PyggWithdraw", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -1924,6 +1929,7 @@ func (_PyggStaking *PyggStakingFilterer) ParseUnpause(log types.Log) (*PyggStaki
 	if err := _PyggStaking.contract.UnpackLog(event, "Unpause", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -2057,6 +2063,7 @@ func (_PyggStaking *PyggStakingFilterer) ParseWhitelistedAddressAdded(log types.
 	if err := _PyggStaking.contract.UnpackLog(event, "WhitelistedAddressAdded", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -2190,5 +2197,6 @@ func (_PyggStaking *PyggStakingFilterer) ParseWhitelistedAddressRemoved(log type
 	if err := _PyggStaking.contract.UnpackLog(event, "WhitelistedAddressRemoved", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }

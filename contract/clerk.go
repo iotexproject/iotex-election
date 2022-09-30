@@ -560,6 +560,7 @@ func (_Clerk *ClerkFilterer) ParseOwnershipTransferred(log types.Log) (*ClerkOwn
 	if err := _Clerk.contract.UnpackLog(event, "OwnershipTransferred", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -693,6 +694,7 @@ func (_Clerk *ClerkFilterer) ParseWhitelistedAddressAdded(log types.Log) (*Clerk
 	if err := _Clerk.contract.UnpackLog(event, "WhitelistedAddressAdded", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -826,5 +828,6 @@ func (_Clerk *ClerkFilterer) ParseWhitelistedAddressRemoved(log types.Log) (*Cle
 	if err := _Clerk.contract.UnpackLog(event, "WhitelistedAddressRemoved", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }

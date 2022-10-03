@@ -323,26 +323,28 @@ func (vc *VoteSync) Stop(ctx context.Context) {
 	vc.terminated = true
 }
 
-func (vc *VoteSync) ProofForAccount(acct address.Address) ([]byte, error) {
+func (vc *VoteSync) ProofForAccount(acct address.Address) (*big.Int, *big.Int, []byte, error) {
 	if vc.agentContract == nil {
-		return nil, errors.New("agent mode is not enabled")
+		return nil, nil, nil, errors.New("agent mode is not enabled")
 	}
 	agentCycle, size, claimed, err := vc.agentContract.Claimed(acct)
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 	if claimed {
-		return nil, nil
+		return nil, nil, nil, nil
 	}
 	cycle, power := vc.votingPowers.VotingPower(common.BytesToAddress(acct.Bytes()))
 	if cycle.Cmp(agentCycle) != 0 {
-		return nil, errors.New("unexpected status")
+		return nil, nil, nil, errors.New("unexpected status")
+	}
+	amount := new(big.Int).Div(power.Mul(power, size), vc.votingPowers.Total())
+	proof, err := vc.agentContract.Digest(amount, cycle)
+	if err != nil {
+		return nil, nil, nil, err
 	}
 
-	return vc.agentContract.Digest(
-		new(big.Int).Div(power.Mul(power, size), vc.votingPowers.Total()),
-		cycle,
-	)
+	return agentCycle, amount, proof, nil
 }
 
 func (vc *VoteSync) brokerSettle() error {

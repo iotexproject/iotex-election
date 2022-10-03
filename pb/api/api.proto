@@ -127,5 +127,7 @@ message ProofRequest {
 }
 
 message ProofResponse {
-	string proof = 1;
+	string amount = 1;
+	string deadline = 2;
+	string proof = 3;
 }

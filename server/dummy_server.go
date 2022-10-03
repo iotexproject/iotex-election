@@ -144,7 +144,7 @@ func (s *dummyServer) GetProof(ctx context.Context, request *api.ProofRequest) (
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to cast account %s", request.Account)
 	}
-	proof, err := s.vs.ProofForAccount(addr)
+	cycle, amount, proof, err := s.vs.ProofForAccount(addr)
 	if err != nil {
 		return nil, err
 	}
@@ -152,5 +152,9 @@ func (s *dummyServer) GetProof(ctx context.Context, request *api.ProofRequest) (
 		return nil, nil
 	}
 
-	return &api.ProofResponse{Proof: hex.EncodeToString(proof)}, nil
+	return &api.ProofResponse{
+		Deadline: cycle.String(),
+		Amount:   amount.String(),
+		Proof:    hex.EncodeToString(proof),
+	}, nil
 }

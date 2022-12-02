@@ -20,21 +20,21 @@ type MixConfig struct {
 
 func NewServerMix(mCfg MixConfig) (*ServerMix, error) {
 	var err error
-	var vs *votesync.VoteSync
-	if mCfg.EnableVoteSync {
-		vs, err = votesync.NewVoteSync(mCfg.VoteSync)
-		if err != nil {
-			return nil, err
-		}
-	}
 	var ess Server
 	if mCfg.DummyServerPort != 0 {
-		ess, err = NewDummyServer(mCfg.DummyServerPort, vs)
+		ess, err = NewDummyServer(mCfg.DummyServerPort)
 		if err != nil {
 			return nil, err
 		}
 		zap.L().Info("New dummy server created")
 	} else {
+		var vs *votesync.VoteSync
+		if mCfg.EnableVoteSync {
+			vs, err = votesync.NewVoteSync(mCfg.VoteSync)
+			if err != nil {
+				return nil, err
+			}
+		}
 		ess, err = NewServer(&mCfg.ElectionConfig, vs)
 		if err != nil {
 			return nil, err

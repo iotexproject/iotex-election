@@ -11,11 +11,14 @@
 package server
 
 import (
+	"fmt"
 	"log"
 	"net"
+	"net/http"
 	"strconv"
 
 	"github.com/golang/protobuf/ptypes/empty"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/net/context"
@@ -40,7 +43,7 @@ type dummyServer struct {
 }
 
 // NewDummyServer returns an implementation of ranking dummy server
-func NewDummyServer(port int) (DummyServer, error) {
+func NewDummyServer(port int, httpPort int) (DummyServer, error) {
 	zapCfg := zap.NewDevelopmentConfig()
 	zapCfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	zapCfg.Level.SetLevel(zap.InfoLevel)
@@ -53,6 +56,21 @@ func NewDummyServer(port int) (DummyServer, error) {
 	s.grpcServer = grpc.NewServer()
 	api.RegisterAPIServiceServer(s.grpcServer, s)
 	reflection.Register(s.grpcServer)
+	if httpPort > 0 {
+		go func() {
+			gwmux := runtime.NewServeMux()
+			if err := api.RegisterAPIServiceHandlerServer(context.Background(), gwmux, s); err != nil {
+				zap.L().Panic("failed to register api server")
+			}
+			gwServer := &http.Server{
+				Addr:    fmt.Sprintf(":%d", httpPort),
+				Handler: gwmux,
+			}
+			if err := gwServer.ListenAndServe(); err != nil {
+				zap.L().Panic("failed to servert api gateway server", zap.Error(err))
+			}
+		}()
+	}
 	return s, nil
 }
 

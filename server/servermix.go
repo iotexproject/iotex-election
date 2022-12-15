@@ -11,18 +11,19 @@ type ServerMix struct {
 }
 
 type MixConfig struct {
-	ElectionConfig  Config              `yaml:"electionConfig"`
-	NativeConfig    NativeStakingConfig `yaml:"nativeConfig"`
-	VoteSync        votesync.Config     `yaml:"voteSync"`
-	EnableVoteSync  bool                `yaml:"enableVoteSync"`
-	DummyServerPort int                 `yaml:"dummyServerPort"`
+	ElectionConfig      Config              `yaml:"electionConfig"`
+	NativeConfig        NativeStakingConfig `yaml:"nativeConfig"`
+	VoteSync            votesync.Config     `yaml:"voteSync"`
+	EnableVoteSync      bool                `yaml:"enableVoteSync"`
+	DummyServerPort     int                 `yaml:"dummyServerPort"`
+	DummyServerHttpPort int                 `yaml:"dummyServerHttpPort"`
 }
 
 func NewServerMix(mCfg MixConfig) (*ServerMix, error) {
 	var err error
 	var ess Server
 	if mCfg.DummyServerPort != 0 {
-		ess, err = NewDummyServer(mCfg.DummyServerPort)
+		ess, err = NewDummyServer(mCfg.DummyServerPort, mCfg.DummyServerHttpPort)
 		if err != nil {
 			return nil, err
 		}

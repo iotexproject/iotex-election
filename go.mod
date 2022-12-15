@@ -10,9 +10,10 @@ require (
 	github.com/edsrzf/mmap-go v1.0.0 // indirect
 	github.com/ethereum/go-ethereum v1.10.1
 	github.com/fjl/memsize v0.0.0-20190710130421-bcb5799ab5e5 // indirect
-	github.com/golang/mock v1.4.4
-	github.com/golang/protobuf v1.4.3
+	github.com/golang/mock v1.6.0
+	github.com/golang/protobuf v1.5.2
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.0
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.14.0
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/iotexproject/go-pkgs v0.1.5-0.20210604060651-be5ee19f2575
 	github.com/iotexproject/iotex-address v0.2.4
@@ -29,9 +30,10 @@ require (
 	github.com/tyler-smith/go-bip39 v1.0.2 // indirect
 	go.etcd.io/bbolt v1.3.5
 	go.uber.org/zap v1.10.0
-	golang.org/x/net v0.0.0-20201021035429-f5854403a974
-	google.golang.org/grpc v1.33.1
-	google.golang.org/protobuf v1.25.0
+	golang.org/x/net v0.2.0
+	google.golang.org/genproto v0.0.0-20221114212237-e4508ebdbee1
+	google.golang.org/grpc v1.50.1
+	google.golang.org/protobuf v1.28.1
 	gopkg.in/yaml.v2 v2.3.0
 )
 

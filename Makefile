@@ -12,6 +12,7 @@ GOLINT=golint
 GOBUILD=$(GOCMD) build
 GOCLEAN=$(GOCMD) clean
 GOTEST=$(GOCMD) test
+PROTOC=protoc
 BUILD_TARGET_SERVER=server
 
 # Pkgs
@@ -23,6 +24,11 @@ ROOT_PKG := "github.com/iotexproject/iotex-election"
 DOCKERCMD=docker
 
 all: clean build test
+
+.PHONY: proto
+proto:
+	$(PROTOC) -I ./pb --go_out ./pb --go_opt paths=source_relative ./pb/election/election.proto
+	$(PROTOC) -I ./pb --go_out ./pb --go_opt paths=source_relative --go-grpc_out ./pb --go-grpc_opt paths=source_relative --grpc-gateway_out ./pb --grpc-gateway_opt paths=source_relative ./pb/api/api.proto
 
 .PHONY: build
 build:

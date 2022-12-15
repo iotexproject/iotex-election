@@ -14,9 +14,10 @@ syntax = "proto3";
 package api;
 option go_package = "github.com/iotexproject/iotex-election/pb/api";
 
+import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
-import "pb/election/election.proto";
+import "election/election.proto";
 
 // The APIService service definition
 service APIService {
@@ -42,7 +43,11 @@ service APIService {
 	rpc getRawData(GetRawDataRequest) returns (RawDataResponse) {}
 
 	// get proof for a given account
-	rpc getProof(ProofRequest) returns (ProofResponse) {}
+	rpc getProof(ProofRequest) returns (ProofResponse) {
+		option (google.api.http) = {
+			get: "/get_proof/{account}"
+		};
+	}
 }
 
 message ChainMeta {

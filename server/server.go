@@ -12,14 +12,17 @@ package server
 
 import (
 	"encoding/hex"
+	"fmt"
 	"math"
 	"math/big"
 	"net"
+	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/empty"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/iotexproject/iotex-address/address"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -40,6 +43,7 @@ import (
 type Config struct {
 	DB                   db.Config        `yaml:"db"`
 	Port                 int              `yaml:"port"`
+	HttpPort             int              `yaml:"httpPort"`
 	Committee            committee.Config `yaml:"committee"`
 	SelfStakingThreshold string           `yaml:"selfStakingThreshold"`
 	ScoreThreshold       string           `yaml:"scoreThreshold"`
@@ -91,6 +95,21 @@ func NewServer(cfg *Config, vs *votesync.VoteSync) (Server, error) {
 	s.grpcServer = grpc.NewServer()
 	api.RegisterAPIServiceServer(s.grpcServer, s)
 	reflection.Register(s.grpcServer)
+	if cfg.HttpPort > 0 {
+		go func() {
+			gwmux := runtime.NewServeMux()
+			if err := api.RegisterAPIServiceHandlerServer(context.Background(), gwmux, s); err != nil {
+				zap.L().Panic("failed to register api server")
+			}
+			gwServer := &http.Server{
+				Addr:    fmt.Sprintf(":%d", cfg.HttpPort),
+				Handler: gwmux,
+			}
+			if err := gwServer.ListenAndServe(); err != nil {
+				zap.L().Panic("failed to servert api gateway server", zap.Error(err))
+			}
+		}()
+	}
 
 	return s, nil
 }

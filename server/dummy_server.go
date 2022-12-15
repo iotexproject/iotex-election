@@ -39,6 +39,7 @@ type DummyServer interface {
 type dummyServer struct {
 	api.UnimplementedAPIServiceServer
 	port       int
+	httpPort   int
 	grpcServer *grpc.Server
 }
 
@@ -52,25 +53,11 @@ func NewDummyServer(port int, httpPort int) (DummyServer, error) {
 		log.Panic("Failed to init zap global logger, no zap log will be shown till zap is properly initialized: ", err)
 	}
 	zap.ReplaceGlobals(l)
-	s := &dummyServer{port: port}
+	s := &dummyServer{port: port, httpPort: httpPort}
 	s.grpcServer = grpc.NewServer()
 	api.RegisterAPIServiceServer(s.grpcServer, s)
 	reflection.Register(s.grpcServer)
-	if httpPort > 0 {
-		go func() {
-			gwmux := runtime.NewServeMux()
-			if err := api.RegisterAPIServiceHandlerServer(context.Background(), gwmux, s); err != nil {
-				zap.L().Panic("failed to register api server")
-			}
-			gwServer := &http.Server{
-				Addr:    fmt.Sprintf(":%d", httpPort),
-				Handler: gwmux,
-			}
-			if err := gwServer.ListenAndServe(); err != nil {
-				zap.L().Panic("failed to servert api gateway server", zap.Error(err))
-			}
-		}()
-	}
+
 	return s, nil
 }
 
@@ -88,6 +75,21 @@ func (s *dummyServer) Start(ctx context.Context) error {
 			zap.L().Fatal("Failed to serve", zap.Error(err))
 		}
 	}()
+	if s.httpPort > 0 {
+		go func() {
+			gwmux := runtime.NewServeMux()
+			if err := api.RegisterAPIServiceHandlerServer(context.Background(), gwmux, s); err != nil {
+				zap.L().Panic("failed to register api server")
+			}
+			gwServer := &http.Server{
+				Addr:    fmt.Sprintf(":%d", s.httpPort),
+				Handler: gwmux,
+			}
+			if err := gwServer.ListenAndServe(); err != nil {
+				zap.L().Panic("failed to servert api gateway server", zap.Error(err))
+			}
+		}()
+	}
 	return nil
 }
 

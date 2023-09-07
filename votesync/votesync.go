@@ -34,7 +34,7 @@ const (
 
 var _fixedAdhocPower = big.NewInt(1)
 
-//VoteSync defines fields used in VoteSync
+// VoteSync defines fields used in VoteSync
 type VoteSync struct {
 	agentContract          *agentContract
 	votingPowers           *VotingPowers
@@ -59,7 +59,7 @@ type VoteSync struct {
 	fairbankHeight         uint64
 }
 
-//Config defines the configs for VoteSync
+// Config defines the configs for VoteSync
 type Config struct {
 	GravityChainAPIs          []string      `yaml:"gravityChainAPIs"`
 	GravityChainTimeInterval  time.Duration `yaml:"gravityChainTimeInterval"`
@@ -82,7 +82,7 @@ type Config struct {
 	AgentContractAddress      string        `yaml:"agentContractAddress"`
 }
 
-//WeightedVote defines voter and votes for weighted vote
+// WeightedVote defines voter and votes for weighted vote
 type WeightedVote struct {
 	Voter string
 	Votes *big.Int
@@ -96,7 +96,7 @@ func ioToEthAddress(str string) (common.Address, error) {
 	return common.BytesToAddress(addr.Bytes()), nil
 }
 
-//NewVoteSync instantiates new VoteSync
+// NewVoteSync instantiates new VoteSync
 func NewVoteSync(cfg Config) (*VoteSync, error) {
 	ctx := context.Background()
 
@@ -125,7 +125,7 @@ func NewVoteSync(cfg Config) (*VoteSync, error) {
 	iotexAPI := iotexapi.NewAPIServiceClient(conn)
 	apiClient := NewIoTeXClient(iotexAPI)
 	fetcher := &VoteFetcher{iotexAPI: iotexAPI}
-	authClient := iotex.NewAuthedClient(iotexAPI, operatorAccount)
+	authClient := iotex.NewAuthedClient(iotexAPI, 1, operatorAccount)
 
 	vitaContractAddress, err := address.FromString(cfg.VitaContractAddress)
 	if err != nil {

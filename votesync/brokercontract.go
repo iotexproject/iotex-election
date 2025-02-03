@@ -9,7 +9,6 @@ import (
 	"github.com/iotexproject/iotex-address/address"
 	"github.com/iotexproject/iotex-antenna-go/v2/iotex"
 	"github.com/iotexproject/iotex-antenna-go/v2/utils/unit"
-	"github.com/iotexproject/iotex-antenna-go/v2/utils/wait"
 	"github.com/iotexproject/iotex-election/contract"
 	"github.com/iotexproject/iotex-election/util"
 )
@@ -28,8 +27,8 @@ func NewBrokerContract(cli iotex.AuthedClient, addr address.Address, batchSize u
 }
 
 func (bc *brokerContract) Reset() error {
-	caller := bc.contract.Execute("reset").SetGasPrice(big.NewInt(int64(1 * unit.Qev))).SetGasLimit(5000000)
-	return wait.Wait(context.Background(), caller)
+	_, err := bc.contract.Execute("reset").SetGasPrice(big.NewInt(int64(1 * unit.Qev))).SetGasLimit(5000000).Call(context.Background())
+	return err
 }
 
 func (bc *brokerContract) NextBidToSettle() (uint64, error) {
@@ -49,8 +48,8 @@ func (bc *brokerContract) NextBidToSettle() (uint64, error) {
 }
 
 func (bc *brokerContract) Settle() error {
-	caller := bc.contract.Execute(
+	_, err := bc.contract.Execute(
 		"settle", big.NewInt(0).SetUint64(bc.batchSize)).
-		SetGasPrice(big.NewInt(int64(1 * unit.Qev))).SetGasLimit(5000000)
-	return wait.Wait(context.Background(), caller)
+		SetGasPrice(big.NewInt(int64(1 * unit.Qev))).SetGasLimit(5000000).Call(context.Background())
+	return err
 }

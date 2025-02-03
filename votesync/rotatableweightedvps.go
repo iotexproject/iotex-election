@@ -10,7 +10,6 @@ import (
 	"github.com/iotexproject/iotex-address/address"
 	"github.com/iotexproject/iotex-antenna-go/v2/iotex"
 	"github.com/iotexproject/iotex-antenna-go/v2/utils/unit"
-	"github.com/iotexproject/iotex-antenna-go/v2/utils/wait"
 	"github.com/iotexproject/iotex-election/contract"
 	"github.com/iotexproject/iotex-election/util"
 	"github.com/pkg/errors"
@@ -54,10 +53,10 @@ func (vps *rwvps) InactiveViewID() (*big.Int, error) {
 }
 
 func (vps *rwvps) Rotate(viewID *big.Int) error {
-	caller := vps.contract.Execute("rotate", viewID).
-		SetGasPrice(big.NewInt(int64(1 * unit.Qev))).SetGasLimit(4000000)
+	_, err := vps.contract.Execute("rotate", viewID).
+		SetGasPrice(big.NewInt(int64(1 * unit.Qev))).SetGasLimit(4000000).Call(context.Background())
 
-	return wait.Wait(context.Background(), caller)
+	return err
 }
 
 func (vps *rwvps) UpdateVotingPowers(addrs []common.Address, weights []*big.Int) error {
@@ -88,9 +87,9 @@ func (vps *rwvps) UpdateVotingPowers(addrs []common.Address, weights []*big.Int)
 }
 
 func (vps *rwvps) updateVotingPowers(addrs []common.Address, weights []*big.Int) error {
-	caller := vps.contract.Execute("updateVotingPowers", addrs, weights).
-		SetGasPrice(big.NewInt(int64(1 * unit.Qev))).SetGasLimit(7000000)
-	return wait.Wait(context.Background(), caller)
+	_, err := vps.contract.Execute("updateVotingPowers", addrs, weights).
+		SetGasPrice(big.NewInt(int64(1 * unit.Qev))).SetGasLimit(7000000).Call(context.Background())
+	return err
 }
 
 func (vps *rwvps) TotalPower() (*big.Int, error) {

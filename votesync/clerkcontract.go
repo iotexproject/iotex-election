@@ -9,7 +9,6 @@ import (
 	"github.com/iotexproject/iotex-address/address"
 	"github.com/iotexproject/iotex-antenna-go/v2/iotex"
 	"github.com/iotexproject/iotex-antenna-go/v2/utils/unit"
-	"github.com/iotexproject/iotex-antenna-go/v2/utils/wait"
 	"github.com/iotexproject/iotex-election/contract"
 )
 
@@ -26,6 +25,6 @@ func NewClerkContract(cli iotex.AuthedClient, addr address.Address) (*clerkContr
 }
 
 func (cc *clerkContract) Claim() error {
-	caller := cc.contract.Execute("claim").SetGasPrice(big.NewInt(int64(1 * unit.Qev))).SetGasLimit(5000000)
-	return wait.Wait(context.Background(), caller)
+	_, err := cc.contract.Execute("claim").SetGasPrice(big.NewInt(int64(1 * unit.Qev))).SetGasLimit(5000000).Call(context.Background())
+	return err
 }

@@ -11,9 +11,9 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.22.0
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d
-	github.com/iotexproject/go-pkgs v0.1.15-0.20250203050652-f6f37ab0c630
+	github.com/iotexproject/go-pkgs v0.1.15
 	github.com/iotexproject/iotex-address v0.2.8
-	github.com/iotexproject/iotex-antenna-go/v2 v2.6.4-0.20250203054316-e9b97f4e8885
+	github.com/iotexproject/iotex-antenna-go/v2 v2.6.4
 	github.com/iotexproject/iotex-proto v0.5.10
 	github.com/mattn/go-sqlite3 v1.11.0
 	github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1

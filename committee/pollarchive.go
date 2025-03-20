@@ -22,8 +22,8 @@ import (
 	"go.uber.org/zap"
 
 	// require sqlite3 driver
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
+	_ "modernc.org/sqlite"
 
 	"github.com/iotexproject/iotex-election/db"
 	"github.com/iotexproject/iotex-election/types"
@@ -108,7 +108,7 @@ func NewArchive(dbPath string, numOfRetries uint8, startHeight uint64, interval 
 	if fileExists(oldDbPath) {
 		kvstore = db.NewBoltDB(oldDbPath, numOfRetries)
 	}
-	sqlDB, err := sql.Open("sqlite3", dbPath)
+	sqlDB, err := sql.Open("sqlite", dbPath)
 	if err != nil {
 		return nil, err
 	}

@@ -22,8 +22,8 @@ import (
 	"time"
 
 	// require sqlite3 driver
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
+	_ "modernc.org/sqlite"
 
 	"github.com/iotexproject/go-pkgs/hash"
 	"github.com/iotexproject/iotex-election/db"
@@ -54,7 +54,7 @@ type InsertRecordsFunc func(string, DRIVERTYPE, interface{}, *sql.Tx) (map[hash.
 // QueryRecordsFunc defines an api to query records
 type QueryRecordsFunc func(string, map[int64]int, *sql.DB, *sql.Tx) (interface{}, error)
 
-//DRIVERTYPE represents the type of sql driver
+// DRIVERTYPE represents the type of sql driver
 type DRIVERTYPE uint8
 
 const (

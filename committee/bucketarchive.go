@@ -18,8 +18,8 @@ import (
 	"time"
 
 	// require sqlite3 driver
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
+	_ "modernc.org/sqlite"
 
 	"github.com/iotexproject/iotex-election/types"
 )
@@ -38,7 +38,7 @@ type BucketArchive struct {
 
 // NewBucketArchive creates a new archive of bucket
 func NewBucketArchive(dbPath string, numOfRetries uint8, startHeight uint64, interval uint64) (*BucketArchive, error) {
-	sqlDB, err := sql.Open("sqlite3", dbPath)
+	sqlDB, err := sql.Open("sqlite", dbPath)
 	if err != nil {
 		return nil, err
 	}

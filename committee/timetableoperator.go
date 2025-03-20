@@ -17,8 +17,8 @@ import (
 	"time"
 
 	// require sqlite3 driver
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
+	_ "modernc.org/sqlite"
 
 	"github.com/iotexproject/iotex-election/db"
 	"github.com/iotexproject/iotex-election/util"

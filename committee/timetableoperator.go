@@ -17,7 +17,8 @@ import (
 	"time"
 
 	// require sqlite3 driver
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/ncruces/go-sqlite3/driver"
+	_ "github.com/ncruces/go-sqlite3/embed"
 	"github.com/pkg/errors"
 
 	"github.com/iotexproject/iotex-election/db"
@@ -77,12 +78,13 @@ func (operator *TimeTableOperator) TipHeight(sdb *sql.DB, tx *sql.Tx) (uint64, e
 
 // HeightBefore returns the Height before ts in the time table
 func (operator *TimeTableOperator) HeightBefore(ts time.Time, sdb *sql.DB, tx *sql.Tx) (height uint64, err error) {
+	tsString := ts.UTC().String()
 	if tx != nil {
-		err = tx.QueryRow(operator.heightQuery, ts, ts).Scan(&height)
+		err = tx.QueryRow(operator.heightQuery, tsString, tsString).Scan(&height)
 	} else {
-		err = sdb.QueryRow(operator.heightQuery, ts, ts).Scan(&height)
+		err = sdb.QueryRow(operator.heightQuery, tsString, tsString).Scan(&height)
 	}
-	return uint64(height), nil
+	return uint64(height), err
 }
 
 // CreateTables prepares the tables for the operator
@@ -117,7 +119,6 @@ func (operator *TimeTableOperator) Put(height uint64, value interface{}, tx *sql
 	if !ok {
 		return errors.Errorf("unexpected type %s", reflect.TypeOf(value))
 	}
-	_, err := tx.Exec(operator.insertMintTimeQuery, height, mintTime)
-
+	_, err := tx.Exec(operator.insertMintTimeQuery, height, mintTime.UTC().String())
 	return err
 }

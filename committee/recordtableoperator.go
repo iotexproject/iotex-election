@@ -411,7 +411,7 @@ const BucketRecordQuery = "SELECT id, start_time, duration, amount, decay, voter
 func QueryBuckets(tableName string, frequencies map[int64]int, sdb *sql.DB, tx *sql.Tx) (interface{}, error) {
 	var (
 		id, decay                int64
-		startTime                time.Time
+		tsString                 string
 		rawDuration              string
 		amount, voter, candidate []byte
 		rows                     *sql.Rows
@@ -434,10 +434,14 @@ func QueryBuckets(tableName string, frequencies map[int64]int, sdb *sql.DB, tx *
 	defer rows.Close()
 	buckets := make([]*types.Bucket, 0, size)
 	for rows.Next() {
-		if err := rows.Scan(&id, &startTime, &rawDuration, &amount, &decay, &voter, &candidate); err != nil {
+		if err := rows.Scan(&id, &tsString, &rawDuration, &amount, &decay, &voter, &candidate); err != nil {
 			return nil, err
 		}
 		duration, err := time.ParseDuration(rawDuration)
+		if err != nil {
+			return nil, err
+		}
+		startTime, err := time.Parse(time.RFC3339, tsString)
 		if err != nil {
 			return nil, err
 		}

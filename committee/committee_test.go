@@ -11,6 +11,7 @@
 package committee
 
 import (
+	"database/sql"
 	"math/big"
 	"testing"
 	"time"
@@ -19,6 +20,34 @@ import (
 
 	"github.com/iotexproject/iotex-election/types"
 )
+
+func TestReadBlockTime(t *testing.T) {
+	req := require.New(t)
+	sqlDB, err := sql.Open("sqlite3", "/Users/dustin/iotexproject/iotex-core/data/poll.db")
+	req.NoError(err)
+
+	tQ := "SELECT MAX(height) FROM mint_time WHERE ? >= time AND EXISTS (SELECT * FROM mint_time WHERE ? <= time)"
+	ts := time.Unix(1555898790, 0).UTC()
+	println("time =", ts.String())
+	var height uint64
+	err = sqlDB.QueryRow(tQ, ts.String(), ts.String()).Scan(&height)
+	req.NoError(err)
+	println("height =", height)
+
+	hQ := "SELECT time FROM mint_time WHERE height = ?"
+	var timestamp string
+	err = sqlDB.QueryRow(hQ, 7614600).Scan(&timestamp)
+	req.NoError(err)
+	println("ts =", timestamp)
+	ts, err = time.Parse(time.RFC3339, timestamp)
+	req.NoError(err)
+	println("parse =", ts.String())
+	var ts1 time.Time
+	err = sqlDB.QueryRow(hQ, 7614600).Scan(&ts1)
+	req.NoError(err)
+	println("ts =", ts1.String())
+	println("UTC =", ts1.UTC().String())
+}
 
 func TestCalcWeightedVotes(t *testing.T) {
 	require := require.New(t)

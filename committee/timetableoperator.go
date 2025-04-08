@@ -31,6 +31,7 @@ type TimeTableOperator struct {
 	insertMintTimeQuery string
 	mintTimeQuery       string
 	tipHeightQuery      string
+	timeLayout          string
 }
 
 // NewTimeTableOperator returns an operator to time table
@@ -50,6 +51,7 @@ func NewTimeTableOperator(tableName string, driverName DRIVERTYPE) *TimeTableOpe
 		heightQuery:         fmt.Sprintf("SELECT MAX(height) FROM %s WHERE ? >= time AND EXISTS (SELECT * FROM %s WHERE ? <= time)", tableName, tableName),
 		mintTimeQuery:       fmt.Sprintf("SELECT time FROM %s WHERE height = ?", tableName),
 		tipHeightQuery:      fmt.Sprintf("SELECT MAX(height) FROM %s", tableName),
+		timeLayout:          "2006-01-02 15:04:05-07:00",
 	}
 }
 
@@ -77,12 +79,14 @@ func (operator *TimeTableOperator) TipHeight(sdb *sql.DB, tx *sql.Tx) (uint64, e
 
 // HeightBefore returns the Height before ts in the time table
 func (operator *TimeTableOperator) HeightBefore(ts time.Time, sdb *sql.DB, tx *sql.Tx) (height uint64, err error) {
+	// convert to timestamp format as stored in DB
+	tsString := ts.UTC().Format(operator.timeLayout)
 	if tx != nil {
-		err = tx.QueryRow(operator.heightQuery, ts, ts).Scan(&height)
+		err = tx.QueryRow(operator.heightQuery, tsString, tsString).Scan(&height)
 	} else {
-		err = sdb.QueryRow(operator.heightQuery, ts, ts).Scan(&height)
+		err = sdb.QueryRow(operator.heightQuery, tsString, tsString).Scan(&height)
 	}
-	return uint64(height), nil
+	return uint64(height), err
 }
 
 // CreateTables prepares the tables for the operator
@@ -117,7 +121,8 @@ func (operator *TimeTableOperator) Put(height uint64, value interface{}, tx *sql
 	if !ok {
 		return errors.Errorf("unexpected type %s", reflect.TypeOf(value))
 	}
-	_, err := tx.Exec(operator.insertMintTimeQuery, height, mintTime)
-
+	// convert to timestamp format as stored in DB
+	tsString := mintTime.UTC().Format(operator.timeLayout)
+	_, err := tx.Exec(operator.insertMintTimeQuery, height, tsString)
 	return err
 }

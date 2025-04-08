@@ -11,6 +11,7 @@
 package committee
 
 import (
+	"database/sql"
 	"math/big"
 	"testing"
 	"time"
@@ -19,6 +20,67 @@ import (
 
 	"github.com/iotexproject/iotex-election/types"
 )
+
+func TestReadBlockTime(t *testing.T) {
+	req := require.New(t)
+	sqlDB, err := sql.Open("sqlite", "/Users/dustin/iotexproject/iotex-core/data/poll.db")
+	req.NoError(err)
+
+	tQ := "SELECT MAX(height) FROM mint_time WHERE ? >= time AND EXISTS (SELECT * FROM mint_time WHERE ? <= time)"
+	ts := time.Unix(1555898790, 0).UTC()
+	println("time =", ts.String())
+	var height uint64
+	err = sqlDB.QueryRow(tQ, ts.String(), ts.String()).Scan(&height)
+	req.NoError(err)
+	println("height =", height)
+
+	hQ := "SELECT time FROM mint_time WHERE height = ?"
+	var timestamp string
+	err = sqlDB.QueryRow(hQ, 7614600).Scan(&timestamp)
+	req.NoError(err)
+	println("ts =", timestamp)
+	ts, err = time.Parse(time.RFC3339, timestamp)
+	req.NoError(err)
+	println("parse =", ts.String())
+	var ts1 time.Time
+	err = sqlDB.QueryRow(hQ, 7614600).Scan(&ts1)
+	req.NoError(err)
+	println("ts =", ts1.String())
+	println("UTC =", ts1.UTC().String())
+}
+
+func TestReadBuckets(t *testing.T) {
+	req := require.New(t)
+	arch, err := NewArchive("/Users/dustin/iotexproject/iotex-core/data/poll.db", 8, 7614500, 100)
+	req.NoError(err)
+	comm, err := NewCommittee(arch, Config{
+		NumOfRetries:               20,
+		GravityChainAPIs:           []string{"https://mainnet.infura.io/v3/b355cae6fafc4302b106b937ee6c15af"},
+		GravityChainHeightInterval: 100,
+		GravityChainStartHeight:    7614500,
+		GravityChainCeilingHeight:  10199000,
+		RegisterContractAddress:    "0x95724986563028deb58f15c5fac19fa09304f32d",
+		StakingContractAddress:     "0x87c9dbff0016af23f5b1ab9b8e072124ab729193",
+		PaginationSize:             255,
+		VoteThreshold:              "100000000000000000000",
+		ScoreThreshold:             "0",
+		SelfStakingThreshold:       "1200000000000000000000000",
+		CacheSize:                  1000,
+		NumOfFetchInParallel:       0,
+		SkipManifiedCandidate:      false,
+		GravityChainBatchSize:      0,
+	})
+	req.NoError(err)
+	ts, err := time.Parse(time.RFC3339, "2019-09-02T22:54:30Z")
+	req.NoError(err)
+	println("UTC =", ts.UTC().String())
+	println("3339 =", ts.Format(time.RFC3339))
+	layout := "2006-01-02 15:04:05-07:00"
+	println("db =", ts.Format(layout))
+	h, err := comm.HeightByTime(ts)
+	req.NoError(err)
+	println("height =", h)
+}
 
 func TestCalcWeightedVotes(t *testing.T) {
 	require := require.New(t)

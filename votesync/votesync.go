@@ -14,6 +14,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/iotexproject/iotex-address/address"
 	"github.com/iotexproject/iotex-antenna-go/v2/account"
@@ -98,23 +99,20 @@ func ioToEthAddress(str string) (common.Address, error) {
 
 // NewVoteSync instantiates new VoteSync
 func NewVoteSync(cfg Config) (*VoteSync, error) {
-	ctx := context.Background()
-
 	opts := []grpc_retry.CallOption{
 		grpc_retry.WithBackoff(grpc_retry.BackoffLinear(100 * time.Second)),
 		grpc_retry.WithMax(3),
 	}
 	dialOpts := []grpc.DialOption{
-		grpc.WithBlock(),
 		grpc.WithStreamInterceptor(grpc_retry.StreamClientInterceptor(opts...)),
 		grpc.WithUnaryInterceptor(grpc_retry.UnaryClientInterceptor(opts...)),
 	}
 	if cfg.IoTeXAPISecure {
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
 	} else {
-		dialOpts = append(dialOpts, grpc.WithInsecure())
+		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
-	conn, err := grpc.DialContext(ctx, cfg.IoTeXAPI, dialOpts...)
+	conn, err := grpc.NewClient(cfg.IoTeXAPI, dialOpts...)
 	if err != nil {
 		return nil, err
 	}

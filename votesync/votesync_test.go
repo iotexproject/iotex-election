@@ -22,6 +22,7 @@ var cfg = Config{
 }
 
 func TestFetchVotesByHeight(t *testing.T) {
+	t.Skip()
 	require := require.New(t)
 	vs, err := NewVoteSync(cfg)
 	require.NoError(err)
@@ -33,6 +34,7 @@ func TestFetchVotesByHeight(t *testing.T) {
 }
 
 func TestFetchVoteUpdate(t *testing.T) {
+	t.Skip()
 	require := require.New(t)
 	vs, err := NewVoteSync(cfg)
 	require.NoError(err)

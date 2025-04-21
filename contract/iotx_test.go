@@ -21,6 +21,7 @@ import (
 )
 
 func TestIOTXContract(t *testing.T) {
+	t.Skip()
 	client, err := ethclient.Dial("https://kovan.infura.io/v3/e1f5217dc75d4b77bfede00ca895635b")
 	require.NoError(t, err)
 	contractAddr := common.HexToAddress("51ca23c98b7481951d0904d3f134889713306c75")

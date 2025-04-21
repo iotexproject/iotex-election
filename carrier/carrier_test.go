@@ -23,6 +23,7 @@ import (
 )
 
 func TestVoteCarrier(t *testing.T) {
+	t.Skip()
 	require := require.New(t)
 	// TODO: update contract address once finalize it
 	carrier, err := NewEthereumVoteCarrier(

@@ -27,9 +27,9 @@ import (
 	lru "github.com/hashicorp/golang-lru"
 
 	// require sqlite3 driver
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	_ "modernc.org/sqlite"
 
 	"github.com/iotexproject/iotex-election/carrier"
 	"github.com/iotexproject/iotex-election/db"

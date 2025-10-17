@@ -86,7 +86,7 @@ func (operator *TimeTableOperator) HeightBefore(ts time.Time, sdb *sql.DB, tx *s
 	} else {
 		err = sdb.QueryRow(operator.heightQuery, tsString, tsString).Scan(&height)
 	}
-	return uint64(height), err
+	return uint64(height), nil
 }
 
 // CreateTables prepares the tables for the operator
